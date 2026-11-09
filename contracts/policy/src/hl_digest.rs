@@ -331,10 +331,9 @@ mod tests {
     #[test]
     fn golden_vectors_all_supported_types() {
         testing_env!(VMContextBuilder::new().build());
-        let fixtures: Value = serde_json::from_str(include_str!(
-            "../../../fixtures/hyperliquid-signing-vectors.json"
-        ))
-        .unwrap();
+        let fixtures: Value =
+            serde_json::from_str(include_str!("../fixtures/hyperliquid-signing-vectors.json"))
+                .unwrap();
         let mut checked = 0;
         for v in fixtures["vectors"].as_array().unwrap() {
             let mainnet = v["network"] == "mainnet";
@@ -374,7 +373,7 @@ mod tests {
             checked += 1;
         }
         assert_eq!(
-            checked, 18,
+            checked, 22,
             "all order/trigger/cancel/cloid/vault/expiry/boundary/withdraw vectors"
         );
     }

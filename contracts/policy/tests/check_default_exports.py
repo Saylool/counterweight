@@ -37,7 +37,10 @@ required = {
     "request_evm_withdrawal", "withdraw_spot", "on_signature",
     "on_spot_withdrawal", "request_cancel_signature", "emergency_reduce",
     "request_next_invalidation", "report_invalidation", "settle_position",
-    "expire_pending_signature",
+    "expire_pending_signature", "set_keeper_address_budget", "set_signing_resources",
+    "sweep_native", "get_rebalance", "configure_rebalancing", "observe_margin",
+    "approve_spot_sale", "on_sale_dispatch", "expire_sale_route",
+    "reconcile_sale_receipt", "reconcile_margin_withdrawal", "abandon_margin_withdrawal",
 }
 forbidden = {
     "sign", "sign_digest", "sign_hash", "request_signature", "upgrade",

@@ -1,0 +1,17 @@
+{
+  "observed_local_date": "2026-11-10",
+  "timezone": "Europe/Istanbul",
+  "method": "POST",
+  "request": { "type": "meta" },
+  "testnet": {
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "asset_index": 54,
+    "entry": { "szDecimals": 1, "name": "NEAR", "maxLeverage": 20, "marginTableId": 20 }
+  },
+  "mainnet": {
+    "source": "https://api.hyperliquid.xyz/info",
+    "asset_index": 74,
+    "entry": { "szDecimals": 1, "name": "NEAR", "maxLeverage": 10, "marginTableId": 52 }
+  },
+  "note": "Read-only public metadata. Mainnet values are not authorization to initialize or deploy on mainnet. Recheck before initialization."
+}

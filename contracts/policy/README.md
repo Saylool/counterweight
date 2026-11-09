@@ -1,206 +1,193 @@
 # Counterweight policy contract — testnet only
 
-Implements `docs/DESIGN.md` Part B and `docs/DESIGN-NOTES.md`. All signing uses
-real Hyperliquid digests; the placeholder feature has been removed. This contract
-has not been deployed to a public network. Local sandbox installation is test-only.
-See [TEST_RESULTS.md](TEST_RESULTS.md) for executed commands and results.
+Implements DESIGN Part B custody tiers and the owner-approved rebalancing revision
+in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). No public-network deployment or
+transaction has been performed. Sandbox signer/token/route behavior is mocked;
+there are no real MPC signatures or venue fills. See [TEST_RESULTS](TEST_RESULTS.md).
 
-## Build and reproduce
+## Reproduce
 
-Requires Rust 1.95+, `wasm32-unknown-unknown`, pinned near-sdk 5.30.1 and
-near-workspaces 0.24.0. Run from `contracts/policy/`. `.cargo/config.toml` supplies
-near-sdk's `cfg(near)` only for Wasm, preserving the native in-memory test host.
-If the default Cargo home is read-only, use `export CARGO_HOME="$PWD/.cargo-home"`.
-The existing local toolchain can be selected with `RUSTUP_HOME="$PWD/.rustup"`
-and `RUSTUP_TOOLCHAIN=stable-aarch64-apple-darwin`.
+Run **from `contracts/policy/`**: Cargo discovers `.cargo/config.toml` from the
+working directory, not the manifest path. It supplies target-specific `cfg(near)`
+for near-sdk 5.30.1. Rust 1.95+ and wasm32-unknown-unknown are required.
 
 ```sh
+export CARGO_HOME="$PWD/.cargo-home"
+export RUSTUP_HOME="$PWD/.rustup"
+export RUSTUP_TOOLCHAIN=stable-aarch64-apple-darwin
+cargo fmt --all
 cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 cargo test --locked
 cargo test --locked --features test-utils
 cargo build --locked --release --target wasm32-unknown-unknown -p counterweight-policy
 python3 tests/check_default_exports.py target/wasm32-unknown-unknown/release/counterweight_policy.wasm
-```
-
-`artifacts/counterweight_policy.wasm` is the default artifact, with SHA-256 in
-`artifacts/SHA256SUMS`. Its exports exclude test setters and arbitrary signing.
-Do not use a `test-utils` artifact for custody.
-
-The authorized integration harness uses disposable LOCAL sandbox credentials
-managed by near-workspaces, with its data directory outside the repository and
-RPC on `127.0.0.1`. It never prints keys or accesses wallet/testnet/mainnet keys.
-Do not set TMPDIR inside the repository. Sandbox artifacts and the signer are
-explicit mocks; no actual ECDSA signatures or venue fills are produced.
-
-```sh
 cargo build --locked --release --target wasm32-unknown-unknown --features test-utils --workspace
 TMPDIR=/private/tmp COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS=1 \
   cargo test --locked --features sandbox-tests --test sandbox -- --test-threads=1
 ```
 
-## Authority and payloads
+The harness checks that TMPDIR is outside the repository and RPC is loopback.
+near-workspaces alone manages disposable local sandbox keys. Never print keys.
+The default artifact is `artifacts/counterweight_policy.wasm`; test-utils setters
+are absent from it. Sandbox contracts and artifacts must never custody funds.
 
-Owner initialization fixes the NEAR/wNEAR/signer identities, market index,
-size precision, derivation path and owner EVM recipient. The contract accepts
-only testnet-style accounts (local `.test.near` accounts require `test-utils`).
-The owner may change keeper/risk limits, heartbeat timeout and reference price,
-but cannot change these fixed identities or reset charged daily usage through
-configuration. The owner must initialize a fresh derivation path with no external
-positions or outstanding signatures.
+From the repository root, the key-free SDK generator and scoped relay check are:
 
-The configured token's `ft_on_transfer` accepts only owner deposits with empty
-`msg`. Spot is accounted in 24-decimal wNEAR units. Keeper inputs contain only
-market, size and reduce-only status. Opens are sell IOC orders, reductions buy
-IOC orders with `r=true`; the contract builds prices from the owner reference and
-price band. Orders must match lot precision. Opens obey backing, maximum short,
-per-order/day notional, cooldown and price freshness. Notional is rounded upward
-at the upper price band. There is no caller-selected nonce, expiry, vault, price,
-side, destination, arbitrary action or raw digest.
+```sh
+.tmp/sdk-venv/bin/python contracts/policy/tools/generate-signing-vectors.py
+node_modules/.bin/tsx contracts/policy/relay/noop.test.ts
+PYTHONDONTWRITEBYTECODE=1 python3 contracts/policy/tools/test_custody_keys.py
+```
 
-The keeper may request fixed-market order-ID cancellations. The codec also
-covers trigger orders and cancel-by-cloid vectors, but those have no controller
-entry point. Owner-only `request_evm_withdrawal` constructs `withdraw3` to the
-fixed lowercase EVM recipient using USDC micro-units. This is more restrictive
-than Part B's optional keeper withdrawal authority. `withdraw_spot` transfers
-only surplus wNEAR to the owner, with at least 80 Tgas and exactly 1 yoctoNEAR.
-No `usdSend`, `spotSend`, `approveAgent`, vault transfer or upgrade is exposed.
+Generation requires pinned dependencies from `scripts/requirements-signing-vectors.txt`.
+It writes only the contract-local fixture. There are 28 SDK vectors: Rust checks
+22 supported vectors, including four noop cases; approveAgent/usdSend are codec
+interoperability fixtures and have no controller signing entry point.
 
-Each signing request requires 300 Tgas and exactly 1 yoctoNEAR; 250 Tgas and the
-1 yoctoNEAR go to the signer, with 30 Tgas reserved for the callback. Heartbeats
-are separately authenticated and are not refreshed by trading. After the timeout,
-anyone can request a reduce-only full-size IOC through `deleverage`. Owner
-`emergency_reduce` bypasses increase limits and can detach a stuck signing slot.
-Public callers can preempt keeper signing, but cannot detach a fresh owner
-emergency/invalidation. They can recover its slot after the local deadline.
-An unresolved token-transfer callback retains its slot to prevent double credit.
+## Authority, prices, and accounting
 
-## Digests, nonces, expiry and capacity
+Initialization fixes owner, market/precision, signer, wNEAR, derivation path and
+EVM withdrawal recipient. Production accepts testnet account names only;
+`.test.near` is enabled solely by test-utils. Verify NEAR metadata before funding:
+read-only venue metadata on 2026-11-10 Istanbul time reported testnet index 54,
+mainnet index 74, `szDecimals=1` ([captured metadata](fixtures/near-market-meta.json)). Historical index 4 / precision 2 tests are mocks.
 
-`hl_digest` explicitly encodes SDK MessagePack field order, minimal unsigned
-integers, canonical normalized decimal strings, optional cloid and trigger order
-fields. It hashes action bytes + big-endian nonce + vault flag/address + optional
-expiry marker/time, then the phantom-agent EIP-712 domain (`Exchange`, 1337,
-source `b` for testnet). `withdraw3` uses its distinct `HyperliquidSignTransaction`
-domain, chain 421614 and Withdraw struct. Noncanonical decimals and integers
-outside JavaScript's safe range are rejected. Controller integer amounts are
-formatted without floating point or trailing fractional zeroes.
+Only owner deposits through the configured token with empty `msg` increase spot.
+Keeper opens are fixed-market sell IOC, bounded by held spot, reserved short,
+per-order and rolling-24h notional, cooldown, and fresh owner price. Opens cannot
+supply prices. Signing counts reservations, not fills. Failed malformed/missing
+callbacks retain exposure; a **definite failed signer receipt** releases its
+opening exposure, while keeping turnover/cooldown/nonce charges.
 
-All 18 supported fixture vectors match action hashes (where present) and digests,
-covering both domain sources, limits, triggers, cancels, cloids, vaults, expiry,
-integer encoding boundaries and withdraw3. Mainnet vectors test the codec only;
-controller authorization is testnet-only. Unsupported approveAgent/usdSend vectors
-are intentionally excluded.
+Keeper reductions require `order.reference_price`; owner
+`emergency_reduce(size, price)` and public `deleverage(price)` also take micro-USD
+marks bounded to $0.00001–$1,000,000. These buy IOC orders apply a 50% band and
+`r=true`, independently of owner price freshness. There is no local exposure-size
+ceiling on reductions. Public recovery requests at least the configured maximum
+short size, permitting residual recovery after an understated settlement.
+Prices floor for sells and ceil for buys to the official five-significant-digit
+and `6 - szDecimals` tick rules; integer prices follow the venue exception.
+[Official tick source](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/tick-and-lot-size).
+Liquidity, mark accuracy and a move outside the band can still prevent an IOC fill.
 
-Fresh nonces are persisted atomically as `max(last_nonce + 1, block_timestamp_ms)`;
-failed/malformed callbacks never roll them back. Every L1 request binds an expiry
-at most 60 seconds after allocation wall time, rechecked before emitting the
-callback signature. Local callback deadlines also bound withdraw3 slot recovery;
-withdraw3 itself has no venue expiry. Reservations survive all failures/timeouts.
+`settle_position` is a fresh, expiry-gated **owner position attestation**, never a
+signature-as-fill inference. It releases matching backing without refunding churn.
+A false owner observation can understate external exposure; reduce-only recovery
+remains usable even then. Pause first, then wait for opening expiry to prevent a
+keeper from extending the settlement barrier. Owner config/spot withdrawal expire
+stale signing slots and can preempt keeper cancels. Token-transfer slots retain
+their callbacks to prevent double credit.
 
-Immutable initializer `signing_limits` defaults:
+## Signing, pause, resources, and custody
 
-| Parameter | Default | Permitted range |
-|---|---:|---:|
-| Keeper authorizations per block | 2 | 1–4 |
-| Keeper authorizations per rolling 60 seconds | 8 | 1–8 |
-| Unexpired keeper authorizations | 8 | 1–8 |
-| Owner authorizations per rolling 60 seconds | 16 | 10–16 |
-| Window duration (ms) | 60000 | 60000 |
-| Maximum nonce drift ahead of wall time (ms) | 1000 | 0–1000 |
+Fresh nonces are persisted as `max(last_nonce+1, block_timestamp_ms)`. L1 expiry is
+at most 60 seconds; withdraw3 instead has a 60-second local callback deadline and
+is tracked through its two-day nonce replay horizon. At most 32 outstanding
+authorizations are retained; invalidations still work with a full queue.
 
-Failures still consume signing capacity. Public dead-man requests have a separate
-one-per-window budget. At most 32 outstanding L1 authorizations are retained;
-expired entries and rolling counters are pruned. Owner capacity is independent
-of keeper/public budgets, including invalidation requests.
+SigningLimits defaults: keeper 2/block, 8/rolling-minute, 8 outstanding; owner
+16/rolling-minute (permitted 10–16); public 1/minute; window 60,000ms;
+nonce-ahead drift 1,000ms (permitted 20–1,000). Every keeper **and public**
+authorization additionally costs five units of a cumulative address allowance,
+default/max 5,000. Owner alone can grant another epoch after verifying actual
+venue capacity. No automatic volume credit or daily reset exists. Owner emergency
+and invalidation capacity is separate. The budget bounds authorizations, not
+repeated relaying of public signatures.
+[Venue address budget source](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/rate-limits-and-user-limits).
 
-## Pause and asynchronous recovery
+Owner `set_signing_resources` configures fee and signer/callback gas. Defaults are
+1 yoctoNEAR, 230/30 Tgas, plus 25 Tgas execution reserve: 285 Tgas total. Signing
+accepts at least the fee and refunds excess to the caller. Spot transfers require
+exactly 1 yoctoNEAR and 80 Tgas. Native sweep retains storage stake + 128 KiB future
+state reserve + 1 NEAR, and sends only to the owner.
 
-Pause stops every keeper signing entry point, including reductions, and discards
-pending keeper callbacks. Owner emergency reductions and public dead-man recovery
-remain available. All existing unexpired L1 nonces are marked for invalidation.
-Pause requests the first `noop` using the **original nonce** and its original
-expiry; `request_next_invalidation` processes the remaining bounded queue. These
-requests do not advance `last_nonce`. Failure or interruption makes the nonce
-retryable. Newer nonces alone never count as revoking older signatures.
+Pause commits with no deposit/low gas, blocks keeper signing, discards its local
+callback, and queues original-nonce noop invalidations. Emergency/public recovery
+also pause and mark keeper nonces. A newer nonce never proves revocation. The
+owner must relay each noop and attest consumption; unpause waits for confirmed
+consumption or expiry. Withdrawals require zero reserved short, configured margin
+limits/observations, and resolution of earlier withdrawals before retry.
 
-`report_invalidation` accepts only owner attestations after the corresponding
-noop has been signed. A failed report permits retry. Pause remains incomplete
-and unpause is rejected until every marked nonce is confirmed consumed or expires.
-Expiry is a deterministic alternative to manual confirmation. If owner capacity
-is exhausted or a token transfer is pending, local pause still commits; invalidation
-continues when capacity/the slot becomes available. A contract cannot relay a
-Hyperliquid HTTP request: the owner/relayer must submit the emitted noop and
-attest venue acceptance. Issuance alone does not establish revocation.
+The policy-scoped relay is [relay/signing.ts](relay/signing.ts). The unchanged
+repository-wide codec outside this task's write scope does not accept noop;
+policy invalidation consumers must use the scoped module. `noop.test.ts` compares
+SDK vectors and assembles a real unit-host pause request with the public MPC fixture.
+It constructs wire bytes only; it never relays to a network.
 
-Successful signing emits a bounded, shape-validated response and frees the slot.
-Failed, malformed or oversized callbacks free the slot automatically while
-retaining exposure, daily usage, cooldown, nonce and authorization reservations.
-Anyone can clear an expired signing slot with `expire_pending_signature`.
-Late/replayed/detached signature callbacks return false and cannot affect a newer
-operation. Private token callbacks restore spot only on transfer failure, never
-on successful oversized return data. Events use NEP-297 `EVENT_JSON`, standard
-`counterweight`, version `1.0.0`.
+Before funding a strategy, require zero access keys at finality:
+`python3 tools/check_custody_keys.py --rpc <RPC> --account <POLICY>`.
+The contract cannot inspect access keys. A remaining full-access or direct-signer
+function-call key can bypass policy. Market/path/account/recipient changes require
+a fresh controller. No upgrade, arbitrary digest, approveAgent, usdSend, spotSend,
+vault, or keeper recipient override is exposed.
 
-## Releasing backing after reductions
+## Owner-approved rebalancing
 
-A signed close is not a fill: it cannot safely release opening budget or spot.
-`signed_short_size` bounds reserved/current exposure; `lifetime_opened` is
-cumulative telemetry. `settle_position(short_size, observed_at_ms)` provides an
-explicit owner-approved reconciliation/epoch boundary after closes or partial
-closes. Every opening authorization must have expired before both observation
-and settlement; the observation must be at most 30 seconds old and not future
-dated. No operation may still be pending. A newer opening restarts this barrier.
-The owner may only decrease the exposure bound to an exact-lot observed size.
+`configure_rebalancing` fixes the adapter and actual HyperCore USDC asset ID,
+strategy margin address, source account/token, per-action/rolling sale and
+withdrawal caps, fees/impact, quote age/deadline, completion timeout, maximum NEAR
+mismatch, original inventory/dollar ceiling, equity/fee reserves, and H bands.
+There is no recipient-change method. Policy USDC amounts use 6 decimals; the fixed 1Click asset uses 8. The adapter must
+convert micro-units exactly by multiplying by 100. The separate adapter must be audited before
+external use; the included implementation in tests is a mock.
 
-Settlement releases the matching spot encumbrance and opening capacity, allowing
-reopening or owner spot withdrawal. It never refunds daily churn usage or
-cooldown. The keeper and signing callbacks cannot attest fills or recycle budget.
-This is a trusted owner observation, not an on-chain venue-position proof; a false
-owner observation can understate external exposure. Automatic release from a close
-signature would allow withheld/reordered opens to violate the hedge invariant.
+`approve_spot_sale` requires exact owner approval and already-reconciled matching
+short reduction. It reserves spot and close quantities, then dispatches a typed
+NEP-141 transfer_call to the fixed adapter. Its callback records used tokens;
+failed/uncertain/expired routes retain reservations and pause. One pending route
+blocks additions and withdrawals. Final owner-attested receipts reconcile actual
+refunds and proportional minimum output, then credit only finalized margin.
+Receipt hashes reject duplicates across route IDs; history is bounded to 1,024.
+
+Margin withdrawals check zero short, fresh finalized equity and venue withdrawal
+availability, fee reserve, residual equity, leverage <=1, per-action/rolling USDC
+limits and minimum H (>=10%). The full withdrawal immediately leaves usable
+margin. A final fixed-recipient receipt checks net+fee against the original amount
+and fee cap. Re-entry then requires actual authenticated wNEAR deposits, fresh
+marks, original inventory/dollar ceilings, $10 minimum adjustment, conservative
+margin and improving lower/target/upper H bands. Pending proceeds are never spot
+or margin. External receipt/fill/finality verification is explicitly owner-trusted.
 
 ## Rule → executed tests
 
-Unit names omit `tests::`; names in the `signing` module carry that prefix.
-Every sandbox case in this table is executed, including the original nine.
+Names omit `tests::`; `audit::` and `rebalance::` identify the new test modules.
 
-| Rule | Unit tests | Sandbox integration |
+| Rule / finding | Unit test(s) | Sandbox / other |
 |---|---|---|
-| Owner-only config; fixed identity/counters | `owner_only_config`, `owner_config_preserves_identity_and_counters` | `sandbox_owner_only_config` |
-| Fixed withdrawal recipients/authentication | `rejects_near_recipient`, `rejects_evm_recipient`, `keeper_cannot_withdraw` | `sandbox_fixed_recipient_rejection` |
-| Authentic owner deposits | `authenticated_wnear_deposit`, `rejects_fake_token`, `rejects_nonowner_deposit` | — |
-| Open caps/cooldown/market/lot/band | `keeper_per_order_cap`, `signing::keeper_daily_cap`, `signing::keeper_cooldown`, `rejects_other_market`, `rejects_quantity_rounding`, `signing::typed_ioc_price_band_and_mpc_request` | `sandbox_keeper_caps_and_cooldown` |
-| Signed short never exceeds held spot | `short_never_exceeds_spot`, `max_short_cap`, `cannot_withdraw_encumbered_spot` | `sandbox_short_spot_invariant` |
-| Reduction signatures never pretend fills | `signing::reductions_never_recycle_signed_open_budget` | `sandbox_reduce_signatures_do_not_prove_fills` |
-| Partial/full settlement releases only matching backing; daily usage survives | `settlement_releases_partial_and_full_backing_but_never_daily_churn_budget`, `settlement_rejects_keeper_stale_observation_and_unexpired_open_replay`, `settlement_cannot_ignore_a_newer_open_authorization` | `sandbox_settlement_releases_backing_and_opening_capacity_after_expiry`, `sandbox_partial_settlement_releases_only_matching_spot` |
-| Pause blocks keeper, preserves owner emergency | `pause_blocks_all_keeper_signing_but_owner_can_reduce`, `keeper_cannot_unpause` | `sandbox_pause_blocks_keeper_but_allows_owner_emergency` |
-| Heartbeat dead-man path and separate public budget | `signing::anyone_deleverages_after_timeout_even_paused`, `public_deleverage_requires_timeout`, `stranger_cannot_refresh_heartbeat`, `public_rate_limit_cannot_consume_owner_capacity` | `sandbox_public_heartbeat_timeout_deleverage` |
-| Exact codec/normalized decimals/nonce/expiry | `hl_digest::tests::golden_vectors_all_supported_types`, `hl_digest::tests::canonical_decimal_validation`, `hl_digest::tests::unsafe_integer_and_noncanonical_inputs_fail_closed`, `same_block_nonce_allocation_and_failed_callback_never_reuse`, `nonce_cannot_drift_ahead_of_clock`, `nonce_overflow_fails_closed` | `sandbox_real_order_cancel_withdraw_digests_and_expiries` |
-| Keeper block/window/outstanding caps; owner reserved capacity; transactional rollback | `keeper_block_limit_and_owner_reserved_emergency`, `keeper_rolling_budget_counts_failed_requests_and_expires_at_boundary`, `keeper_outstanding_cap_keeps_invalidation_capacity` | `sandbox_failed_signing_budget_exhaustion_preserves_owner_emergency`, `sandbox_outstanding_limit_and_failed_transaction_do_not_advance_nonce` |
-| Original-nonce invalidations, confirmation/retry/expiry | `pause_invalidates_each_original_nonce_and_confirmation_controls_completion`, `pause_discards_inflight_keeper_callback_and_retries_failed_invalidation`, `withheld_signature_keeps_pause_incomplete_until_expiry_without_confirmation`, `interrupted_invalidation_can_retry_same_nonce`, `pause_also_tracks_existing_owner_and_public_l1_authorizations` | `sandbox_pause_invalidates_all_nonces_confirmation_failure_and_expiry` |
-| Local pause survives blocked invalidation capacity/slot | `exhausted_owner_budget_still_commits_local_pause_and_discards_keeper_callback`, `pause_commits_during_token_transfer_and_preserves_its_callback` | — |
-| One operation; failed/malformed/oversized callbacks recover without acknowledgement | `signing::duplicate_pending_operation_rejected`, `signing::failed_callback_retains_reservation_without_owner_ack`, `signing::malformed_callback_is_uncertain`, `signing::oversized_signature_callback_is_uncertain` | `sandbox_pending_duplicate_and_failed_callback`, `sandbox_malformed_callback_and_private_endpoint` |
-| Timeout/late callback cannot clear newer slot; public cannot interrupt owner | `expired_callback_is_discarded_and_missing_callback_recovers_permissionlessly`, `signer_success_after_expiry_never_emits_signature`, `emergency_detaches_stuck_signer_and_late_callback_cannot_clear_new_slot`, `missing_withdraw_callback_expires_locally_without_reusing_its_nonce`, `public_cannot_interrupt_owner_emergency_or_invalidation` | — |
-| Token failure restores ledger; success never double credits | `failed_spot_transfer_restores_ledger`, `successful_spot_transfer_does_not_restore_ledger_for_large_return` | `sandbox_partial_settlement_releases_only_matching_spot` |
-| Private callbacks and bounded ABI | `callbacks_are_private`, `signing::stale_callback_id_rejected`, `signing::completed_callback_cannot_replay` | `sandbox_malformed_callback_and_private_endpoint`; default Wasm export check |
+| H: stale-price close | `audit::audit_rally_closes_and_price_precision_matrix` | `sandbox_rally_precision_and_cumulative_address_budget` |
+| H: tick / five significant digits | `audit::audit_nonround_near_price_obeys_ticks`, `audit::audit_open_price_rounding_nonround_bands_matrix` | rally test above; official SDK fixtures |
+| H: timed-out withdraw3 revocation / retry | `audit::audit_withdraw_timeout_remains_revocable`, `audit::audit_withdraw_requires_invalidation_before_retry`, `audit::audit_withdraw_rejects_open_short` | `sandbox_withdrawal_nonce_requires_confirmed_invalidation` |
+| H: understated settlement / residual close | `audit::audit_residual_reduce_after_understated_settlement`, `reduce_can_exceed_local_exposure_bound` | `sandbox_reduce_signatures_do_not_prove_fills` |
+| H: cumulative address allowance | `audit::audit_cumulative_keeper_budget_reserves_owner_capacity` | `sandbox_rally_precision_and_cumulative_address_budget` |
+| H: configurable MPC fee/gas / local pause | `audit::audit_configurable_mpc_fee_gas_and_refund`, `audit::audit_pause_without_signing_resources_commits` | `sandbox_pause_blocks_keeper_but_allows_owner_emergency` |
+| M: detached/public MPC / withheld nonce | `audit::audit_emergency_marks_withheld_keeper_nonce`, `audit::audit_private_successful_detached_callback_and_public_recovery_after_owner_deadline` | pause invalidation sandbox |
+| M: noop SDK + TS assembly | `hl_digest::tests::golden_vectors_all_supported_types`, `audit::audit_emits_pause_request_fixture_for_ts_relay` | `relay/noop.test.ts`: 4 vectors + pause event/public MPC fixture |
+| M: definite failure retains no fictitious exposure | `audit::audit_definite_signer_failure_releases_only_exposure` | `sandbox_pending_duplicate_and_failed_callback` |
+| M: rolling-day cap / keeper slot grief | `audit::audit_rolling_turnover_cannot_double_at_midnight`, `audit::audit_owner_config_preempts_keeper_cancel` | `sandbox_keeper_caps_and_cooldown` |
+| M: keyless funding / native reserve | `audit::audit_native_sweep_preserves_storage_and_operating_reserve` | `tools/test_custody_keys.py` |
+| L: flat/nested MPC / scalar / drift | `audit::audit_real_mpc_fixture_and_flat_schema`, `audit::audit_mpc_scalar_and_event_guards`, `audit::audit_nonce_drift_zero_rejected` | public captured MPC fixture |
+| L: event metadata | `audit::audit_mpc_scalar_and_event_guards`, `pause_emits_nep297` | real order/cancel/withdraw digest sandbox |
+| Owner/config / fixed recipients | `owner_only_config`, `owner_config_preserves_identity_and_counters`, `rejects_near_recipient`, `rejects_evm_recipient`, `keeper_cannot_withdraw` | `sandbox_owner_only_config`, `sandbox_fixed_recipient_rejection` |
+| Testnet / initializer / resources / full queue | `audit::audit_initializer_and_resource_guards`, `audit::audit_limits_evm_self_authority_and_spot_resources`, `audit::audit_full_outstanding_queue_can_still_pause_and_invalidate` | default export checker |
+| Authentic deposits; nonempty msg / zero amount | `authenticated_wnear_deposit`, `rejects_fake_token`, `rejects_nonowner_deposit`, `audit::audit_deposit_rejects_nonempty_message_and_zero_amount` | `sandbox_authenticated_deposits_and_token_failure_restoration` uses actual receiver receipts |
+| Open backing / caps / cooldown | `short_never_exceeds_spot`, `max_short_cap`, `keeper_per_order_cap`, `signing::keeper_daily_cap`, `signing::keeper_cooldown`, `rejects_other_market`, `rejects_quantity_rounding` | `sandbox_short_spot_invariant`, `sandbox_keeper_caps_and_cooldown` |
+| Settlement releases matching backing only | `settlement_releases_partial_and_full_backing_but_never_daily_churn_budget`, `settlement_rejects_keeper_stale_observation_and_unexpired_open_replay`, `settlement_cannot_ignore_a_newer_open_authorization` | both settlement sandboxes |
+| Heartbeat and reserved owner capacity | `public_deleverage_requires_timeout`, `stranger_cannot_refresh_heartbeat`, `public_rate_limit_cannot_consume_owner_capacity`, `keeper_block_limit_and_owner_reserved_emergency` | public heartbeat / failed signing budget sandboxes |
+| Original nonce pause / retry / confirmation / expiry | `pause_invalidates_each_original_nonce_and_confirmation_controls_completion`, `interrupted_invalidation_can_retry_same_nonce`, `withheld_signature_keeps_pause_incomplete_until_expiry_without_confirmation` | `sandbox_pause_invalidates_all_nonces_confirmation_failure_and_expiry` |
+| Local pause survives exhausted owner capacity / token transfer | `exhausted_owner_budget_still_commits_local_pause_and_discards_keeper_callback`, `pause_commits_during_token_transfer_and_preserves_its_callback` | — |
+| Nonce / expiry / callbacks / private ABI | `same_block_nonce_allocation_and_failed_callback_never_reuse`, `nonce_cannot_drift_ahead_of_clock`, `nonce_overflow_fails_closed`, `signer_success_after_expiry_never_emits_signature`, `callbacks_are_private`, `signing::oversized_signature_callback_is_uncertain` | real digest / malformed callback / outstanding limit sandboxes |
+| Token failure and oversized successful transfer | `failed_spot_transfer_restores_ledger`, `successful_spot_transfer_does_not_restore_ledger_for_large_return` | `sandbox_authenticated_deposits_and_token_failure_restoration` |
+| Exact sale reservation / finalized credit / replay | `rebalance::rebalance_exact_route_reserves_inventory_and_credits_only_final_receipt`, `rebalance::rebalance_receipt_cannot_be_reused_across_route_ids` | `sandbox_exact_sale_route_finality_and_replay` |
+| Quote age, deadline, recipient, lot, fee, impact, min output | `rebalance::rebalance_rejects_keeper_recipient_changes_and_unsafe_quotes` | exact route sandbox |
+| Route uncertainty / timeout / partial refund / late callback | `rebalance::rebalance_failure_timeout_late_and_partial_refund_never_double_credit` | — |
+| Matching close quantity / sale turnover / health | `rebalance::rebalance_sale_requires_reconciled_matching_short_quantity`, `rebalance::rebalance_sale_daily_caps_and_margin_health` | exact route sandbox |
+| Pending route blocks additions and withdrawals, preserves recovery | `rebalance::rebalance_pending_route_blocks_additions_withdrawals_and_second_route_but_not_emergency` | exact route sandbox |
+| Margin reservation / action and day caps / availability / H | `rebalance::rebalance_withdrawal_reserves_full_margin_and_caps_rolling_usage`, `rebalance::rebalance_withdrawal_health_availability_and_fee_caps` | withdrawal invalidation sandbox |
+| Finalized arrival, actual spot, original target and funded H-band re-entry | `rebalance::rebalance_pending_withdrawal_blocks_risk_before_final_arrival`, `rebalance::rebalance_final_withdrawal_arrival_requires_actual_spot_before_reentry`, `rebalance::rebalance_finalized_funded_reentry_obeys_inventory_dollar_and_health_bands` | — |
 
-## Remaining proof boundary
-
-The signer callback checks response shape, not ECDSA recovery. Mock sandbox
-success proves receipt/state behavior, not a valid MPC signature or venue
-acceptance. Live gas/deposit sufficiency, venue price precision, market-index and
-delisting verification, expiry enforcement, noop acceptance, fills and immutable
-custody/key removal still require public testnet evidence. A local deadline does
-not revoke an already-public MPC response. Owner prices are not an oracle and
-stale prices can prevent IOC fills. wNEAR spot sale remains owner-approved.
-
-For the unit-test reference ($5 price, 100 bps band, $10.10/order and $20.20/day),
-a fixed-reference churn estimate at 4.5 bps taker fees is
-`$20.20 × (2 × 0.00045 + 2 × 0.01) = $0.42218/day`, plus signing/gas.
-This excludes market moves, margin losses, reference changes and unavailable fills;
-it is not a complete financial loss bound or a deployed configuration.
-
-Counterweight is user-instantiated software, not a fund, broker, exchange or
-investment advisor. It does not pool funds or promise returns. Funding can turn
-negative; contract, venue and cross-chain settlement risks apply.
+Full ECDSA point validation/recovery/address binding remains a relayer check;
+contract callbacks enforce schema, low/nonzero s, scheme and recovery-ID bounds.
+Owner price/position/equity/finality attestations remain trusted. Test passing
+proves local accounting/receipts and serialization, not live venue fills, bridge
+finality, MPC fee availability, or an account's actual key removal.

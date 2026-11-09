@@ -6,10 +6,11 @@ use near_sdk::{
 };
 
 pub mod hl_digest;
+pub mod rebalance;
+use rebalance::*;
 const BASE: u128 = 10u128.pow(24); // wNEAR yocto base units
 const DAY: u64 = 86_400;
-const SIGN_GAS: Gas = Gas::from_tgas(250);
-const CALLBACK_GAS: Gas = Gas::from_tgas(30);
+
 const LIFETIME_MS: u64 = 60_000;
 
 /// Separate owner emergency capacity is never charged to a keeper/public caller.
@@ -46,6 +47,7 @@ pub struct Authorization {
     pub invalidation_signed: bool,
     /// Owner-attested venue acceptance; never used as a position/fill proof.
     pub invalidation_confirmed: bool,
+    pub withdrawal: bool,
 }
 
 #[near(serializers = [borsh, json])]
@@ -66,6 +68,8 @@ pub struct OrderParams {
     pub asset_index: u32,
     pub size: U128,
     pub reduce_only: bool,
+    /// Required for reductions: untrusted current USD micro-price, bounded absolutely.
+    pub reference_price: Option<U128>,
 }
 
 /// SDK field order; the codec rebuilds it explicitly.
@@ -210,6 +214,11 @@ pub struct StateView {
     pub pause_complete: bool,
     pub lifetime_opened: U128,
     pub last_open_expiry: U64,
+    pub keeper_weight_used: U64,
+    pub keeper_weight_limit: U64,
+    pub mpc_fee: U128,
+    pub signer_gas_tgas: u64,
+    pub callback_gas_tgas: u64,
 }
 
 #[near(contract_state)]
@@ -244,6 +253,13 @@ pub struct Policy {
     outstanding: Vec<Authorization>,
     lifetime_opened: u128,
     last_open_expiry: u64,
+    rebalance: Option<RebalanceState>,
+    turnover: Vec<(u64, u128)>,
+    keeper_weight_used: u64,
+    keeper_weight_limit: u64,
+    mpc_fee: u128,
+    signer_gas_tgas: u64,
+    callback_gas_tgas: u64,
 }
 
 #[near]
@@ -284,7 +300,7 @@ impl Policy {
             !derivation_path.is_empty() && derivation_path.len() <= 128,
             "ERR_PATH"
         );
-        require!(size_decimals <= 8, "ERR_SIZE_DECIMALS");
+        require!(size_decimals <= 6, "ERR_SIZE_DECIMALS");
         validate_evm(&evm_recipient);
         validate_limits(&limits);
         require!(
@@ -293,7 +309,18 @@ impl Policy {
         );
         let signing_limits = signing_limits.unwrap_or_default();
         validate_signing_limits(&signing_limits);
+        event(
+            "init",
+            near_sdk::serde_json::json!({"owner": owner, "keeper": keeper, "asset_index": asset_index, "size_decimals": size_decimals, "evm_recipient": evm_recipient, "signer_account": signer_account, "wnear_account": wnear_account, "limits": limits, "heartbeat_timeout_seconds": heartbeat_timeout_seconds, "signing_limits": signing_limits}),
+        );
         Self {
+            rebalance: None,
+            turnover: vec![],
+            keeper_weight_used: 0,
+            keeper_weight_limit: 5_000,
+            mpc_fee: 1,
+            signer_gas_tgas: 230,
+            callback_gas_tgas: 30,
             signing_limits,
             keeper_requests: vec![],
             owner_requests: vec![],
@@ -324,6 +351,60 @@ impl Policy {
             reference_price: reference_price.0,
             reference_price_timestamp: now(),
         }
+    }
+
+    /// Owner grants a fresh cumulative epoch only after checking venue address capacity.
+    pub fn set_keeper_address_budget(&mut self, weight: U64) {
+        self.assert_owner();
+        require!(weight.0 <= 5_000, "ERR_ADDRESS_BUDGET");
+        self.keeper_weight_limit = weight.0;
+        self.keeper_weight_used = 0;
+        event(
+            "keeper_budget",
+            near_sdk::serde_json::json!({"caller": self.owner, "weight": weight}),
+        );
+    }
+    pub fn set_signing_resources(
+        &mut self,
+        fee: U128,
+        signer_gas_tgas: u64,
+        callback_gas_tgas: u64,
+    ) {
+        self.assert_owner();
+        require!(
+            fee.0 > 0
+                && (10..=250).contains(&signer_gas_tgas)
+                && (10..=30).contains(&callback_gas_tgas)
+                && signer_gas_tgas + callback_gas_tgas + 25 <= 300,
+            "ERR_MPC_RESOURCES"
+        );
+        self.mpc_fee = fee.0;
+        self.signer_gas_tgas = signer_gas_tgas;
+        self.callback_gas_tgas = callback_gas_tgas;
+        event(
+            "signing_resources",
+            near_sdk::serde_json::json!({"fee": fee, "signer_gas_tgas": signer_gas_tgas, "callback_gas_tgas": callback_gas_tgas}),
+        );
+    }
+    /// Fixed owner only; retain storage, 128 KiB bounded state growth, and 1 NEAR operations.
+    pub fn sweep_native(&mut self, amount: U128) -> Promise {
+        self.assert_owner();
+        let reserve = u128::from(env::storage_usage() + 131_072)
+            * env::storage_byte_cost().as_yoctonear()
+            + BASE;
+        require!(
+            amount.0 > 0
+                && amount.0
+                    <= env::account_balance()
+                        .as_yoctonear()
+                        .saturating_sub(reserve),
+            "ERR_NATIVE_RESERVE"
+        );
+        event(
+            "withdrawal",
+            near_sdk::serde_json::json!({"kind": "native", "recipient": self.owner, "amount": amount, "status": "requested"}),
+        );
+        Promise::new(self.owner.clone()).transfer(NearToken::from_yoctonear(amount.0))
     }
 
     pub fn get_state(&self) -> StateView {
@@ -361,6 +442,11 @@ impl Policy {
             pause_complete: self.pause_complete(),
             lifetime_opened: U128(self.lifetime_opened),
             last_open_expiry: U64(self.last_open_expiry),
+            keeper_weight_used: U64(self.keeper_weight_used),
+            keeper_weight_limit: U64(self.keeper_weight_limit),
+            mpc_fee: U128(self.mpc_fee),
+            signer_gas_tgas: self.signer_gas_tgas,
+            callback_gas_tgas: self.callback_gas_tgas,
         }
     }
 
@@ -371,7 +457,7 @@ impl Policy {
         heartbeat_timeout_seconds: u64,
     ) {
         self.assert_owner();
-        self.assert_idle();
+        self.owner_idle();
         validate_limits(&limits);
         require!(
             limits.max_short_size.0 >= self.signed_short_size,
@@ -389,7 +475,7 @@ impl Policy {
         // Changing keeper/config does not refresh its heartbeat or reset budgets.
         event(
             "config",
-            near_sdk::serde_json::json!({"keeper": self.keeper, "limits": self.limits}),
+            near_sdk::serde_json::json!({"keeper": self.keeper, "limits": self.limits, "heartbeat_timeout_seconds": self.heartbeat_timeout_seconds, "caller": env::predecessor_account_id()}),
         );
     }
 
@@ -434,6 +520,7 @@ impl Policy {
             near_sdk::serde_json::json!({"paused": paused, "complete": self.pause_complete()}),
         );
         if paused
+            && self.has_signing_resources()
             && self.owner_requests.len() < self.signing_limits.owner_per_window as usize
             && self
                 .pending
@@ -446,6 +533,7 @@ impl Policy {
         {
             return PromiseOrValue::Promise(self.request_next_invalidation());
         }
+        self.refund_attached(0);
         PromiseOrValue::Value(self.pause_complete())
     }
 
@@ -467,7 +555,7 @@ impl Policy {
         let payload = SigningPayload {
             action: HlAction::Noop,
             nonce: a.nonce,
-            expires_after: Some(a.expires_after),
+            expires_after: Some(a.expires_after.min(env::block_timestamp_ms() + LIFETIME_MS)),
         };
         let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
         self.outstanding[index].invalidation_requested = true;
@@ -504,8 +592,7 @@ impl Policy {
     /// Keeper and signing callbacks can never report fills or recycle budget.
     pub fn settle_position(&mut self, short_size: U128, observed_at_ms: U64) {
         self.assert_owner();
-        self.expire_pending();
-        self.assert_idle();
+        self.owner_idle();
         let ms = env::block_timestamp_ms();
         require!(
             ms > self.last_open_expiry
@@ -523,6 +610,9 @@ impl Policy {
         );
         let released = self.signed_short_size - short_size.0;
         self.signed_short_size = short_size.0;
+        if let Some(r) = &mut self.rebalance {
+            r.reduced_inventory.0 = add(r.reduced_inventory.0, released);
+        }
         event(
             "position_settlement",
             near_sdk::serde_json::json!({"short_size": short_size, "released": U128(released), "observed_at_ms": observed_at_ms, "source": "owner_attestation", "daily_budget_released": false}),
@@ -535,13 +625,15 @@ impl Policy {
     }
 
     #[payable]
-    pub fn emergency_reduce(&mut self, size: U128) -> Promise {
+    pub fn emergency_reduce(&mut self, size: U128, price: U128) -> Promise {
         self.assert_owner();
+        self.emergency_pause();
         self.clear_signing_slot();
         self.request_order(OrderParams {
             asset_index: self.asset_index,
             size,
             reduce_only: true,
+            reference_price: Some(price),
         })
     }
 
@@ -595,6 +687,12 @@ impl Policy {
         );
         require!(sender_id == self.owner, "ERR_DEPOSIT_OWNER");
         require!(msg.is_empty() && amount.0 > 0, "ERR_DEPOSIT");
+        if let Some(r) = &mut self.rebalance
+            && r.reentry_required
+            && r.withdrawal.is_none()
+        {
+            r.acquired_near.0 = add(r.acquired_near.0, amount.0);
+        }
         self.spot_balance = add(self.spot_balance, amount.0);
         event(
             "deposit",
@@ -623,12 +721,13 @@ impl Policy {
     }
 
     #[payable]
-    pub fn deleverage(&mut self) -> Promise {
+    pub fn deleverage(&mut self, price: U128) -> Promise {
         require!(
             now().saturating_sub(self.last_keeper_heartbeat) >= self.heartbeat_timeout_seconds,
             "ERR_HEARTBEAT_ACTIVE"
         );
         self.expire_pending();
+        self.emergency_pause();
         // Public callers can preempt a keeper, but cannot discard an owner's
         // fresh emergency/invalidation callback. Its local deadline is bounded.
         if self.pending.as_ref().is_some_and(|p| p.keeper) {
@@ -636,8 +735,9 @@ impl Policy {
         }
         self.request_order(OrderParams {
             asset_index: self.asset_index,
-            size: U128(self.signed_short_size),
+            size: U128(self.signed_short_size.max(self.limits.max_short_size.0)),
             reduce_only: true,
+            reference_price: Some(price),
         })
     }
 
@@ -652,7 +752,16 @@ impl Policy {
             "ERR_RECIPIENT"
         );
         require!(amount.0 > 0, "ERR_AMOUNT");
+        require!(self.signed_short_size == 0, "ERR_OPEN_SHORT");
+        require!(
+            !self
+                .outstanding
+                .iter()
+                .any(|a| a.withdrawal && !a.invalidation_confirmed),
+            "ERR_WITHDRAWAL_UNRESOLVED"
+        );
         self.assert_signing_resources();
+        self.reserve_margin_withdrawal(amount.0);
         self.charge_signing(false, false);
         let nonce = self.next_nonce();
         let payload = SigningPayload {
@@ -674,7 +783,8 @@ impl Policy {
     #[payable]
     pub fn withdraw_spot(&mut self, recipient: AccountId, amount: U128) -> Promise {
         self.assert_owner();
-        self.assert_idle();
+        self.owner_idle();
+        self.assert_route_idle();
         require!(recipient == self.owner, "ERR_RECIPIENT");
         require!(
             env::attached_deposit() == NearToken::from_yoctonear(1),
@@ -720,6 +830,18 @@ impl Policy {
             self.mark_uncertain(op.id, "expired_or_paused");
             return false;
         }
+        if matches!(
+            env::promise_result_checked(0, 1024),
+            Err(near_sdk::PromiseError::Failed)
+        ) {
+            if matches!(op.kind, OperationKind::Increase) {
+                self.signed_short_size = self.signed_short_size.saturating_sub(op.amount.0);
+            }
+            self.outstanding
+                .retain(|a| a.nonce != op.nonce || matches!(op.kind, OperationKind::Invalidation));
+            self.mark_uncertain(op.id, "signer_definite_failure");
+            return false;
+        }
         if let Ok(bytes) = env::promise_result_checked(0, 1024)
             && let Ok(signature) = near_sdk::serde_json::from_slice::<MpcSignature>(&bytes)
             && signature.valid_shape()
@@ -736,7 +858,7 @@ impl Policy {
             if matches!(op.kind, OperationKind::EvmWithdrawal) {
                 event(
                     "withdrawal",
-                    near_sdk::serde_json::json!({"id": operation_id, "recipient": self.evm_recipient, "amount": op.amount, "status": "signed"}),
+                    near_sdk::serde_json::json!({"id": operation_id, "kind": "withdraw3", "recipient": self.evm_recipient, "amount": op.amount, "status": "signed"}),
                 );
             }
             self.pending = None;
@@ -763,7 +885,7 @@ impl Policy {
         self.pending = None;
         event(
             "withdrawal",
-            near_sdk::serde_json::json!({"id": operation_id, "status": if success { "completed" } else { "failed" }, "recipient": self.owner, "amount": op.amount}),
+            near_sdk::serde_json::json!({"id": operation_id, "kind": "wnear", "status": if success { "completed" } else { "failed" }, "recipient": self.owner, "amount": op.amount}),
         );
         success
     }
@@ -785,12 +907,57 @@ impl Policy {
     fn assert_idle(&self) {
         require!(self.pending.is_none(), "ERR_PENDING_OPERATION");
     }
+    fn owner_idle(&mut self) {
+        self.expire_pending();
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|p| p.keeper && matches!(p.kind, OperationKind::Cancel))
+        {
+            self.clear_signing_slot();
+        }
+        self.assert_idle();
+    }
+    fn emergency_pause(&mut self) {
+        self.paused = true;
+        self.prune();
+        for a in &mut self.outstanding {
+            if a.keeper && !a.invalidation_confirmed {
+                a.discarded = true;
+                event(
+                    "invalidation_required",
+                    near_sdk::serde_json::json!({"nonce": U64(a.nonce), "expiresAfter": U64(a.expires_after)}),
+                );
+            }
+        }
+        event(
+            "pause",
+            near_sdk::serde_json::json!({"paused": true, "reason": "recovery", "complete": self.pause_complete()}),
+        );
+    }
+    fn has_signing_resources(&self) -> bool {
+        env::attached_deposit().as_yoctonear() >= self.mpc_fee
+            && env::prepaid_gas().as_tgas() >= self.signer_gas_tgas + self.callback_gas_tgas + 25
+    }
     fn assert_signing_resources(&self) {
         require!(
-            env::attached_deposit() == NearToken::from_yoctonear(1),
-            "ERR_ONE_YOCTO"
+            env::attached_deposit().as_yoctonear() >= self.mpc_fee,
+            "ERR_MPC_FEE"
         );
-        require!(env::prepaid_gas() >= Gas::from_tgas(300), "ERR_GAS");
+        require!(
+            env::prepaid_gas().as_tgas() >= self.signer_gas_tgas + self.callback_gas_tgas + 25,
+            "ERR_GAS"
+        );
+    }
+    fn refund_attached(&self, retained: u128) {
+        let excess = env::attached_deposit()
+            .as_yoctonear()
+            .saturating_sub(retained);
+        if excess > 0 {
+            Promise::new(env::predecessor_account_id())
+                .transfer(NearToken::from_yoctonear(excess))
+                .detach();
+        }
     }
     fn next_nonce(&self) -> u64 {
         let ms = env::block_timestamp_ms();
@@ -810,6 +977,9 @@ impl Policy {
         let ms = env::block_timestamp_ms();
         let window = self.signing_limits.window_ms;
         self.outstanding.retain(|a| a.expires_after >= ms);
+        self.turnover
+            .retain(|(t, _)| now().saturating_sub(*t) < DAY);
+        self.daily_usage = self.turnover.iter().map(|(_, n)| *n).sum();
         self.keeper_requests
             .retain(|(t, _)| ms.saturating_sub(*t) < window);
         self.owner_requests
@@ -818,7 +988,13 @@ impl Policy {
     fn charge_signing(&mut self, keeper: bool, public: bool) {
         self.prune();
         let ms = env::block_timestamp_ms();
-        require!(self.outstanding.len() < 32, "ERR_OUTSTANDING_CAP");
+        if keeper || public {
+            require!(
+                self.keeper_weight_used + 5 <= self.keeper_weight_limit,
+                "ERR_KEEPER_ADDRESS_BUDGET"
+            );
+            self.keeper_weight_used += 5;
+        }
         if keeper {
             require!(
                 self.keeper_requests
@@ -920,20 +1096,25 @@ impl Policy {
             "ERR_SIZE"
         );
         let band = u128::from(self.limits.price_band_bps);
-        let price = self
-            .reference_price
-            .checked_mul(if order.reduce_only {
-                10_000 + band
-            } else {
-                10_000 - band
-            })
-            .expect("ERR_OVERFLOW")
-            / 10_000;
+        let price = if order.reduce_only {
+            let mark = order.reference_price.expect("ERR_REDUCE_PRICE").0;
+            // No dependency on the owner's stale mark. 50% IOC buy band, absolute
+            // input range 0.00001..1,000,000 USD. Venue r=true prevents exposure growth.
+            require!((10..=1_000_000_000_000).contains(&mark), "ERR_REDUCE_PRICE");
+            mark.checked_mul(15_000)
+                .expect("ERR_OVERFLOW")
+                .div_ceil(10_000)
+        } else {
+            require!(order.reference_price.is_none(), "ERR_OPEN_PRICE_OVERRIDE");
+            self.reference_price
+                .checked_mul(10_000 - band)
+                .expect("ERR_OVERFLOW")
+                / 10_000
+        };
+        let price = quantize_price(price, self.size_decimals, order.reduce_only);
         require!(price > 0, "ERR_PRICE");
         let mut notional = 0;
-        if order.reduce_only {
-            require!(order.size.0 <= self.signed_short_size, "ERR_REDUCE_SIZE");
-        } else {
+        if !order.reduce_only {
             require!(!self.paused, "ERR_PAUSED");
             require!(
                 now().saturating_sub(self.reference_price_timestamp)
@@ -941,6 +1122,7 @@ impl Policy {
                 "ERR_STALE_PRICE"
             );
             let total = add(self.signed_short_size, order.size.0);
+            self.check_rebalance_increase(total);
             require!(total <= self.spot_balance, "ERR_EXCEEDS_SPOT_HEDGE");
             require!(total <= self.limits.max_short_size.0, "ERR_MAX_SHORT");
             // Charge at the upper band: a sell can execute ABOVE its lower limit.
@@ -959,11 +1141,13 @@ impl Policy {
                 notional <= self.limits.per_order_notional_cap.0,
                 "ERR_PER_ORDER_CAP"
             );
-            let used = if self.usage_day == now() / DAY {
-                self.daily_usage
-            } else {
-                0
-            };
+            let used: u128 = self
+                .turnover
+                .iter()
+                .filter(|(t, _)| now().saturating_sub(*t) < DAY)
+                .map(|(_, n)| *n)
+                .sum();
+            require!(self.turnover.len() < 1024, "ERR_TURNOVER_CAPACITY");
             require!(
                 add(used, notional) <= self.limits.per_day_notional_cap.0,
                 "ERR_PER_DAY_CAP"
@@ -1007,11 +1191,14 @@ impl Policy {
             self.signed_short_size = add(self.signed_short_size, order.size.0);
             self.lifetime_opened = add(self.lifetime_opened, order.size.0);
             self.last_open_expiry = payload.expires_after.unwrap();
-            if self.usage_day != now() / DAY {
-                self.daily_usage = 0;
-                self.usage_day = now() / DAY;
-            }
+            self.turnover.push((now(), notional));
             self.daily_usage = add(self.daily_usage, notional);
+            if let Some(r) = &mut self.rebalance
+                && r.reentry_required
+            {
+                r.acquired_near.0 -= order.size.0;
+                r.acquisition_budget_usdc.0 = r.acquisition_budget_usdc.0.saturating_sub(notional);
+            }
             self.last_increase = Some(now());
         }
         self.start_signing(
@@ -1034,6 +1221,17 @@ impl Policy {
     ) -> Promise {
         let invalidation = matches!(kind, OperationKind::Invalidation);
         let keeper = env::predecessor_account_id() == self.keeper && !invalidation;
+        require!(
+            invalidation || self.outstanding.len() < 32,
+            "ERR_OUTSTANDING_CAP"
+        );
+        let withdrawal = matches!(kind, OperationKind::EvmWithdrawal);
+        if withdrawal
+            && let Some(r) = &mut self.rebalance
+            && let Some(w) = &mut r.withdrawal
+        {
+            w.nonce = U64(payload.nonce);
+        }
         let id = self.begin(kind, amount);
         let op = self.pending.as_mut().unwrap();
         op.nonce = payload.nonce;
@@ -1046,9 +1244,13 @@ impl Policy {
         });
         if !invalidation {
             self.last_nonce = payload.nonce;
-            if let Some(expiry) = payload.expires_after {
+            if let Some(expiry) = payload
+                .expires_after
+                .or_else(|| withdrawal.then_some(payload.nonce + 2 * DAY * 1000 + 1))
+            {
                 self.outstanding.push(Authorization {
                     nonce: payload.nonce,
+                    withdrawal,
                     expires_after: expiry,
                     keeper,
                     discarded: false,
@@ -1060,11 +1262,18 @@ impl Policy {
         }
         event(
             "request",
-            near_sdk::serde_json::json!({"id": U64(id), "payload": payload, "digest": hex(&digest), "digest_implementation": hl_digest::IMPLEMENTATION}),
+            near_sdk::serde_json::json!({"id": U64(id), "caller": env::predecessor_account_id(), "kind": self.pending.as_ref().unwrap().kind, "payload": payload, "digest": hex(&digest), "digest_implementation": hl_digest::IMPLEMENTATION}),
         );
+        self.refund_attached(self.mpc_fee);
+        if withdrawal {
+            event(
+                "withdrawal",
+                near_sdk::serde_json::json!({"id": U64(id), "kind": "withdraw3", "recipient": self.evm_recipient, "amount": U128(amount), "status": "requested"}),
+            );
+        }
         Promise::new(self.signer_account.clone()).function_call(
             "sign", json_bytes(near_sdk::serde_json::json!({"request": {"payload_v2": {"Ecdsa": hex(&digest)}, "path": self.derivation_path, "domain_id": 0}})),
-            NearToken::from_yoctonear(1), SIGN_GAS,
+            NearToken::from_yoctonear(self.mpc_fee), Gas::from_tgas(self.signer_gas_tgas),
         ).then(self.callback("on_signature", id))
     }
     fn callback(&self, name: &str, id: u64) -> Promise {
@@ -1072,7 +1281,7 @@ impl Policy {
             name,
             json_bytes(near_sdk::serde_json::json!({"operation_id": U64(id)})),
             NearToken::from_yoctonear(0),
-            CALLBACK_GAS,
+            Gas::from_tgas(self.callback_gas_tgas),
         )
     }
     fn assert_callback(&self, id: u64) -> PendingOperation {
@@ -1096,6 +1305,14 @@ impl Policy {
             a.invalidation_requested = false;
             a.invalidation_signed = false;
         }
+        if let Some(p) = &self.pending
+            && matches!(p.kind, OperationKind::EvmWithdrawal)
+        {
+            event(
+                "withdrawal",
+                near_sdk::serde_json::json!({"id": U64(id), "kind": "withdraw3", "recipient": self.evm_recipient, "amount": p.amount, "status": "failed", "reason": reason}),
+            );
+        }
         self.pending = None;
         event(
             "failure",
@@ -1107,8 +1324,10 @@ impl Policy {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 struct MpcSignature {
-    big_r: AffinePoint,
-    s: Scalar,
+    big_r: PointValue,
+    s: ScalarValue,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    scheme: Option<String>,
     recovery_id: u8,
 }
 #[derive(Serialize, Deserialize)]
@@ -1121,15 +1340,38 @@ struct AffinePoint {
 struct Scalar {
     scalar: String,
 }
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde", untagged)]
+enum PointValue {
+    Flat(String),
+    Nested(AffinePoint),
+}
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde", untagged)]
+enum ScalarValue {
+    Flat(String),
+    Nested(Scalar),
+}
 impl MpcSignature {
     fn valid_shape(&self) -> bool {
-        let r = &self.big_r.affine_point;
+        let r = match &self.big_r {
+            PointValue::Flat(s) => s,
+            PointValue::Nested(p) => &p.affine_point,
+        };
+        let scalar = match &self.s {
+            ScalarValue::Flat(s) => s,
+            ScalarValue::Nested(p) => &p.scalar,
+        };
+        let scalar = scalar.to_ascii_lowercase();
         r.len() == 66
             && (r.starts_with("02") || r.starts_with("03"))
             && r.bytes().all(|b| b.is_ascii_hexdigit())
-            && self.s.scalar.len() == 64
-            && self.s.scalar.bytes().all(|b| b.is_ascii_hexdigit())
+            && scalar.len() == 64
+            && scalar.bytes().all(|b| b.is_ascii_hexdigit())
+            && scalar.bytes().any(|b| b != b'0')
+            && scalar.as_str() <= "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0"
             && self.recovery_id <= 1
+            && self.scheme.as_ref().is_none_or(|s| s == "Secp256k1")
     }
 }
 fn validate_signing_limits(l: &SigningLimits) {
@@ -1143,7 +1385,7 @@ fn validate_signing_limits(l: &SigningLimits) {
             && l.owner_per_window >= 10
             && l.owner_per_window <= 16
             && l.window_ms == 60_000
-            && l.max_nonce_ahead_ms <= 1_000,
+            && (20..=1_000).contains(&l.max_nonce_ahead_ms),
         "ERR_SIGNING_LIMITS"
     );
 }
@@ -1185,6 +1427,16 @@ fn event(name: &str, data: near_sdk::serde_json::Value) {
         "EVENT_JSON:{}",
         near_sdk::serde_json::json!({"standard": "counterweight", "version": "1.0.0", "event": name, "data": [data]})
     ));
+}
+// USD micro-units: maximum 5 significant digits AND 6-szDecimals decimals.
+fn quantize_price(price: u128, sz_decimals: u8, ceil: bool) -> u128 {
+    let digits = price.max(1).ilog10() + 1;
+    let step = 10u128.pow(u32::from(sz_decimals).max(digits.saturating_sub(5)).min(6));
+    if ceil {
+        price.div_ceil(step) * step
+    } else {
+        price / step * step
+    }
 }
 fn decimal(value: u128, decimals: u32) -> String {
     let factor = 10u128.pow(decimals);

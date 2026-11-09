@@ -64,8 +64,9 @@ impl Fixture {
             "reference_price": "5000000", "signing_limits": signing_limits
         })).transact().await?.into_result()?;
         owner
-            .call(contract.id(), "test_only_set_spot_balance")
-            .args_json(json!({"amount": (100 * BASE).to_string()}))
+            .call(signer.id(), "deposit_to")
+            .args_json(json!({"policy": contract.id(), "sender_id": owner.id(), "amount": (100 * BASE).to_string(), "msg": ""}))
+            .max_gas()
             .transact()
             .await?
             .into_result()?;
@@ -85,8 +86,11 @@ impl Fixture {
         &self,
         who: &Account,
         method: &str,
-        args: Value,
+        mut args: Value,
     ) -> Result<near_workspaces::result::ExecutionFinalResult> {
+        if matches!(method, "emergency_reduce" | "deleverage") {
+            args["price"] = json!("5750000");
+        }
         Ok(who
             .call(self.contract.id(), method)
             .args_json(args)
@@ -119,12 +123,40 @@ impl Fixture {
         self.call(
             &self.keeper,
             "request_order_signature",
-            json!({"order": {"asset_index": 4, "size": size.to_string(), "reduce_only": reduce}}),
+            json!({"order": {"asset_index": 4, "size": size.to_string(), "reduce_only": reduce, "reference_price": if reduce { json!("5000000") } else { Value::Null }}}),
         )
         .await
     }
     async fn config(&self, cooldown: u64) -> Result<()> {
         self.owner.call(self.contract.id(), "set_config").args_json(json!({"keeper": self.keeper.id(), "limits": limits(cooldown), "heartbeat_timeout_seconds": 600})).transact().await?.into_result()?;
+        Ok(())
+    }
+    async fn prepare_margin(&self) -> Result<()> {
+        let mark = self
+            .call(
+                &self.owner,
+                "set_reference_price",
+                json!({"price": "5000000"}),
+            )
+            .await?;
+        mark.into_result()?;
+        if self
+            .contract
+            .view("get_rebalance")
+            .await?
+            .json::<Value>()?
+            .is_null()
+        {
+            self.call(
+                &self.owner,
+                "configure_rebalancing",
+                json!({"limits": route_limits(self.signer.id().as_str())}),
+            )
+            .await?
+            .into_result()?;
+        }
+        let observed = self.worker.view_block().await?.timestamp() / 1_000_000;
+        self.call(&self.owner, "observe_margin", json!({"equity_usdc":"100000000", "withdrawable_usdc":"80000000", "observed_at_ms":observed.to_string()})).await?.into_result()?;
         Ok(())
     }
     async fn advance_past_ms(&self, timestamp_ms: u64) -> Result<()> {
@@ -194,6 +226,7 @@ async fn sandbox_fixed_recipient_rejection() -> Result<()> {
         .await?,
         "ERR_CALLER_NOT_OWNER",
     );
+    f.prepare_margin().await?;
     let result = f
         .call(
             &f.owner,
@@ -232,7 +265,11 @@ async fn sandbox_reduce_signatures_do_not_prove_fills() -> Result<()> {
         f.state().await?["signed_short_size"],
         (2 * BASE).to_string()
     );
-    rejects(f.order(3 * BASE, true).await?, "ERR_REDUCE_SIZE");
+    f.order(3 * BASE, true).await?.into_result()?;
+    assert_eq!(
+        f.state().await?["signed_short_size"],
+        (2 * BASE).to_string()
+    );
     Ok(())
 }
 #[tokio::test]
@@ -310,7 +347,7 @@ async fn sandbox_pending_duplicate_and_failed_callback() -> Result<()> {
     assert!(!result.clone().json::<bool>()?);
     let state = f.state().await?;
     assert!(state["pending"].is_null());
-    assert_eq!(state["signed_short_size"], BASE.to_string());
+    assert_eq!(state["signed_short_size"], "0");
     f.signer
         .call("set_mode")
         .args_json(json!({"mode": 0}))
@@ -319,7 +356,7 @@ async fn sandbox_pending_duplicate_and_failed_callback() -> Result<()> {
         .into_result()?;
     f.order(BASE, true).await?.into_result()?;
     assert_eq!(f.state().await?["operation_id"], "2");
-    assert_eq!(f.state().await?["signed_short_size"], BASE.to_string());
+    assert_eq!(f.state().await?["signed_short_size"], "0");
     Ok(())
 }
 #[tokio::test]
@@ -382,6 +419,20 @@ async fn sandbox_real_order_cancel_withdraw_digests_and_expiries() -> Result<()>
     assert_eq!(request(&result)["payload"]["action"]["cancels"][0]["a"], 4);
     assert!(request(&result)["payload"]["nonce"].as_u64().unwrap() > first_nonce);
     result.into_result()?;
+    let expiry = f.state().await?["last_open_expiry"]
+        .as_str()
+        .unwrap()
+        .parse::<u64>()?;
+    f.advance_past_ms(expiry).await?;
+    let observed = f.worker.view_block().await?.timestamp() / 1_000_000;
+    f.call(
+        &f.owner,
+        "settle_position",
+        json!({"short_size": "0", "observed_at_ms": observed.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    f.prepare_margin().await?;
     let result = f
         .call(
             &f.owner,
@@ -660,5 +711,214 @@ async fn sandbox_outstanding_limit_and_failed_transaction_do_not_advance_nonce()
     .await?
     .into_result()?;
     assert_eq!(f.state().await?["paused"], true);
+    Ok(())
+}
+
+fn route_limits(adapter: &str) -> Value {
+    json!({"adapter":adapter, "strategy_margin_address": EVM, "destination_token": counterweight_policy::rebalance::HYPERCORE_USDC,
+        "per_sale_near":(2*BASE).to_string(), "daily_sale_near":(4*BASE).to_string(), "max_fee_usdc":"50000", "max_impact_bps":100,
+        "quote_age_ms":30000, "completion_ms":3600000, "max_mismatch_near":(2*BASE).to_string(), "per_withdrawal_usdc":"10000000",
+        "daily_withdrawal_usdc":"20000000", "min_residual_equity_usdc":"10000000", "min_headroom_bps":1000, "lower_headroom_bps":3000, "target_headroom_bps":6000, "upper_headroom_bps":9000, "fee_reserve_usdc":"100000", "original_target_usdc":"500000000"})
+}
+
+#[tokio::test]
+async fn sandbox_authenticated_deposits_and_token_failure_restoration() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    for (sender, amount, msg, error) in [
+        (f.owner.id(), "0".to_string(), "", "ERR_DEPOSIT"),
+        (f.owner.id(), BASE.to_string(), "unexpected", "ERR_DEPOSIT"),
+        (f.keeper.id(), BASE.to_string(), "", "ERR_DEPOSIT_OWNER"),
+    ] {
+        rejects(f.owner.call(f.signer.id(), "deposit_to").args_json(json!({"policy": f.contract.id(), "sender_id":sender, "amount":amount,"msg":msg})).max_gas().transact().await?, error);
+    }
+    assert_eq!(f.state().await?["spot_balance"], (100 * BASE).to_string());
+    f.signer
+        .call("set_mode")
+        .args_json(json!({"mode":3}))
+        .transact()
+        .await?
+        .into_result()?;
+    let failed = f
+        .call(
+            &f.owner,
+            "withdraw_spot",
+            json!({"recipient":f.owner.id(), "amount":BASE.to_string()}),
+        )
+        .await?;
+    assert!(!failed.json::<bool>()?);
+    assert_eq!(f.state().await?["spot_balance"], (100 * BASE).to_string());
+    f.signer
+        .call("set_mode")
+        .args_json(json!({"mode":4}))
+        .transact()
+        .await?
+        .into_result()?;
+    let large = f
+        .call(
+            &f.owner,
+            "withdraw_spot",
+            json!({"recipient":f.owner.id(), "amount":BASE.to_string()}),
+        )
+        .await?;
+    assert!(large.json::<bool>()?);
+    assert_eq!(f.state().await?["spot_balance"], (99 * BASE).to_string());
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_rally_precision_and_cumulative_address_budget() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.order(BASE, false).await?.into_result()?;
+    f.call(&f.owner, "set_reference_price", json!({"price":"5123000"}))
+        .await?
+        .into_result()?;
+    f.call(&f.owner, "set_keeper_address_budget", json!({"weight":"5"}))
+        .await?
+        .into_result()?;
+    f.call(
+        &f.keeper,
+        "request_cancel_signature",
+        json!({"order_id":"1"}),
+    )
+    .await?
+    .into_result()?;
+    rejects(
+        f.call(
+            &f.keeper,
+            "request_cancel_signature",
+            json!({"order_id":"2"}),
+        )
+        .await?,
+        "ERR_KEEPER_ADDRESS_BUDGET",
+    );
+    let reduced = f
+        .call(
+            &f.owner,
+            "emergency_reduce",
+            json!({"size": (100 * BASE).to_string()}),
+        )
+        .await?;
+    let wire = request(&reduced);
+    verify_request_digest(&wire);
+    assert!(
+        wire["payload"]["action"]["orders"][0]["p"]
+            .as_str()
+            .unwrap()
+            .parse::<f64>()?
+            >= 5.75
+    );
+    assert_eq!(wire["payload"]["action"]["orders"][0]["r"], true);
+    reduced.into_result()?;
+    assert_eq!(f.state().await?["paused"], true);
+    assert!(
+        f.state().await?["outstanding"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["keeper"] == true && a["discarded"] == true)
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_exact_sale_route_finality_and_replay() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.order(2 * BASE, false).await?.into_result()?;
+    let expiry = f.state().await?["last_open_expiry"]
+        .as_str()
+        .unwrap()
+        .parse::<u64>()?;
+    f.advance_past_ms(expiry).await?;
+    f.prepare_margin().await?;
+    let observed = f.worker.view_block().await?.timestamp() / 1_000_000;
+    f.call(
+        &f.owner,
+        "settle_position",
+        json!({"short_size":"0", "observed_at_ms":observed.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    let quoted = f.worker.view_block().await?.timestamp() / 1_000_000;
+    let quote = json!({"near_amount":BASE.to_string(), "paired_closed_near":BASE.to_string(), "min_usdc":"4900000", "fee_usdc":"50000", "impact_bps":100, "quoted_at_ms":quoted.to_string(), "deadline_ms":(quoted+30000).to_string()});
+    let sale = f
+        .owner
+        .call(f.contract.id(), "approve_spot_sale")
+        .args_json(json!({"quote":quote}))
+        .deposit(NearToken::from_yoctonear(1))
+        .max_gas()
+        .transact()
+        .await?;
+    sale.into_result()?;
+    assert_eq!(f.state().await?["spot_balance"], (99 * BASE).to_string());
+    let state: Value = f.contract.view("get_rebalance").await?.json()?;
+    assert_eq!(state["route"]["phase"], "AwaitingReceipt");
+    assert_eq!(state["usable_margin"], "100000000");
+    rejects(f.order(BASE, false).await?, "ERR_ROUTE_UNRESOLVED");
+    let now = f.worker.view_block().await?.timestamp() / 1_000_000;
+    let args = json!({"route_id":"1", "refunded_near":"0", "credited_usdc":"4950000", "receipt_id":"local-finalized-mock", "finalized_at_ms":now.to_string()});
+    f.call(&f.owner, "reconcile_sale_receipt", args.clone())
+        .await?
+        .into_result()?;
+    rejects(
+        f.call(&f.owner, "reconcile_sale_receipt", args).await?,
+        "ERR_NO_ROUTE",
+    );
+    let state: Value = f.contract.view("get_rebalance").await?.json()?;
+    assert_eq!(state["usable_margin"], "104950000");
+    assert!(state["route"].is_null());
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_withdrawal_nonce_requires_confirmed_invalidation() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.prepare_margin().await?;
+    let withdrawal = f
+        .call(
+            &f.owner,
+            "request_evm_withdrawal",
+            json!({"recipient":EVM,"amount":"1000000"}),
+        )
+        .await?;
+    let nonce = request(&withdrawal)["payload"]["nonce"].as_u64().unwrap();
+    withdrawal.into_result()?;
+    rejects(
+        f.call(
+            &f.owner,
+            "request_evm_withdrawal",
+            json!({"recipient":EVM,"amount":"1000000"}),
+        )
+        .await?,
+        "ERR_WITHDRAWAL_UNRESOLVED",
+    );
+    let pause = f
+        .call(&f.owner, "set_paused", json!({"paused":true}))
+        .await?;
+    let invalidate = request(&pause);
+    assert_eq!(invalidate["payload"]["nonce"], nonce);
+    assert_eq!(invalidate["payload"]["action"]["type"], "noop");
+    assert!(
+        invalidate["payload"]["expiresAfter"].as_u64().unwrap()
+            <= f.worker.view_block().await?.timestamp() / 1_000_000 + 60_000
+    );
+    pause.into_result()?;
+    f.call(
+        &f.owner,
+        "report_invalidation",
+        json!({"nonce":nonce.to_string(),"accepted":true}),
+    )
+    .await?
+    .into_result()?;
+    f.call(&f.owner, "abandon_margin_withdrawal", json!({}))
+        .await?
+        .into_result()?;
+    f.prepare_margin().await?;
+    f.call(
+        &f.owner,
+        "request_evm_withdrawal",
+        json!({"recipient":EVM,"amount":"1000000"}),
+    )
+    .await?
+    .into_result()?;
     Ok(())
 }
