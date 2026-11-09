@@ -5,7 +5,9 @@
   "scripts": {
     "test": "vitest run", "build": "tsc -b", "typecheck": "tsc --noEmit",
     "prove:signing": "tsx scripts/prove-signing.ts", "prove:submit": "tsx scripts/prove-submit.ts",
-    "vectors:generate": ".tmp/sdk-venv/bin/python scripts/generate-signing-vectors.py"
+    "vectors:generate": ".tmp/sdk-venv/bin/python scripts/generate-signing-vectors.py",
+    "replay": "tsx apps/keeper/src/cli.ts",
+    "capture:market": "tsx apps/keeper/src/capture-market.ts"
   },
   "dependencies": { "@msgpack/msgpack": "^3.1.2", "@noble/curves": "^2.0.1", "@scure/base": "^2.0.0", "viem": "^2.38.0", "zod": "^4.1.0", "pino": "^10.0.0" },
   "devDependencies": { "@types/node": "^24.0.0", "typescript": "^5.9.0", "vitest": "^4.0.0", "tsx": "^4.20.0" }

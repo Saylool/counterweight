@@ -1,0 +1,367 @@
+[
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "meta"
+    },
+    "requestedAt": "2026-11-09T20:29:26.669Z",
+    "receivedAt": "2026-11-09T20:29:27.048Z",
+    "httpStatus": 200,
+    "responseFile": "raw/hyperliquid-meta.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:27.048Z",
+    "receivedAt": "2026-11-09T20:29:27.251Z",
+    "httpStatus": 200,
+    "responseFile": "raw/coinbase-product.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1778457600000,
+      "endTime": 1779897599999
+    },
+    "requestedAt": "2026-11-09T20:29:27.251Z",
+    "receivedAt": "2026-11-09T20:29:27.528Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-0.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1779897600000,
+      "endTime": 1781337599999
+    },
+    "requestedAt": "2026-11-09T20:29:27.528Z",
+    "receivedAt": "2026-11-09T20:29:27.818Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-1.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1781337600000,
+      "endTime": 1782777599999
+    },
+    "requestedAt": "2026-11-09T20:29:27.819Z",
+    "receivedAt": "2026-11-09T20:29:28.375Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-2.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1782777600000,
+      "endTime": 1784217599999
+    },
+    "requestedAt": "2026-11-09T20:29:28.376Z",
+    "receivedAt": "2026-11-09T20:29:29.288Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-3.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1784217600000,
+      "endTime": 1785657599999
+    },
+    "requestedAt": "2026-11-09T20:29:29.288Z",
+    "receivedAt": "2026-11-09T20:29:29.805Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-4.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1785657600000,
+      "endTime": 1787097599999
+    },
+    "requestedAt": "2026-11-09T20:29:29.805Z",
+    "receivedAt": "2026-11-09T20:29:30.326Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-5.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1787097600000,
+      "endTime": 1788537599999
+    },
+    "requestedAt": "2026-11-09T20:29:30.326Z",
+    "receivedAt": "2026-11-09T20:29:30.840Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-6.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1788537600000,
+      "endTime": 1789977599999
+    },
+    "requestedAt": "2026-11-09T20:29:30.840Z",
+    "receivedAt": "2026-11-09T20:29:31.350Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-7.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1789977600000,
+      "endTime": 1791417599999
+    },
+    "requestedAt": "2026-11-09T20:29:31.350Z",
+    "receivedAt": "2026-11-09T20:29:31.629Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-8.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1791417600000,
+      "endTime": 1792857599999
+    },
+    "requestedAt": "2026-11-09T20:29:31.629Z",
+    "receivedAt": "2026-11-09T20:29:31.917Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-9.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "fundingHistory",
+      "coin": "NEAR",
+      "startTime": 1792857600000,
+      "endTime": 1794095999999
+    },
+    "requestedAt": "2026-11-09T20:29:31.918Z",
+    "receivedAt": "2026-11-09T20:29:32.242Z",
+    "httpStatus": 200,
+    "responseFile": "raw/funding-10.json"
+  },
+  {
+    "method": "POST",
+    "url": "https://api.hyperliquid.xyz/info",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": {
+      "type": "candleSnapshot",
+      "req": {
+        "coin": "NEAR",
+        "interval": "1h",
+        "startTime": 1778457600000,
+        "endTime": 1794095999999
+      }
+    },
+    "requestedAt": "2026-11-09T20:29:32.243Z",
+    "receivedAt": "2026-11-09T20:29:33.516Z",
+    "httpStatus": 200,
+    "responseFile": "raw/perp-candles.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-05-11T00%3A00%3A00.000Z&end=2026-05-23T11%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:33.516Z",
+    "receivedAt": "2026-11-09T20:29:34.009Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-0.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-05-23T11%3A00%3A00.000Z&end=2026-06-04T22%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:34.009Z",
+    "receivedAt": "2026-11-09T20:29:34.187Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-1.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-06-04T22%3A00%3A00.000Z&end=2026-06-17T09%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:34.187Z",
+    "receivedAt": "2026-11-09T20:29:34.399Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-2.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-06-17T09%3A00%3A00.000Z&end=2026-06-29T20%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:34.399Z",
+    "receivedAt": "2026-11-09T20:29:34.568Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-3.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-06-29T20%3A00%3A00.000Z&end=2026-07-12T07%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:34.568Z",
+    "receivedAt": "2026-11-09T20:29:34.750Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-4.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-07-12T07%3A00%3A00.000Z&end=2026-07-24T18%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:34.750Z",
+    "receivedAt": "2026-11-09T20:29:34.935Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-5.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-07-24T18%3A00%3A00.000Z&end=2026-08-06T05%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:34.936Z",
+    "receivedAt": "2026-11-09T20:29:35.119Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-6.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-08-06T05%3A00%3A00.000Z&end=2026-08-18T16%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:35.119Z",
+    "receivedAt": "2026-11-09T20:29:35.287Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-7.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-08-18T16%3A00%3A00.000Z&end=2026-08-31T03%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:35.287Z",
+    "receivedAt": "2026-11-09T20:29:35.468Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-8.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-08-31T03%3A00%3A00.000Z&end=2026-09-12T14%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:35.468Z",
+    "receivedAt": "2026-11-09T20:29:35.644Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-9.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-09-12T14%3A00%3A00.000Z&end=2026-09-25T01%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:35.644Z",
+    "receivedAt": "2026-11-09T20:29:35.820Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-10.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-09-25T01%3A00%3A00.000Z&end=2026-10-07T12%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:35.821Z",
+    "receivedAt": "2026-11-09T20:29:35.995Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-11.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-10-07T12%3A00%3A00.000Z&end=2026-10-19T23%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:35.995Z",
+    "receivedAt": "2026-11-09T20:29:36.171Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-12.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-10-19T23%3A00%3A00.000Z&end=2026-11-01T10%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:36.172Z",
+    "receivedAt": "2026-11-09T20:29:36.401Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-13.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.exchange.coinbase.com/products/NEAR-USD/candles?granularity=3600&start=2026-11-01T10%3A00%3A00.000Z&end=2026-11-08T00%3A00%3A00.000Z",
+    "headers": {},
+    "requestedAt": "2026-11-09T20:29:36.401Z",
+    "receivedAt": "2026-11-09T20:29:36.583Z",
+    "httpStatus": 200,
+    "responseFile": "raw/spot-14.json"
+  }
+]

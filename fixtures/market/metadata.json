@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "coin": "NEAR",
+  "assetIndex": 74,
+  "marginTableId": 52,
+  "capturedAt": "2026-11-09T20:29:36.612Z",
+  "window": {
+    "start": 1778544000000,
+    "end": 1794096000000,
+    "warmupStart": 1778457600000,
+    "endExclusive": true,
+    "hours": 4320
+  },
+  "independentSpot": "Coinbase Exchange NEAR-USD public hourly candles; product verified in raw/coinbase-product.json",
+  "sources": [
+    "https://hyperliquid.gitbook.io/hyperliquid-docs/trading/margin-tiers",
+    "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint",
+    "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles"
+  ],
+  "notes": [
+    "Funding event timestamps have sub-hour jitter; assigned to their UTC hour, available at that hour end.",
+    "Perp and spot OHLC are trade candles, not historical mark prices or order books.",
+    "Current captured maintenance table applied throughout; historical tier changes unavailable."
+  ]
+}

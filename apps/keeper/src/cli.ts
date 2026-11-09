@@ -1,0 +1,16 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { loadMarket } from './market.js';
+import { buildReport, markdownReport } from './report.js';
+if (process.argv.length > 2) throw new Error('replay takes no arguments: all scenarios run to prevent selective reporting');
+const directory = fileURLToPath(new URL('../../../fixtures/market/', import.meta.url));
+const output = fileURLToPath(new URL('../../../reports/', import.meta.url));
+const data = await loadMarket(directory);
+const report = buildReport(data);
+await mkdir(output, { recursive: true });
+await writeFile(output + 'replay-report.json', JSON.stringify(report, null, 2) + '\n');
+await writeFile(output + 'replay-report.md', markdownReport(report));
+console.log(`Offline replay: ${report.status}; ${report.provenance.completeHours} hours, ${report.provenance.gaps.length} gaps`);
+for (const r of report.runs) console.log(`${r.label}: net $${r.netPnlUsd.toFixed(6)}, return ${r.netReturnPct.toFixed(6)}%, capital $${r.initialCapitalUsd}`);
+console.log('Generated reports/replay-report.md and reports/replay-report.json');
+if (report.status !== 'complete') process.exitCode = 1;

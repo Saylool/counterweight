@@ -1,0 +1,176 @@
+{
+  "algorithm": "SHA-256",
+  "capturedAt": "2026-11-09T20:29:36.612Z",
+  "files": [
+    {
+      "path": "raw/hyperliquid-meta.json",
+      "sha256": "95ab2c4e84a0ef904511745a02181c4eb0bc858a9289b4fc51b89e519a477bc4",
+      "bytes": 29295
+    },
+    {
+      "path": "raw/coinbase-product.json",
+      "sha256": "18c985a547d32af6924f074be0bb7ba07fa6077cc37de5e8ad1cddabe6be2852",
+      "bytes": 494
+    },
+    {
+      "path": "raw/funding-0.json",
+      "sha256": "78a70edd28bb9227b20391685d0af89371bc7a3a4c86c20bb155818651814b2f",
+      "bytes": 47624
+    },
+    {
+      "path": "raw/funding-1.json",
+      "sha256": "f8f189dcfd69a3488a4d4840e4c3add341f8682697e57f5ce5bd3ef8f4de1935",
+      "bytes": 47722
+    },
+    {
+      "path": "raw/funding-2.json",
+      "sha256": "27f7a73d054cd1f9c1807da8b183fc67a7f63043265ac99d8a4231b798d18a6c",
+      "bytes": 47534
+    },
+    {
+      "path": "raw/funding-3.json",
+      "sha256": "2ece443c12ee3be29cd35226e0a58447426ebeea3408372e1ead8b53c023903f",
+      "bytes": 47387
+    },
+    {
+      "path": "raw/funding-4.json",
+      "sha256": "2f0a595e27e37e4d23a7d41b78efbfed898b6f8d3245198807fef10d7b00aa13",
+      "bytes": 47728
+    },
+    {
+      "path": "raw/funding-5.json",
+      "sha256": "40095608db4d83c1e5be9f6a9a7a5c2d22a3406ff75c671b91febad0da549e10",
+      "bytes": 47529
+    },
+    {
+      "path": "raw/funding-6.json",
+      "sha256": "7458fcbb3986127e8ba2f7d81bc8ec80d0c45bbfdb899a0011097a3bc68b1d6a",
+      "bytes": 47586
+    },
+    {
+      "path": "raw/funding-7.json",
+      "sha256": "07afa20f3dba838a8e1ed3858ffd37a057367374186dc902e9206f5d9a7474d5",
+      "bytes": 47667
+    },
+    {
+      "path": "raw/funding-8.json",
+      "sha256": "1a4124ea11fdbec655f897a29734f0524d69c5b9956ca27bfe75bcb450134730",
+      "bytes": 47573
+    },
+    {
+      "path": "raw/funding-9.json",
+      "sha256": "7942a54b03b40242065edbe4e0ff57737b6e2acb0e41c88d2fa0fa517fd4aacb",
+      "bytes": 47743
+    },
+    {
+      "path": "raw/funding-10.json",
+      "sha256": "b4bfe9cf45a6dfe82f1b551fd1c1cf8472b008081df2f9b3533f3f408bd8cd83",
+      "bytes": 40996
+    },
+    {
+      "path": "raw/perp-candles.json",
+      "sha256": "100160e8400412299cc85da73179a7b82521801acddfc095910e64ea57b22e1a",
+      "bytes": 873495
+    },
+    {
+      "path": "raw/spot-0.json",
+      "sha256": "6bf29c0f89f2f44189ee56f96cb1efbf618f316dcd6db52f76bf2fe5dd2cbc95",
+      "bytes": 24944
+    },
+    {
+      "path": "raw/spot-1.json",
+      "sha256": "58b07399b4a96bc6ceeff8b06a41c9817f00074b9720d4a2d4b38de987b7c5b0",
+      "bytes": 25148
+    },
+    {
+      "path": "raw/spot-2.json",
+      "sha256": "600be0fa5499383688cde124766f09dcd9d6ae6d84faeccf0bc0d132d58a2b63",
+      "bytes": 25073
+    },
+    {
+      "path": "raw/spot-3.json",
+      "sha256": "bd6c40513cec6a74c76c9fdc9f4136449821190d1dc897a3b0e9ca75e5c5a33e",
+      "bytes": 25006
+    },
+    {
+      "path": "raw/spot-4.json",
+      "sha256": "bd3b0118e0841e06a14741c3cc13bd4d272134bc33d2defc17f2534492c5eac4",
+      "bytes": 24936
+    },
+    {
+      "path": "raw/spot-5.json",
+      "sha256": "ddc938de9e1c59f1a27de6cab73a7c16f6f50da02d1e9d5a7c92283117bd10b9",
+      "bytes": 24907
+    },
+    {
+      "path": "raw/spot-6.json",
+      "sha256": "2f0bcf0f0394c019036eea5add3b39b3627efc690214533625682c6163e9ace4",
+      "bytes": 25094
+    },
+    {
+      "path": "raw/spot-7.json",
+      "sha256": "014422de0f8f0588502be74e3b3d11706a65aa891ed86874ef7b1766e493dc75",
+      "bytes": 26077
+    },
+    {
+      "path": "raw/spot-8.json",
+      "sha256": "3d33ae451bbbae001be60800d2759901894333065da7990c8682b2e2249a3296",
+      "bytes": 26056
+    },
+    {
+      "path": "raw/spot-9.json",
+      "sha256": "e6dc3671b5a25c24ce601885f6ffac4d79ab703a4d89e998525e5aa3bc0e665a",
+      "bytes": 26063
+    },
+    {
+      "path": "raw/spot-10.json",
+      "sha256": "f5f486de5cb33d149f380ccd6fe705aab33e8afe604a2b6bb801295b5f4f4da7",
+      "bytes": 26153
+    },
+    {
+      "path": "raw/spot-11.json",
+      "sha256": "d9dcf7146b62072039bac7b7f8d4fab52e0fc0faa0d5d5b88c8509448d8e9e39",
+      "bytes": 26095
+    },
+    {
+      "path": "raw/spot-12.json",
+      "sha256": "d7b992c037abc264fd16f6af179d81d8a65d2e5e6d6c481ee3c494e6e09c23c3",
+      "bytes": 26132
+    },
+    {
+      "path": "raw/spot-13.json",
+      "sha256": "bad4b431b3ea0d83cc9bc0b8b6d6c7326c8b6aa75aef313701198f79b55f9032",
+      "bytes": 26098
+    },
+    {
+      "path": "raw/spot-14.json",
+      "sha256": "e122ee4ee6ba9e56c846148a66ca53e6366a43945d987fbb9f71fa84aa2657c3",
+      "bytes": 13862
+    },
+    {
+      "path": "funding.json",
+      "sha256": "3f2ebcca047d7c4d229270e5b6b2b55459ccea7b3af20aa9a939616dd4a30d44",
+      "bytes": 517059
+    },
+    {
+      "path": "perp.json",
+      "sha256": "100160e8400412299cc85da73179a7b82521801acddfc095910e64ea57b22e1a",
+      "bytes": 873495
+    },
+    {
+      "path": "spot.json",
+      "sha256": "127e099761e3cc91da805e46650e42061dc428a9b6c8aba09ad4a016b188559e",
+      "bytes": 370315
+    },
+    {
+      "path": "requests.json",
+      "sha256": "5364fe4a20fe00aed52679bb50c06e025cb90d86a127787c9557f7c6598638a0",
+      "bytes": 11405
+    },
+    {
+      "path": "metadata.json",
+      "sha256": "ccc967cab14abe192422ed8221ac8245d8f6d802896ecc4a41a68730f52c16fd",
+      "bytes": 1000
+    }
+  ]
+}
