@@ -50,6 +50,25 @@ export function fundingStats(input: unknown, asOf: unknown) {
   }
   return { complete24h, trailing24hRate: complete24h ? trailing.reduce((s, r) => s + r.rate, 0) : null, consecutiveNegativeHours };
 }
+
+/** Replay protocol constants are structural choices; only confirmation is selected on training data. */
+export const CarryRuleSchema = z.object({
+  positiveHours: z.number().int().min(1).max(24),
+  minimumHoldHours: z.literal(72).default(72), cooldownHours: z.literal(24).default(24),
+  entryHeadroomFraction: z.literal(0.2).default(0.2), entryLeverageCap: z.literal(0.9).default(0.9),
+}).strict();
+export type CarryRule = z.input<typeof CarryRuleSchema>;
+export function carrySignal(input: unknown, asOf: number, ruleInput: CarryRule) {
+  const rule = CarryRuleSchema.parse(ruleInput);
+  const rows = FundingSeriesSchema.parse(input).filter(r => r.time <= asOf);
+  const stats = fundingStats(rows, asOf);
+  const confirmation = rows.slice(-rule.positiveHours);
+  const positiveConfirmed = confirmation.length === rule.positiveHours && confirmation.every((r, i) =>
+    r.rate > 0 && r.time === asOf - (rule.positiveHours - 1 - i) * HOUR_MS);
+  return { ...stats, positiveConfirmed,
+    enter: positiveConfirmed && stats.complete24h && stats.trailing24hRate! > 0,
+    fundingExit: stats.consecutiveNegativeHours >= 6 && stats.complete24h && stats.trailing24hRate! < 0 };
+}
 export const RiskInputSchema = ExposureSchema.extend({
   intent: z.enum(['enter', 'monitor']), now: time, observedAt: time,
   maxDataAgeMs: z.number().int().positive().max(HOUR_MS),

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { loadMarket, type MarketDataset, type MarketHour } from '../../../apps/keeper/src/market.js';
 import { COSTS, simulate, selectWorstMoves, syntheticGap } from '../../../apps/keeper/src/replay.js';
-import { breakEven, buildReport, markdownReport } from '../../../apps/keeper/src/report.js';
+import { breakEven, buildReport, markdownReport, comparisonTable } from '../../../apps/keeper/src/report.js';
 import { HOUR_MS } from './index.js';
 
 const fixtureDirectory = fileURLToPath(new URL('../../../fixtures/market/', import.meta.url));
@@ -208,6 +208,22 @@ describe('selection and provenance', () => {
     expect(data.gaps).toEqual([]); expect(data.bars).toHaveLength(4344);
     expect(data.bars.filter(b => b.start >= data.start && b.fundingRate < 0)).toHaveLength(163);
     const report = buildReport(data);
+    // Independent numeric oracle: npm run replay never rewrites this file. All period/size/policy
+    // headline fields, every cost line, candidate scores and diagnostics are pinned at full precision.
+    const expected = JSON.parse(await readFile(fileURLToPath(new URL('./replay-headlines.json', import.meta.url)), 'utf8'));
+    const comparisons = report.comparisons.map(({ events, proposals, equityCurve, ...headline }) => headline);
+    expect({ provenance: report.provenance, selection: report.selection, comparisons }).toEqual(expected);
+    expect(markdownReport(report)).toContain(comparisonTable(report));
+    expect(report.comparisons).toHaveLength(36);
+    for (const r of report.comparisons) {
+      expect(r.netPnlUsd).toBeCloseTo(r.spotPnlUsd + r.perpPnlUsd + r.fundingPnlUsd - r.totalCostsUsd, 10);
+      expect(r.netReturnPct).toBe(r.netPnlUsd / r.initialCapitalUsd * 100);
+      expect(r.simpleAnnualizedNetReturnPct).toBe(r.netReturnPct * 8760 / r.windowHours);
+      expect(r.timeInMarketPct).toBe(r.heldHours / r.windowHours * 100);
+      expect(r.equityCurve.at(-1)!.equityUsd).toBeCloseTo(r.initialCapitalUsd + r.netPnlUsd, 10);
+      expect(r.totalCostsUsd).toBe(Object.values(r.costs).reduce((sum, cost) => sum + cost, 0));
+      expect(r.operatingBudgetExceeded).toBe(false);
+    }
     expect(report).toEqual(JSON.parse(await readFile(reportDirectory + 'replay-report.json', 'utf8')));
     expect(markdownReport(report)).toBe(await readFile(reportDirectory + 'replay-report.md', 'utf8'));
     for (const r of report.runs) {

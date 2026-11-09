@@ -11,6 +11,6 @@ await mkdir(output, { recursive: true });
 await writeFile(output + 'replay-report.json', JSON.stringify(report, null, 2) + '\n');
 await writeFile(output + 'replay-report.md', markdownReport(report));
 console.log(`Offline replay: ${report.status}; ${report.provenance.completeHours} hours, ${report.provenance.gaps.length} gaps`);
-for (const r of report.runs) console.log(`${r.label}: net $${r.netPnlUsd.toFixed(6)}, return ${r.netReturnPct.toFixed(6)}%, capital $${r.initialCapitalUsd}`);
+for (const r of report.comparisons.filter(r => r.period === 'full')) console.log(`${r.policy}/${r.label}: net $${r.netPnlUsd.toFixed(6)}, return ${r.netReturnPct.toFixed(6)}%, capital $${r.initialCapitalUsd}, held ${r.heldHours}/${r.windowHours}h, entries ${r.entries}`);
 console.log('Generated reports/replay-report.md and reports/replay-report.json');
 if (report.status !== 'complete') process.exitCode = 1;
