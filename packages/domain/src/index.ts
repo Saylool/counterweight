@@ -124,3 +124,12 @@ export function evaluateRisk(input: unknown) {
   if (x.intent === 'enter' && entryBlocks.length === 0) proposals.push({ type: 'enter', shortNotional: x.shortNotional, supervised: true });
   return { metrics, funding, entryBlocks, proposals, state: { entryHalted } };
 }
+
+/** Fractions of current short notional; latency/caps are protocol constants, not fitted. */
+export const RebalanceRuleSchema = z.object({
+  lower: z.number().finite().min(0.1).max(1),
+  target: z.number().finite().min(0.1).max(2),
+  upper: z.number().finite().min(0.1).max(3),
+  latencyHours: z.literal(1).default(1),
+}).strict().refine(r => r.lower < r.target && r.target < r.upper, 'Require lower < target < upper');
+export type RebalanceRule = z.input<typeof RebalanceRuleSchema>;

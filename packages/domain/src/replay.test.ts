@@ -212,9 +212,9 @@ describe('selection and provenance', () => {
     // headline fields, every cost line, candidate scores and diagnostics are pinned at full precision.
     const expected = JSON.parse(await readFile(fileURLToPath(new URL('./replay-headlines.json', import.meta.url)), 'utf8'));
     const comparisons = report.comparisons.map(({ events, proposals, equityCurve, ...headline }) => headline);
-    expect({ provenance: report.provenance, selection: report.selection, comparisons }).toEqual(expected);
+    expect({ provenance: report.provenance, selection: report.selection, rebalanceSelection: report.rebalanceSelection, comparisons }).toEqual(expected);
     expect(markdownReport(report)).toContain(comparisonTable(report));
-    expect(report.comparisons).toHaveLength(36);
+    expect(report.comparisons).toHaveLength(45);
     for (const r of report.comparisons) {
       expect(r.netPnlUsd).toBeCloseTo(r.spotPnlUsd + r.perpPnlUsd + r.fundingPnlUsd - r.totalCostsUsd, 10);
       expect(r.netReturnPct).toBe(r.netPnlUsd / r.initialCapitalUsd * 100);
@@ -223,6 +223,15 @@ describe('selection and provenance', () => {
       expect(r.equityCurve.at(-1)!.equityUsd).toBeCloseTo(r.initialCapitalUsd + r.netPnlUsd, 10);
       expect(r.totalCostsUsd).toBe(Object.values(r.costs).reduce((sum, cost) => sum + cost, 0));
       expect(r.operatingBudgetExceeded).toBe(false);
+      if (r.policy === 'hedged-rebalance') {
+        expect(r.maintenanceProxyBreachHours).toBe(0);
+        expect(r.minMarkedVenueEquityUsd!).toBeGreaterThan(0);
+        expect(r.pendingTransferUsd).toBe(0);
+        expect(r.finalQuantity).toBe(0);
+        expect(r.events.filter(e => e.type === 'rebalance-reduce' || e.type === 'rebalance-withdraw')).toHaveLength(r.rebalances);
+        for (const event of r.events) expect(event.spotQuantity).toBe(event.shortQuantity);
+        expect(r.terminalQuantity).toBeLessThanOrEqual(r.initialQuantity);
+      }
     }
     expect(report).toEqual(JSON.parse(await readFile(reportDirectory + 'replay-report.json', 'utf8')));
     expect(markdownReport(report)).toBe(await readFile(reportDirectory + 'replay-report.md', 'utf8'));

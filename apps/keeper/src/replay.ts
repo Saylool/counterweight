@@ -3,22 +3,23 @@ import { evaluateRisk, HOUR_MS, stressMetrics, maintenanceMargin, CarryRuleSchem
 import type { z as Zod } from 'zod';
 import type { MarketDataset, MarketHour } from './market.js';
 
+import { COSTS } from './costs.js';
+export { COSTS } from './costs.js';
+import { simulateRebalance, survivedMoves } from './rebalance.js';
+import { RebalanceRuleSchema } from '@counterweight/domain';
+
 type Funding = Zod.infer<typeof FundingObservationSchema>;
-export const COSTS = {
-  perpTaker: 0.00045, perpMaker: 0.00015, route: 0.0025, protocol: 0.000001,
-  perpSlippage: 0.0005, spotSlippage: 0.0005,
-  activationUsd: 1, storageGasUsd: 1, withdrawalUsd: 1, infrastructureUsd: 3, signingPerActionUsd: 0.02,
-} as const;
 const ConfigSchema = z.object({ shortUsd: z.number().finite().min(10).max(1e9), marginUsd: z.number().finite().positive().max(1e10),
   operatingUsd: z.number().finite().nonnegative().max(1e10), execution: z.enum(['taker', 'maker-entry']).default('taker'),
-  policy: z.enum(['original', 'reentry', 'always-hedged', 'spot-holder']).default('original'),
-  carryRule: CarryRuleSchema.optional(),
+  policy: z.enum(['original', 'reentry', 'always-hedged', 'spot-holder', 'hedged-rebalance']).default('original'),
+  carryRule: CarryRuleSchema.optional(), rebalanceRule: RebalanceRuleSchema.optional(),
   forceInitial: z.boolean().default(false), reenter: z.boolean().default(true), szDecimals: z.number().int().min(0).max(8).default(1),
   preExistingEntry: z.object({ spotPrice: z.number().finite().positive(), perpPrice: z.number().finite().positive() }).strict().optional() }).strict();
 export type ReplayConfig = z.input<typeof ConfigSchema>;
-export interface LedgerEvent { time: number; type: string; quantity: number; shortNotional: number; spotPrice: number; perpPrice: number; reason: string }
+export interface LedgerEvent { time: number; type: string; quantity: number; shortNotional: number; spotPrice: number; perpPrice: number; reason: string; spotQuantity?: number; shortQuantity?: number; venueEquityUsd?: number; stressHeadroomUsd?: number | null; pendingTransferUsd?: number }
 export function simulate(bars: MarketHour[], start: number, end: number, input: ReplayConfig) {
   const config = ConfigSchema.parse(input);
+  if (config.policy === 'hedged-rebalance') return simulateRebalance(bars, start, end, config);
   if (config.policy === 'reentry' && !config.carryRule) throw new Error('Re-entry requires a frozen carry rule');
   const hedged = config.policy !== 'spot-holder';
   const passive = config.policy === 'always-hedged' || !hedged;
@@ -30,6 +31,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
     marginRouteFees: marginCapital * (COSTS.route + COSTS.protocol), fixed: COSTS.activationUsd + COSTS.storageGasUsd + COSTS.withdrawalUsd + COSTS.infrastructureUsd, signing: 0 };
   let spotPnl = 0, perpPnl = 0, fundingPnl = 0, negativeFundingHoursHeld = 0, heldHours = 0;
   let position: { quantity: number; spotEntry: number; perpEntry: number; enteredAt: number } | null = null;
+  let initialQuantity = 0, terminalQuantity = 0;
   let lastExit: number | null = null, entryAttempts = 0, blockedEntryAttempts = 0;
   let pendingEntry = true, pendingExit: string | null = null, entered = false;
   let minHeadroom: number | null = null, minIntrabarHeadroom: number | null = null;
@@ -38,6 +40,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
   const events: LedgerEvent[] = [], proposals: { time: number; types: string[] }[] = [];
   const entryBlockCounts: Record<string, number> = {};
   const entryBlockDetails: Record<string, { firstTime: number; lastTime: number; firstNotional: number; firstVenueEquity: number }> = {};
+  const survived: boolean[] = [];
   const equityCurve: { time: number; equityUsd: number }[] = [];
   const totalCosts = () => Object.values(costs).reduce((a, b) => a + b, 0);
   const venueCash = () => marginCapital + perpPnl + fundingPnl - costs.perpFees - costs.perpSlippage;
@@ -73,7 +76,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
     maxDrawdownPct = Math.max(maxDrawdownPct, (peak - value) / peak * 100);
     if (record) equityCurve.push({ time, equityUsd: value });
   }
-  for (const bar of window) {
+  for (const [barIndex, bar] of window.entries()) {
     let heldBeforeOpen = position !== null;
     if (pendingExit) { close(bar.start, bar.spot.open, bar.perp.open, pendingExit); pendingExit = null; heldBeforeOpen = false; }
     if (!position && pendingEntry && (!entered || config.reenter)) {
@@ -105,6 +108,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
       }
       if ((config.forceInitial && !entered) || (blocks.length === 0 && (!passive || !entered))) {
         position = { quantity, spotEntry: spotPrice, perpEntry: perpPrice, enteredAt: bar.start };
+        if (!entered) initialQuantity = quantity;
         entered = true;
         if (hedged) {
           costs.perpFees += n * (config.execution === 'taker' ? COSTS.perpTaker : COSTS.perpMaker);
@@ -133,10 +137,13 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
         const adverse = stressMetrics({ shortNotional: position.quantity * bar.perp.high, venueEquity: adverseEquity });
         minIntrabarHeadroom = Math.min(minIntrabarHeadroom ?? Infinity, adverse.headroom);
         // Maintenance before the additional hypothetical +50% shock.
-        if (adverseEquity <= maintenanceMargin(position.quantity * bar.perp.high)) maintenanceProxyBreachHours++;
+        const breach = adverseEquity <= maintenanceMargin(position.quantity * bar.perp.high);
+        if (breach) maintenanceProxyBreachHours++;
+        survived[barIndex] = !breach;
         maxUnmatchedExposureUsd = Math.max(maxUnmatchedExposureUsd, Math.abs(position.quantity * (bar.spot.close - bar.perp.close)));
       } else maxUnmatchedExposureUsd = Math.max(maxUnmatchedExposureUsd, position.quantity * bar.spot.close);
     }
+    survived[barIndex] ??= false;
     history = [...history, { time: bar.end, rate: bar.fundingRate }].slice(-24);
     if (position && hedged) {
       const n = position.quantity * bar.perp.close;
@@ -150,7 +157,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
       }
     } else if (!position && !passive && (config.reenter || !entered)) pendingEntry = true;
     // Predetermined horizon close uses this last completed candle; no future price is read.
-    if (bar.end === end) close(end, bar.spot.close, bar.perp.close, 'fixed-horizon-close');
+    if (bar.end === end) { terminalQuantity = position?.quantity ?? 0; close(end, bar.spot.close, bar.perp.close, 'fixed-horizon-close'); }
     mark(bar.end, bar.spot.close, bar.perp.close);
   }
   const netPnlUsd = spotPnl + perpPnl + fundingPnl - totalCosts();
@@ -163,6 +170,8 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
     spotPnlUsd: spotPnl, perpPnlUsd: perpPnl, fundingPnlUsd: fundingPnl, costs, totalCostsUsd: totalCosts(), fixedCostsUsd,
     negativeFundingHoursHeld, heldHours, maxDrawdownUsd, maxDrawdownPct, minStressHeadroomUsd: minHeadroom,
     minIntrabarStressHeadroomUsd: minIntrabarHeadroom, maintenanceProxyBreachHours, maxUnmatchedExposureUsd,
+    rebalances: 0, rebalanceCostsUsd: 0, initialQuantity, terminalQuantity, finalQuantity: 0,
+    pendingTransferUsd: 0, netMarginTransfersUsd: 0, largestSurvivedMoves: hedged ? survivedMoves(bars, window, survived) : [],
     operatingBudgetExceeded: totalCosts() - costs.perpFees - costs.perpSlippage > config.operatingUsd,
     endingVenueCashUsd: venueCash(), minMarkedVenueEquityUsd: minMarkedVenueEquity,
     entries: events.filter(e => e.type === 'open').length, entryAttempts, blockedEntryAttempts,
