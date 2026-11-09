@@ -21,3 +21,52 @@ On `pause`, stop new keeper authorizations and discard pending keeper callbacks.
 Never fund the owner-EOA probe address. Direct owner MPC requests bypass controller policy. Fund only the strategy address derived from the audited policy contract predecessor after policy and immutable custody checks. `approveAgent` and `usdSend` remain interoperability-only codecs; they must never be authorized through the controller or proof relay.
 
 The testnet proof relay is deliberately separate from production rules: only an unfunded order-ID-zero cancel, no vault or expiresAfter, nonce at most 30 minutes old and at most 60 seconds ahead. Plans are one-use and consumed before relay submission, including transport failures. Production keeper actions instead require the tight expiry and on-chain limits above.
+
+## Cross-venue rebalance actions and contract safety limits
+
+The replay's paired fills and one-hour 1Click completion are assumptions, not an
+implemented atomic cross-chain operation. The controller must add these explicit
+capabilities before this policy can operate. No generic arbitrary payload signer,
+recipient override, private key, `usdSend`, or `approveAgent` authority is implied.
+
+- **Spot sale route:** owner-approved exact route, or a keeper-bounded NEAR-to-USDC
+  sale authorization. Fix token IDs, source account, destination chain and strategy
+  Hyperliquid margin address in policy. Bound per-action NEAR, minimum received USDC,
+  maximum route/protocol fee and price impact, quote age/deadline, and rolling daily
+  turnover. Reserve inventory atomically against outstanding routes. Compare completed
+  spot and perp fills in NEAR units; a dollar-value match is insufficient. Start with
+  owner approvals until asynchronous fill reconciliation is audited.
+- **Margin top-up:** accept proceeds only from that recorded route into the fixed
+  strategy margin account. Bind route ID, amount range, chain/token and destination;
+  prove finality/receipt and reconcile actual credited margin before spending it.
+  Pending or refundable proceeds are not margin or stress headroom. One pending route
+  per strategy, idempotent callbacks, bounded completion timeout, and no double credit.
+  A paired spot sale must accompany a reduce-only short buyback, with quantity bounded
+  by existing matched inventory. Reserve perp fees and the margin needed during latency.
+- **Margin withdrawal to fixed recipient:** policy allowlists the owner's strategy
+  spot funding account/1Click deposit recipient, immutable to the keeper. Owner approval
+  for recipient changes with pause and delay. Bound per-action/rolling USDC withdrawal,
+  fee, minimum residual venue equity and H, and any venue withdrawal availability limit.
+  Deduct the full withdrawal immediately from usable margin. Require finalized receipt
+  before spot acquisition and matching short increase; never front-run a pending arrival
+  with an unbacked short. Requote and recalculate quantity from arrival prices and net
+  received funds. No withdrawal of third-party collateral or external top-up assumption.
+- **Paired increase:** cap both legs at initial approved NEAR inventory and original
+  target dollars for additions, venue size precision, $10 replay minimum adjustment,
+  leverage <= 1 after fees, approved liquidity/impact limits, and owner's total exposure
+  limit. Check lower/target/upper H bands and interim H >= 10% notional using fresh
+  authenticated balances/marks and conservative fees. Replay's selected 30/60/90% bands
+  and one-hour latency are historical model settings, not production safety guarantees.
+- **Asynchronous failure:** use an on-chain state machine for intent, spot/perp fills,
+  route dispatch, final receipt, reconciliation and completion/refund. Prevent duplicate
+  keeper actions and additions while unresolved. Enforce a maximum temporary NEAR mismatch,
+  timeout and owner emergency capacity; reject excessive mismatch and pause new risk.
+  If an actionable band cannot be restored within caps, authorize bounded full unwind
+  with paired spot disposal and reduce-only perp close. Never credit a negative venue
+  balance as a financed strategy outcome. Real gaps can preclude an executable unwind.
+
+All actions inherit the nonce, tight `expiresAfter`, signing budgets, pause/noop
+invalidation, and custody requirements above. Test malicious recipients, stale quotes,
+slippage/fee bounds, route failure/refund/late and duplicated callbacks, partial fills,
+withdrawals during an unresolved top-up, latency stress, cap exhaustion, and emergency
+pause while a signature or route is outstanding. No contract code is changed by replay.
