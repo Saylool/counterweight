@@ -1,6 +1,7 @@
 //! Local sandbox only; mock signer returns fabricated signature-shaped public data.
 //! Running requires explicit consent for near-workspaces' disposable test keys.
 use anyhow::Result;
+use counterweight_policy::{SigningPayload, hl_digest};
 use near_sdk::serde_json::{Value, json};
 use near_workspaces::{Account, Contract, Worker, network::Sandbox, types::NearToken};
 
@@ -24,11 +25,25 @@ fn limits(cooldown: u64) -> Value {
 
 impl Fixture {
     async fn new(cooldown: u64) -> Result<Self> {
+        Self::with_signing_limits(cooldown, Value::Null).await
+    }
+    async fn with_signing_limits(cooldown: u64, signing_limits: Value) -> Result<Self> {
         anyhow::ensure!(
             std::env::var("COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS").as_deref() == Ok("1"),
             "sandbox execution requires explicit permission for disposable local test keys"
         );
+        let repository = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()?;
+        anyhow::ensure!(
+            !std::env::temp_dir().canonicalize()?.starts_with(repository),
+            "sandbox TMPDIR must be outside the repository"
+        );
         let worker = near_workspaces::sandbox().await?;
+        anyhow::ensure!(
+            worker.rpc_addr().starts_with("http://127.0.0.1:"),
+            "sandbox RPC must be loopback"
+        );
         let owner = worker.dev_create_account().await?;
         let keeper = worker.dev_create_account().await?;
         let stranger = worker.dev_create_account().await?;
@@ -46,7 +61,7 @@ impl Fixture {
             "owner": owner.id(), "keeper": keeper.id(), "asset_index": 4, "size_decimals": 2,
             "derivation_path": "counterweight-1", "evm_recipient": EVM, "signer_account": signer.id(),
             "wnear_account": signer.id(), "limits": limits(cooldown), "heartbeat_timeout_seconds": 600,
-            "reference_price": "5000000"
+            "reference_price": "5000000", "signing_limits": signing_limits
         })).transact().await?.into_result()?;
         owner
             .call(contract.id(), "test_only_set_spot_balance")
@@ -75,7 +90,23 @@ impl Fixture {
         Ok(who
             .call(self.contract.id(), method)
             .args_json(args)
-            .deposit(NearToken::from_yoctonear(1))
+            .deposit(NearToken::from_yoctonear(
+                if matches!(
+                    method,
+                    "request_order_signature"
+                        | "request_cancel_signature"
+                        | "request_evm_withdrawal"
+                        | "withdraw_spot"
+                        | "deleverage"
+                        | "emergency_reduce"
+                        | "set_paused"
+                        | "request_next_invalidation"
+                ) {
+                    1
+                } else {
+                    0
+                },
+            ))
             .max_gas()
             .transact()
             .await?)
@@ -96,12 +127,23 @@ impl Fixture {
         self.owner.call(self.contract.id(), "set_config").args_json(json!({"keeper": self.keeper.id(), "limits": limits(cooldown), "heartbeat_timeout_seconds": 600})).transact().await?.into_result()?;
         Ok(())
     }
+    async fn advance_past_ms(&self, timestamp_ms: u64) -> Result<()> {
+        // fast_forward advances block height; block duration is sandbox-specific.
+        for _ in 0..20 {
+            if self.worker.view_block().await?.timestamp() / 1_000_000 > timestamp_ms {
+                return Ok(());
+            }
+            self.worker.fast_forward(1000).await?;
+        }
+        anyhow::bail!("sandbox clock did not reach requested timestamp")
+    }
 }
 fn rejects(result: near_workspaces::result::ExecutionFinalResult, message: &str) {
     assert!(result.is_failure(), "expected {message}");
+    let error = format!("{:?}", result.into_result().unwrap_err());
     assert!(
-        format!("{:?}", result.into_result().unwrap_err()).contains(message),
-        "expected {message}"
+        error.contains(message),
+        "expected {message}, received {error}"
     );
 }
 
@@ -181,7 +223,7 @@ async fn sandbox_keeper_caps_and_cooldown() -> Result<()> {
     Ok(())
 }
 #[tokio::test]
-async fn sandbox_reduce_always_allowed_and_budget_not_recycled() -> Result<()> {
+async fn sandbox_reduce_signatures_do_not_prove_fills() -> Result<()> {
     let f = Fixture::new(600).await?;
     f.order(2 * BASE, false).await?.into_result()?;
     f.order(2 * BASE, true).await?.into_result()?;
@@ -218,17 +260,21 @@ async fn sandbox_short_spot_invariant() -> Result<()> {
     Ok(())
 }
 #[tokio::test]
-async fn sandbox_pause_blocks_increases_not_reductions() -> Result<()> {
+async fn sandbox_pause_blocks_keeper_but_allows_owner_emergency() -> Result<()> {
     let f = Fixture::new(0).await?;
     f.order(BASE, false).await?.into_result()?;
-    f.owner
-        .call(f.contract.id(), "set_paused")
-        .args_json(json!({"paused": true}))
-        .transact()
+    f.call(&f.owner, "set_paused", json!({"paused": true}))
         .await?
         .into_result()?;
     rejects(f.order(BASE, false).await?, "ERR_PAUSED");
-    f.order(BASE, true).await?.into_result()?;
+    rejects(f.order(BASE, true).await?, "ERR_PAUSED");
+    f.call(
+        &f.owner,
+        "emergency_reduce",
+        json!({"size": BASE.to_string()}),
+    )
+    .await?
+    .into_result()?;
     Ok(())
 }
 #[tokio::test]
@@ -239,7 +285,12 @@ async fn sandbox_public_heartbeat_timeout_deleverage() -> Result<()> {
         f.call(&f.stranger, "deleverage", json!({})).await?,
         "ERR_HEARTBEAT_ACTIVE",
     );
-    f.worker.fast_forward(1000).await?;
+    let state = f.state().await?;
+    let heartbeat = state["last_keeper_heartbeat"]
+        .as_str()
+        .unwrap()
+        .parse::<u64>()?;
+    f.advance_past_ms((heartbeat + 600) * 1000).await?;
     f.call(&f.stranger, "deleverage", json!({}))
         .await?
         .into_result()?;
@@ -258,23 +309,8 @@ async fn sandbox_pending_duplicate_and_failed_callback() -> Result<()> {
     let result = f.order(BASE, false).await?;
     assert!(!result.clone().json::<bool>()?);
     let state = f.state().await?;
-    assert_eq!(state["pending"]["phase"], "Uncertain");
+    assert!(state["pending"].is_null());
     assert_eq!(state["signed_short_size"], BASE.to_string());
-    rejects(f.order(BASE, true).await?, "ERR_PENDING_OPERATION");
-    rejects(
-        f.stranger
-            .call(f.contract.id(), "acknowledge_failed_signature")
-            .args_json(json!({"operation_id": "1"}))
-            .transact()
-            .await?,
-        "ERR_CALLER_NOT_OWNER",
-    );
-    f.owner
-        .call(f.contract.id(), "acknowledge_failed_signature")
-        .args_json(json!({"operation_id": "1"}))
-        .transact()
-        .await?
-        .into_result()?;
     f.signer
         .call("set_mode")
         .args_json(json!({"mode": 0}))
@@ -297,7 +333,7 @@ async fn sandbox_malformed_callback_and_private_endpoint() -> Result<()> {
         .into_result()?;
     let result = f.order(BASE, false).await?;
     assert!(!result.json::<bool>()?);
-    assert_eq!(f.state().await?["pending"]["phase"], "Uncertain");
+    assert!(f.state().await?["pending"].is_null());
     let forged = f
         .stranger
         .call(f.contract.id(), "on_signature")
@@ -305,5 +341,324 @@ async fn sandbox_malformed_callback_and_private_endpoint() -> Result<()> {
         .transact()
         .await?;
     assert!(forged.is_failure());
+    Ok(())
+}
+
+fn request(result: &near_workspaces::result::ExecutionFinalResult) -> Value {
+    result
+        .logs()
+        .iter()
+        .filter_map(|l| l.strip_prefix("EVENT_JSON:"))
+        .filter_map(|l| near_sdk::serde_json::from_str::<Value>(l).ok())
+        .find(|e| e["event"] == "request")
+        .unwrap()["data"][0]
+        .clone()
+}
+fn verify_request_digest(r: &Value) {
+    near_sdk::testing_env!(near_sdk::test_utils::VMContextBuilder::new().build());
+    let payload: SigningPayload = near_sdk::serde_json::from_value(r["payload"].clone()).unwrap();
+    let digest = hl_digest::digest(&payload).unwrap();
+    let encoded: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(r["digest"], encoded);
+    assert_eq!(r["digest_implementation"], hl_digest::IMPLEMENTATION);
+}
+#[tokio::test]
+async fn sandbox_real_order_cancel_withdraw_digests_and_expiries() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    let result = f.order(BASE, false).await?;
+    verify_request_digest(&request(&result));
+    let order_request = request(&result);
+    let first_nonce = order_request["payload"]["nonce"].as_u64().unwrap();
+    assert!(order_request["payload"]["expiresAfter"].as_u64().unwrap() <= first_nonce + 60_000);
+    result.into_result()?;
+    let result = f
+        .call(
+            &f.keeper,
+            "request_cancel_signature",
+            json!({"order_id": "9007199254740991"}),
+        )
+        .await?;
+    verify_request_digest(&request(&result));
+    assert_eq!(request(&result)["payload"]["action"]["cancels"][0]["a"], 4);
+    assert!(request(&result)["payload"]["nonce"].as_u64().unwrap() > first_nonce);
+    result.into_result()?;
+    let result = f
+        .call(
+            &f.owner,
+            "request_evm_withdrawal",
+            json!({"recipient": EVM, "amount": "1000001"}),
+        )
+        .await?;
+    verify_request_digest(&request(&result));
+    assert_eq!(request(&result)["payload"]["action"]["amount"], "1.000001");
+    assert_eq!(request(&result)["payload"]["action"]["destination"], EVM);
+    result.into_result()?;
+    Ok(())
+}
+#[tokio::test]
+async fn sandbox_pause_invalidates_all_nonces_confirmation_failure_and_expiry() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    let r1 = f.order(BASE, false).await?;
+    let n1 = request(&r1)["payload"]["nonce"].clone();
+    r1.into_result()?;
+    let r2 = f
+        .call(
+            &f.keeper,
+            "request_cancel_signature",
+            json!({"order_id": "7"}),
+        )
+        .await?;
+    let n2 = request(&r2)["payload"]["nonce"].clone();
+    r2.into_result()?;
+    let result = f
+        .call(&f.owner, "set_paused", json!({"paused": true}))
+        .await?;
+    let r = request(&result);
+    verify_request_digest(&r);
+    assert_eq!(r["payload"]["action"]["type"], "noop");
+    assert_eq!(r["payload"]["nonce"], n1);
+    result.into_result()?;
+    assert_eq!(f.state().await?["pause_complete"], false);
+    rejects(
+        f.call(&f.owner, "set_paused", json!({"paused": false}))
+            .await?,
+        "ERR_PAUSE_INCOMPLETE",
+    );
+    rejects(
+        f.call(
+            &f.keeper,
+            "report_invalidation",
+            json!({"nonce": n1.as_u64().unwrap().to_string(), "accepted": true}),
+        )
+        .await?,
+        "ERR_CALLER_NOT_OWNER",
+    );
+    f.call(
+        &f.owner,
+        "report_invalidation",
+        json!({"nonce": n1.as_u64().unwrap().to_string(), "accepted": false}),
+    )
+    .await?
+    .into_result()?;
+    let retry = f
+        .call(&f.owner, "request_next_invalidation", json!({}))
+        .await?;
+    assert_eq!(request(&retry)["payload"]["nonce"], n1);
+    retry.into_result()?;
+    f.call(
+        &f.owner,
+        "report_invalidation",
+        json!({"nonce": n1.as_u64().unwrap().to_string(), "accepted": true}),
+    )
+    .await?
+    .into_result()?;
+    let next = f
+        .call(&f.owner, "request_next_invalidation", json!({}))
+        .await?;
+    assert_eq!(request(&next)["payload"]["nonce"], n2);
+    next.into_result()?;
+    assert_eq!(f.state().await?["pause_complete"], false);
+    let expiry = r["payload"]["expiresAfter"].as_u64().unwrap();
+    // The second nonce may expire slightly later than the first.
+    f.advance_past_ms(expiry + 10_000).await?;
+    f.call(&f.owner, "set_paused", json!({"paused": false}))
+        .await?
+        .into_result()?;
+    assert_eq!(f.state().await?["pause_complete"], true);
+    assert_eq!(f.state().await?["signed_short_size"], BASE.to_string());
+    Ok(())
+}
+#[tokio::test]
+async fn sandbox_failed_signing_budget_exhaustion_preserves_owner_emergency() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.order(BASE, false).await?.into_result()?;
+    f.signer
+        .call("set_mode")
+        .args_json(json!({"mode": 1}))
+        .transact()
+        .await?
+        .into_result()?;
+    for _ in 0..7 {
+        let r = f
+            .call(
+                &f.keeper,
+                "request_cancel_signature",
+                json!({"order_id": "0"}),
+            )
+            .await?;
+        assert!(!r.json::<bool>()?);
+    }
+    rejects(
+        f.call(
+            &f.keeper,
+            "request_cancel_signature",
+            json!({"order_id": "0"}),
+        )
+        .await?,
+        "ERR_KEEPER_WINDOW_LIMIT",
+    );
+    f.signer
+        .call("set_mode")
+        .args_json(json!({"mode": 0}))
+        .transact()
+        .await?
+        .into_result()?;
+    f.call(
+        &f.owner,
+        "emergency_reduce",
+        json!({"size": BASE.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    f.call(&f.owner, "set_paused", json!({"paused": true}))
+        .await?
+        .into_result()?;
+    assert_eq!(f.state().await?["paused"], true);
+    Ok(())
+}
+#[tokio::test]
+async fn sandbox_settlement_releases_backing_and_opening_capacity_after_expiry() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.owner
+        .call(f.contract.id(), "test_only_set_spot_balance")
+        .args_json(json!({"amount": BASE.to_string()}))
+        .transact()
+        .await?
+        .into_result()?;
+    let open = f.order(BASE, false).await?;
+    let expiry = request(&open)["payload"]["expiresAfter"].as_u64().unwrap();
+    open.into_result()?;
+    f.order(BASE, true).await?.into_result()?;
+    assert_eq!(f.state().await?["signed_short_size"], BASE.to_string());
+    rejects(
+        f.call(
+            &f.owner,
+            "settle_position",
+            json!({"short_size": "0", "observed_at_ms": expiry.to_string()}),
+        )
+        .await?,
+        "ERR_SETTLEMENT_FRESHNESS",
+    );
+    f.advance_past_ms(expiry).await?;
+    let block = f.worker.view_block().await?;
+    let observed = block.timestamp() / 1_000_000;
+    rejects(
+        f.call(
+            &f.keeper,
+            "settle_position",
+            json!({"short_size": "0", "observed_at_ms": observed.to_string()}),
+        )
+        .await?,
+        "ERR_CALLER_NOT_OWNER",
+    );
+    f.call(
+        &f.owner,
+        "settle_position",
+        json!({"short_size": "0", "observed_at_ms": observed.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    assert_eq!(f.state().await?["signed_short_size"], "0");
+    assert_eq!(f.state().await?["daily_usage"], "5050000");
+    f.order(BASE, false).await?.into_result()?;
+    assert_eq!(f.state().await?["signed_short_size"], BASE.to_string());
+    assert_eq!(f.state().await?["lifetime_opened"], (2 * BASE).to_string());
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_partial_settlement_releases_only_matching_spot() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.owner
+        .call(f.contract.id(), "test_only_set_spot_balance")
+        .args_json(json!({"amount": (2 * BASE).to_string()}))
+        .transact()
+        .await?
+        .into_result()?;
+    let open = f.order(2 * BASE, false).await?;
+    let expiry = request(&open)["payload"]["expiresAfter"].as_u64().unwrap();
+    open.into_result()?;
+    f.order(BASE, true).await?.into_result()?;
+    rejects(
+        f.call(
+            &f.owner,
+            "withdraw_spot",
+            json!({"recipient": f.owner.id(), "amount": BASE.to_string()}),
+        )
+        .await?,
+        "ERR_ENCUMBERED_SPOT",
+    );
+    f.advance_past_ms(expiry).await?;
+    let observed = f.worker.view_block().await?.timestamp() / 1_000_000;
+    f.call(
+        &f.owner,
+        "settle_position",
+        json!({"short_size": BASE.to_string(), "observed_at_ms": observed.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    f.call(
+        &f.owner,
+        "withdraw_spot",
+        json!({"recipient": f.owner.id(), "amount": BASE.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    let state = f.state().await?;
+    assert_eq!(state["spot_balance"], BASE.to_string());
+    assert_eq!(state["signed_short_size"], BASE.to_string());
+    assert_eq!(state["daily_usage"], "10100000");
+    rejects(
+        f.call(
+            &f.owner,
+            "withdraw_spot",
+            json!({"recipient": f.owner.id(), "amount": "1"}),
+        )
+        .await?,
+        "ERR_ENCUMBERED_SPOT",
+    );
+    Ok(())
+}
+#[tokio::test]
+async fn sandbox_outstanding_limit_and_failed_transaction_do_not_advance_nonce() -> Result<()> {
+    let f = Fixture::with_signing_limits(
+        0,
+        json!({
+            "keeper_per_block": 1, "keeper_per_window": 2, "keeper_outstanding": 1,
+            "owner_per_window": 16, "window_ms": 60000, "max_nonce_ahead_ms": 1000
+        }),
+    )
+    .await?;
+    f.order(BASE, false).await?.into_result()?;
+    let nonce = f.state().await?["last_nonce"].clone();
+    rejects(
+        f.call(
+            &f.keeper,
+            "request_cancel_signature",
+            json!({"order_id": "1"}),
+        )
+        .await?,
+        "ERR_KEEPER_OUTSTANDING_LIMIT",
+    );
+    assert_eq!(f.state().await?["last_nonce"], nonce);
+    let pause = f
+        .call(&f.owner, "set_paused", json!({"paused": true}))
+        .await?;
+    assert_eq!(
+        request(&pause)["payload"]["nonce"]
+            .as_u64()
+            .unwrap()
+            .to_string(),
+        nonce.as_str().unwrap()
+    );
+    pause.into_result()?;
+    f.call(
+        &f.owner,
+        "emergency_reduce",
+        json!({"size": BASE.to_string()}),
+    )
+    .await?
+    .into_result()?;
+    assert_eq!(f.state().await?["paused"], true);
     Ok(())
 }

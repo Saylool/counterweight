@@ -12,7 +12,6 @@ crate-type = ["cdylib", "rlib"]
 default = []
 # TEST ONLY: never enable either feature for a custody contract.
 test-utils = []
-day1-placeholder-digest = []
 sandbox-tests = ["dep:near-workspaces", "dep:tokio", "dep:anyhow"]
 
 [dependencies]

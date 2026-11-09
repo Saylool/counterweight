@@ -10,6 +10,43 @@ const BASE: u128 = 10u128.pow(24); // wNEAR yocto base units
 const DAY: u64 = 86_400;
 const SIGN_GAS: Gas = Gas::from_tgas(250);
 const CALLBACK_GAS: Gas = Gas::from_tgas(30);
+const LIFETIME_MS: u64 = 60_000;
+
+/// Separate owner emergency capacity is never charged to a keeper/public caller.
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug)]
+pub struct SigningLimits {
+    pub keeper_per_block: u32,
+    pub keeper_per_window: u32,
+    pub keeper_outstanding: u32,
+    pub owner_per_window: u32,
+    pub window_ms: u64,
+    pub max_nonce_ahead_ms: u64,
+}
+impl Default for SigningLimits {
+    fn default() -> Self {
+        Self {
+            keeper_per_block: 2,
+            keeper_per_window: 8,
+            keeper_outstanding: 8,
+            owner_per_window: 16,
+            window_ms: 60_000,
+            max_nonce_ahead_ms: 1_000,
+        }
+    }
+}
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug)]
+pub struct Authorization {
+    pub nonce: u64,
+    pub expires_after: u64,
+    pub keeper: bool,
+    pub discarded: bool,
+    pub invalidation_requested: bool,
+    pub invalidation_signed: bool,
+    /// Owner-attested venue acceptance; never used as a position/fill proof.
+    pub invalidation_confirmed: bool,
+}
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug)]
@@ -31,21 +68,46 @@ pub struct OrderParams {
     pub reduce_only: bool,
 }
 
-/// Field order is intentional; the future MessagePack encoder must preserve it.
+/// SDK field order; the codec rebuilds it explicitly.
 #[near(serializers = [json])]
 #[derive(Clone, Debug)]
 pub struct HlOrder {
-    pub a: u32,
+    pub a: u64,
     pub b: bool,
     pub p: String,
     pub s: String,
     pub r: bool,
     pub t: OrderType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub c: Option<String>,
 }
 #[near(serializers = [json])]
 #[derive(Clone, Debug)]
-pub struct OrderType {
-    pub limit: LimitType,
+#[serde(untagged)]
+pub enum OrderType {
+    Limit { limit: LimitType },
+    Trigger { trigger: TriggerType },
+}
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct TriggerType {
+    #[serde(rename = "isMarket")]
+    pub is_market: bool,
+    #[serde(rename = "triggerPx")]
+    pub trigger_px: String,
+    pub tpsl: String,
+}
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct Cancel {
+    pub a: u64,
+    pub o: u64,
+}
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct CancelCloid {
+    pub asset: u64,
+    pub cloid: String,
 }
 #[near(serializers = [json])]
 #[derive(Clone, Debug)]
@@ -61,6 +123,12 @@ pub enum HlAction {
         orders: Vec<HlOrder>,
         grouping: String,
     },
+    #[serde(rename = "cancel")]
+    Cancel { cancels: Vec<Cancel> },
+    #[serde(rename = "cancelByCloid")]
+    CancelByCloid { cancels: Vec<CancelCloid> },
+    #[serde(rename = "noop")]
+    Noop,
     #[serde(rename = "withdraw3")]
     Withdraw {
         #[serde(rename = "hyperliquidChain")]
@@ -88,6 +156,8 @@ pub enum OperationKind {
     Reduce,
     EvmWithdrawal,
     SpotWithdrawal,
+    Cancel,
+    Invalidation,
 }
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq)]
@@ -102,6 +172,11 @@ pub struct PendingOperation {
     pub kind: OperationKind,
     pub amount: U128,
     pub phase: Phase,
+    pub nonce: u64,
+    pub expires_after: Option<u64>,
+    pub keeper: bool,
+    /// Local callback deadline; withdraw3 has no venue expiresAfter support.
+    pub callback_deadline_ms: u64,
 }
 
 #[near(serializers = [json])]
@@ -118,7 +193,7 @@ pub struct StateView {
     pub wnear_account: AccountId,
     pub limits: Limits,
     pub spot_balance: U128,
-    /// Lifetime signed/reserved opens, NEVER decreased by a close signature.
+    /// Signed/reserved exposure bound; only expiry-gated owner settlement decreases it.
     pub signed_short_size: U128,
     pub daily_usage: U128,
     pub usage_day: u64,
@@ -129,6 +204,12 @@ pub struct StateView {
     pub heartbeat_timeout_seconds: u64,
     pub reference_price: U128,
     pub reference_price_timestamp: U64,
+    pub last_nonce: U64,
+    pub signing_limits: SigningLimits,
+    pub outstanding: Vec<Authorization>,
+    pub pause_complete: bool,
+    pub lifetime_opened: U128,
+    pub last_open_expiry: U64,
 }
 
 #[near(contract_state)]
@@ -156,6 +237,13 @@ pub struct Policy {
     heartbeat_timeout_seconds: u64,
     reference_price: u128,
     reference_price_timestamp: u64,
+    signing_limits: SigningLimits,
+    keeper_requests: Vec<(u64, u64)>,
+    owner_requests: Vec<u64>,
+    last_public_request: Option<u64>,
+    outstanding: Vec<Authorization>,
+    lifetime_opened: u128,
+    last_open_expiry: u64,
 }
 
 #[near]
@@ -173,6 +261,7 @@ impl Policy {
         limits: Limits,
         heartbeat_timeout_seconds: u64,
         reference_price: U128,
+        signing_limits: Option<SigningLimits>,
     ) -> Self {
         require!(
             env::predecessor_account_id() == owner,
@@ -186,7 +275,9 @@ impl Policy {
         require!(is_test_account(&signer_account), "ERR_TESTNET_SIGNER");
         require!(is_test_account(&wnear_account), "ERR_TESTNET_WNEAR");
         require!(
-            keeper != env::current_account_id() && owner != env::current_account_id(),
+            keeper != env::current_account_id()
+                && owner != env::current_account_id()
+                && keeper != owner,
             "ERR_SELF_AUTHORITY"
         );
         require!(
@@ -200,7 +291,16 @@ impl Policy {
             heartbeat_timeout_seconds > 0 && reference_price.0 > 0,
             "ERR_CONFIG"
         );
+        let signing_limits = signing_limits.unwrap_or_default();
+        validate_signing_limits(&signing_limits);
         Self {
+            signing_limits,
+            keeper_requests: vec![],
+            owner_requests: vec![],
+            last_public_request: None,
+            outstanding: vec![],
+            lifetime_opened: 0,
+            last_open_expiry: 0,
             owner,
             keeper,
             asset_index,
@@ -250,6 +350,17 @@ impl Policy {
             heartbeat_timeout_seconds: self.heartbeat_timeout_seconds,
             reference_price: U128(self.reference_price),
             reference_price_timestamp: U64(self.reference_price_timestamp),
+            last_nonce: U64(self.last_nonce),
+            signing_limits: self.signing_limits.clone(),
+            outstanding: self
+                .outstanding
+                .iter()
+                .filter(|a| a.expires_after >= env::block_timestamp_ms())
+                .cloned()
+                .collect(),
+            pause_complete: self.pause_complete(),
+            lifetime_opened: U128(self.lifetime_opened),
+            last_open_expiry: U64(self.last_open_expiry),
         }
     }
 
@@ -267,7 +378,9 @@ impl Policy {
             "ERR_EXISTING_EXPOSURE"
         );
         require!(
-            keeper != env::current_account_id() && heartbeat_timeout_seconds > 0,
+            keeper != env::current_account_id()
+                && keeper != self.owner
+                && heartbeat_timeout_seconds > 0,
             "ERR_CONFIG"
         );
         self.keeper = keeper;
@@ -292,10 +405,172 @@ impl Policy {
         );
     }
 
-    pub fn set_paused(&mut self, paused: bool) {
+    /// Pause queues every unexpired L1 nonce. One signer call fits in 300 Tgas;
+    /// continue with request_next_invalidation for the rest of the bounded queue.
+    #[payable]
+    pub fn set_paused(&mut self, paused: bool) -> PromiseOrValue<bool> {
         self.assert_owner();
+        if !paused {
+            require!(self.pause_complete(), "ERR_PAUSE_INCOMPLETE");
+        }
         self.paused = paused;
-        event("pause", near_sdk::serde_json::json!({"paused": paused}));
+        self.prune();
+        if paused {
+            for a in &mut self.outstanding {
+                if !a.invalidation_confirmed {
+                    a.discarded = true;
+                    event(
+                        "invalidation_required",
+                        near_sdk::serde_json::json!({"nonce": U64(a.nonce), "expiresAfter": U64(a.expires_after)}),
+                    );
+                }
+            }
+            if self.pending.as_ref().is_some_and(|p| p.keeper) {
+                self.pending = None;
+            }
+        }
+        event(
+            "pause",
+            near_sdk::serde_json::json!({"paused": paused, "complete": self.pause_complete()}),
+        );
+        if paused
+            && self.owner_requests.len() < self.signing_limits.owner_per_window as usize
+            && self
+                .pending
+                .as_ref()
+                .is_none_or(|p| !matches!(p.kind, OperationKind::SpotWithdrawal))
+            && self
+                .outstanding
+                .iter()
+                .any(|a| a.discarded && !a.invalidation_requested && !a.invalidation_confirmed)
+        {
+            return PromiseOrValue::Promise(self.request_next_invalidation());
+        }
+        PromiseOrValue::Value(self.pause_complete())
+    }
+
+    #[payable]
+    pub fn request_next_invalidation(&mut self) -> Promise {
+        self.assert_owner();
+        require!(self.paused, "ERR_NOT_PAUSED");
+        self.assert_signing_resources();
+        self.prune();
+        self.clear_signing_slot();
+        let index = self
+            .outstanding
+            .iter()
+            .position(|a| a.discarded && !a.invalidation_requested && !a.invalidation_confirmed)
+            .expect("ERR_NO_INVALIDATION");
+        let a = self.outstanding[index].clone();
+        self.charge_signing(false, false);
+        // Consume the original nonce, never a fresh nonce. Do not change last_nonce.
+        let payload = SigningPayload {
+            action: HlAction::Noop,
+            nonce: a.nonce,
+            expires_after: Some(a.expires_after),
+        };
+        let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
+        self.outstanding[index].invalidation_requested = true;
+        self.start_signing(payload, digest, OperationKind::Invalidation, 0)
+    }
+
+    /// Trusted owner relay observation, not a cryptographic Hyperliquid proof.
+    /// Does not release exposure. Failure enables a bounded retry.
+    pub fn report_invalidation(&mut self, nonce: U64, accepted: bool) {
+        self.assert_owner();
+        let a = self
+            .outstanding
+            .iter_mut()
+            .find(|a| a.nonce == nonce.0)
+            .expect("ERR_NONCE");
+        require!(
+            a.invalidation_requested && a.invalidation_signed,
+            "ERR_INVALIDATION_NOT_SIGNED"
+        );
+        if accepted {
+            a.invalidation_confirmed = true;
+        } else {
+            a.invalidation_requested = false;
+            a.invalidation_signed = false;
+        }
+        event(
+            "invalidation_report",
+            near_sdk::serde_json::json!({"nonce": nonce, "accepted": accepted, "source": "owner_attestation"}),
+        );
+    }
+
+    /// A signature is not a fill. After all opens expire, the owner can attest
+    /// a fresh observed position to release backing / begin the next risk epoch.
+    /// Keeper and signing callbacks can never report fills or recycle budget.
+    pub fn settle_position(&mut self, short_size: U128, observed_at_ms: U64) {
+        self.assert_owner();
+        self.expire_pending();
+        self.assert_idle();
+        let ms = env::block_timestamp_ms();
+        require!(
+            ms > self.last_open_expiry
+                && observed_at_ms.0 > self.last_open_expiry
+                && observed_at_ms.0 <= ms
+                && ms - observed_at_ms.0 <= 30_000,
+            "ERR_SETTLEMENT_FRESHNESS"
+        );
+        require!(
+            short_size.0 <= self.signed_short_size
+                && short_size
+                    .0
+                    .is_multiple_of(10u128.pow(24 - self.size_decimals as u32)),
+            "ERR_SETTLEMENT_SIZE"
+        );
+        let released = self.signed_short_size - short_size.0;
+        self.signed_short_size = short_size.0;
+        event(
+            "position_settlement",
+            near_sdk::serde_json::json!({"short_size": short_size, "released": U128(released), "observed_at_ms": observed_at_ms, "source": "owner_attestation", "daily_budget_released": false}),
+        );
+    }
+
+    /// Anyone may clear an expired L1 callback slot; reservations survive.
+    pub fn expire_pending_signature(&mut self) {
+        self.expire_pending();
+    }
+
+    #[payable]
+    pub fn emergency_reduce(&mut self, size: U128) -> Promise {
+        self.assert_owner();
+        self.clear_signing_slot();
+        self.request_order(OrderParams {
+            asset_index: self.asset_index,
+            size,
+            reduce_only: true,
+        })
+    }
+
+    /// Typed, fixed-market cancellation only. No arbitrary action/nonce/vault ABI.
+    #[payable]
+    pub fn request_cancel_signature(&mut self, order_id: U64) -> Promise {
+        self.assert_keeper();
+        require!(!self.paused, "ERR_PAUSED");
+        self.expire_pending();
+        self.assert_idle();
+        self.assert_signing_resources();
+        self.charge_signing(true, false);
+        let nonce = self.next_nonce();
+        let payload = SigningPayload {
+            action: HlAction::Cancel {
+                cancels: vec![Cancel {
+                    a: u64::from(self.asset_index),
+                    o: order_id.0,
+                }],
+            },
+            nonce,
+            expires_after: Some(
+                env::block_timestamp_ms()
+                    .checked_add(LIFETIME_MS)
+                    .expect("ERR_NONCE_OVERFLOW"),
+            ),
+        };
+        let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
+        self.start_signing(payload, digest, OperationKind::Cancel, 0)
     }
 
     pub fn heartbeat(&mut self) {
@@ -353,6 +628,12 @@ impl Policy {
             now().saturating_sub(self.last_keeper_heartbeat) >= self.heartbeat_timeout_seconds,
             "ERR_HEARTBEAT_ACTIVE"
         );
+        self.expire_pending();
+        // Public callers can preempt a keeper, but cannot discard an owner's
+        // fresh emergency/invalidation callback. Its local deadline is bounded.
+        if self.pending.as_ref().is_some_and(|p| p.keeper) {
+            self.clear_signing_slot();
+        }
         self.request_order(OrderParams {
             asset_index: self.asset_index,
             size: U128(self.signed_short_size),
@@ -364,6 +645,7 @@ impl Policy {
     #[payable]
     pub fn request_evm_withdrawal(&mut self, recipient: String, amount: U128) -> Promise {
         self.assert_owner();
+        self.expire_pending();
         self.assert_idle();
         require!(
             recipient.to_ascii_lowercase() == self.evm_recipient,
@@ -371,6 +653,7 @@ impl Policy {
         );
         require!(amount.0 > 0, "ERR_AMOUNT");
         self.assert_signing_resources();
+        self.charge_signing(false, false);
         let nonce = self.next_nonce();
         let payload = SigningPayload {
             action: HlAction::Withdraw {
@@ -416,33 +699,50 @@ impl Policy {
 
     #[private]
     pub fn on_signature(&mut self, operation_id: U64) -> bool {
-        let op = self.assert_callback(operation_id.0);
+        require!(
+            env::predecessor_account_id() == env::current_account_id(),
+            "ERR_PRIVATE_CALLBACK"
+        );
+        require!(env::promise_results_count() == 1, "ERR_CALLBACK_RESULTS");
+        // Detached, expired or pause-discarded callbacks cannot clear a newer slot.
+        let Some(op) = self.pending.clone().filter(|p| p.id == operation_id.0) else {
+            event(
+                "discarded_callback",
+                near_sdk::serde_json::json!({"id": operation_id}),
+            );
+            return false;
+        };
         require!(
             !matches!(op.kind, OperationKind::SpotWithdrawal),
             "ERR_CALLBACK_KIND"
         );
-        match env::promise_result_checked(0, 1024) {
-            Ok(bytes) => {
-                if let Ok(signature) = near_sdk::serde_json::from_slice::<MpcSignature>(&bytes)
-                    && signature.valid_shape()
-                {
-                    event(
-                        "signature",
-                        near_sdk::serde_json::json!({"id": operation_id, "signature": signature}),
-                    );
-                    if matches!(op.kind, OperationKind::EvmWithdrawal) {
-                        event(
-                            "withdrawal",
-                            near_sdk::serde_json::json!({"id": operation_id, "recipient": self.evm_recipient, "amount": op.amount, "status": "signed"}),
-                        );
-                    }
-                    self.pending = None;
-                    return true;
-                }
-                self.mark_uncertain(operation_id.0, "malformed_signer_response");
-            }
-            Err(_) => self.mark_uncertain(operation_id.0, "signer_receipt_failed_or_oversized"),
+        if env::block_timestamp_ms() > op.callback_deadline_ms || (op.keeper && self.paused) {
+            self.mark_uncertain(op.id, "expired_or_paused");
+            return false;
         }
+        if let Ok(bytes) = env::promise_result_checked(0, 1024)
+            && let Ok(signature) = near_sdk::serde_json::from_slice::<MpcSignature>(&bytes)
+            && signature.valid_shape()
+        {
+            if matches!(op.kind, OperationKind::Invalidation)
+                && let Some(a) = self.outstanding.iter_mut().find(|a| a.nonce == op.nonce)
+            {
+                a.invalidation_signed = true;
+            }
+            event(
+                "signature",
+                near_sdk::serde_json::json!({"id": operation_id, "nonce": U64(op.nonce), "expiresAfter": op.expires_after.map(U64), "signature": signature}),
+            );
+            if matches!(op.kind, OperationKind::EvmWithdrawal) {
+                event(
+                    "withdrawal",
+                    near_sdk::serde_json::json!({"id": operation_id, "recipient": self.evm_recipient, "amount": op.amount, "status": "signed"}),
+                );
+            }
+            self.pending = None;
+            return true;
+        }
+        self.mark_uncertain(op.id, "signer_receipt_failed_malformed_or_oversized");
         false
     }
 
@@ -466,26 +766,6 @@ impl Policy {
             near_sdk::serde_json::json!({"id": operation_id, "status": if success { "completed" } else { "failed" }, "recipient": self.owner, "amount": op.amount}),
         );
         success
-    }
-
-    /// Acknowledges uncertain MPC outcome; never refunds signed size, daily budget,
-    /// or cooldown. Cannot clear a callback still in flight or a token withdrawal.
-    pub fn acknowledge_failed_signature(&mut self, operation_id: U64) {
-        self.assert_owner();
-        let op = self.pending.as_ref().expect("ERR_NO_PENDING");
-        require!(
-            op.id == operation_id.0 && op.phase == Phase::Uncertain,
-            "ERR_PENDING_PHASE"
-        );
-        require!(
-            !matches!(op.kind, OperationKind::SpotWithdrawal),
-            "ERR_CALLBACK_KIND"
-        );
-        self.pending = None;
-        event(
-            "reconciliation",
-            near_sdk::serde_json::json!({"id": operation_id, "budget_released": false}),
-        );
     }
 }
 
@@ -513,7 +793,96 @@ impl Policy {
         require!(env::prepaid_gas() >= Gas::from_tgas(300), "ERR_GAS");
     }
     fn next_nonce(&self) -> u64 {
-        (env::block_timestamp_ms()).max(self.last_nonce.checked_add(1).expect("ERR_NONCE_OVERFLOW"))
+        let ms = env::block_timestamp_ms();
+        let nonce = ms.max(self.last_nonce.checked_add(1).expect("ERR_NONCE_OVERFLOW"));
+        require!(
+            nonce - ms <= self.signing_limits.max_nonce_ahead_ms,
+            "ERR_NONCE_DRIFT"
+        );
+        nonce
+    }
+    fn pause_complete(&self) -> bool {
+        !self.outstanding.iter().any(|a| {
+            a.discarded && !a.invalidation_confirmed && env::block_timestamp_ms() <= a.expires_after
+        })
+    }
+    fn prune(&mut self) {
+        let ms = env::block_timestamp_ms();
+        let window = self.signing_limits.window_ms;
+        self.outstanding.retain(|a| a.expires_after >= ms);
+        self.keeper_requests
+            .retain(|(t, _)| ms.saturating_sub(*t) < window);
+        self.owner_requests
+            .retain(|t| ms.saturating_sub(*t) < window);
+    }
+    fn charge_signing(&mut self, keeper: bool, public: bool) {
+        self.prune();
+        let ms = env::block_timestamp_ms();
+        require!(self.outstanding.len() < 32, "ERR_OUTSTANDING_CAP");
+        if keeper {
+            require!(
+                self.keeper_requests
+                    .iter()
+                    .filter(|(_, h)| *h == env::block_height())
+                    .count()
+                    < self.signing_limits.keeper_per_block as usize,
+                "ERR_KEEPER_BLOCK_LIMIT"
+            );
+            require!(
+                self.keeper_requests.len() < self.signing_limits.keeper_per_window as usize,
+                "ERR_KEEPER_WINDOW_LIMIT"
+            );
+            require!(
+                self.outstanding.iter().filter(|a| a.keeper).count()
+                    < self.signing_limits.keeper_outstanding as usize,
+                "ERR_KEEPER_OUTSTANDING_LIMIT"
+            );
+            self.keeper_requests.push((ms, env::block_height()));
+        } else if public {
+            require!(
+                self.last_public_request
+                    .is_none_or(|t| ms.saturating_sub(t) >= self.signing_limits.window_ms),
+                "ERR_PUBLIC_RATE_LIMIT"
+            );
+            self.last_public_request = Some(ms);
+        } else {
+            require!(
+                self.owner_requests.len() < self.signing_limits.owner_per_window as usize,
+                "ERR_OWNER_WINDOW_LIMIT"
+            );
+            self.owner_requests.push(ms);
+        }
+    }
+    fn expire_pending(&mut self) {
+        if self.pending.as_ref().is_some_and(|p| {
+            !matches!(p.kind, OperationKind::SpotWithdrawal)
+                && env::block_timestamp_ms() > p.callback_deadline_ms
+        }) {
+            let id = self.pending.as_ref().unwrap().id;
+            self.mark_uncertain(id, "callback_timeout_expired");
+        }
+        self.prune();
+    }
+    fn clear_signing_slot(&mut self) {
+        if let Some(p) = &self.pending {
+            require!(
+                !matches!(p.kind, OperationKind::SpotWithdrawal),
+                "ERR_PENDING_OPERATION"
+            );
+            // Keep its authorization and all reservations. A delayed signature is
+            // never returned by this contract after the operation is detached.
+            event(
+                "detached_callback",
+                near_sdk::serde_json::json!({"id": U64(p.id)}),
+            );
+            if matches!(p.kind, OperationKind::Invalidation)
+                && let Some(a) = self.outstanding.iter_mut().find(|a| a.nonce == p.nonce)
+            {
+                a.invalidation_requested = false;
+                a.invalidation_signed = false;
+            }
+            self.pending = None;
+        }
     }
     fn begin(&mut self, kind: OperationKind, amount: u128) -> u64 {
         self.assert_idle();
@@ -526,10 +895,19 @@ impl Policy {
             kind,
             amount: U128(amount),
             phase: Phase::AwaitingCallback,
+            nonce: 0,
+            expires_after: None,
+            keeper: false,
+            callback_deadline_ms: 0,
         });
         self.operation_id
     }
     fn request_order(&mut self, order: OrderParams) -> Promise {
+        let keeper = env::predecessor_account_id() == self.keeper;
+        if keeper {
+            require!(!self.paused, "ERR_PAUSED");
+        }
+        self.expire_pending();
         self.assert_idle();
         self.assert_signing_resources();
         require!(order.asset_index == self.asset_index, "ERR_MARKET");
@@ -597,27 +975,38 @@ impl Policy {
                 );
             }
         }
+        self.charge_signing(
+            keeper,
+            !keeper && env::predecessor_account_id() != self.owner,
+        );
         let nonce = self.next_nonce();
         let payload = SigningPayload {
             action: HlAction::Order {
                 orders: vec![HlOrder {
-                    a: self.asset_index,
+                    a: u64::from(self.asset_index),
                     b: order.reduce_only,
                     p: decimal(price, 6),
                     s: decimal(order.size.0, 24),
                     r: order.reduce_only,
-                    t: OrderType {
+                    t: OrderType::Limit {
                         limit: LimitType { tif: "Ioc".into() },
                     },
+                    c: None,
                 }],
                 grouping: "na".into(),
             },
             nonce,
-            expires_after: Some(nonce.checked_add(60_000).expect("ERR_NONCE_OVERFLOW")),
+            expires_after: Some(
+                env::block_timestamp_ms()
+                    .checked_add(LIFETIME_MS)
+                    .expect("ERR_NONCE_OVERFLOW"),
+            ),
         };
         let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
         if !order.reduce_only {
             self.signed_short_size = add(self.signed_short_size, order.size.0);
+            self.lifetime_opened = add(self.lifetime_opened, order.size.0);
+            self.last_open_expiry = payload.expires_after.unwrap();
             if self.usage_day != now() / DAY {
                 self.daily_usage = 0;
                 self.usage_day = now() / DAY;
@@ -643,11 +1032,35 @@ impl Policy {
         kind: OperationKind,
         amount: u128,
     ) -> Promise {
+        let invalidation = matches!(kind, OperationKind::Invalidation);
+        let keeper = env::predecessor_account_id() == self.keeper && !invalidation;
         let id = self.begin(kind, amount);
-        self.last_nonce = payload.nonce;
+        let op = self.pending.as_mut().unwrap();
+        op.nonce = payload.nonce;
+        op.expires_after = payload.expires_after;
+        op.keeper = keeper;
+        op.callback_deadline_ms = payload.expires_after.unwrap_or_else(|| {
+            env::block_timestamp_ms()
+                .checked_add(LIFETIME_MS)
+                .expect("ERR_NONCE_OVERFLOW")
+        });
+        if !invalidation {
+            self.last_nonce = payload.nonce;
+            if let Some(expiry) = payload.expires_after {
+                self.outstanding.push(Authorization {
+                    nonce: payload.nonce,
+                    expires_after: expiry,
+                    keeper,
+                    discarded: false,
+                    invalidation_requested: false,
+                    invalidation_signed: false,
+                    invalidation_confirmed: false,
+                });
+            }
+        }
         event(
             "request",
-            near_sdk::serde_json::json!({"id": U64(id), "payload": payload, "digest": hex(&digest), "digest_implementation": hl_digest::PLACEHOLDER_NAME}),
+            near_sdk::serde_json::json!({"id": U64(id), "payload": payload, "digest": hex(&digest), "digest_implementation": hl_digest::IMPLEMENTATION}),
         );
         Promise::new(self.signer_account.clone()).function_call(
             "sign", json_bytes(near_sdk::serde_json::json!({"request": {"payload_v2": {"Ecdsa": hex(&digest)}, "path": self.derivation_path, "domain_id": 0}})),
@@ -676,7 +1089,14 @@ impl Policy {
         op
     }
     fn mark_uncertain(&mut self, id: u64, reason: &str) {
-        self.pending.as_mut().expect("ERR_NO_PENDING").phase = Phase::Uncertain;
+        if let Some(p) = &self.pending
+            && matches!(p.kind, OperationKind::Invalidation)
+            && let Some(a) = self.outstanding.iter_mut().find(|a| a.nonce == p.nonce)
+        {
+            a.invalidation_requested = false;
+            a.invalidation_signed = false;
+        }
+        self.pending = None;
         event(
             "failure",
             near_sdk::serde_json::json!({"id": U64(id), "reason": reason, "budget_released": false}),
@@ -711,6 +1131,21 @@ impl MpcSignature {
             && self.s.scalar.bytes().all(|b| b.is_ascii_hexdigit())
             && self.recovery_id <= 1
     }
+}
+fn validate_signing_limits(l: &SigningLimits) {
+    require!(
+        l.keeper_per_block > 0
+            && l.keeper_per_block <= 4
+            && l.keeper_per_window > 0
+            && l.keeper_per_window <= 8
+            && l.keeper_outstanding > 0
+            && l.keeper_outstanding <= 8
+            && l.owner_per_window >= 10
+            && l.owner_per_window <= 16
+            && l.window_ms == 60_000
+            && l.max_nonce_ahead_ms <= 1_000,
+        "ERR_SIGNING_LIMITS"
+    );
 }
 fn validate_limits(l: &Limits) {
     require!(

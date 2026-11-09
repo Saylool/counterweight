@@ -1,6 +1,5 @@
 #![allow(unused_must_use)] // Promises are deliberately dropped to materialize mock receipts.
 use super::*;
-#[cfg(feature = "day1-placeholder-digest")]
 use near_sdk::test_utils::get_created_receipts;
 use near_sdk::test_utils::{VMContextBuilder, get_logs};
 use near_sdk::{PromiseResult, RuntimeFeesConfig, testing_env};
@@ -19,6 +18,7 @@ fn context(caller: &str, seconds: u64) -> VMContextBuilder {
         .predecessor_account_id(account(caller))
         .signer_account_id(account(caller))
         .block_timestamp(seconds * 1_000_000_000)
+        .block_height(seconds)
         .prepaid_gas(Gas::from_tgas(300))
         .attached_deposit(NearToken::from_yoctonear(1));
     b
@@ -50,6 +50,7 @@ fn policy() -> Policy {
         limits(),
         600,
         U128(5_000_000),
+        None,
     );
     at(TOKEN, 1000);
     p.ft_on_transfer(account(OWNER), U128(100 * BASE), String::new());
@@ -63,7 +64,6 @@ fn order(size: u128, reduce_only: bool) -> OrderParams {
         reduce_only,
     }
 }
-#[cfg(feature = "day1-placeholder-digest")]
 fn success(p: &mut Policy, seconds: u64) {
     let data = json_bytes(
         near_sdk::serde_json::json!({"big_r":{"affine_point":format!("02{}", "11".repeat(32))},"s":{"scalar":"22".repeat(32)},"recovery_id":0}),
@@ -281,16 +281,7 @@ fn pause_emits_nep297() {
     assert_eq!(event["data"][0]["paused"], true);
 }
 
-#[cfg(not(feature = "day1-placeholder-digest"))]
-#[test]
-#[should_panic(expected = "ERR_HL_DIGEST_NOT_IMPLEMENTED")]
-fn default_build_refuses_placeholder_signing() {
-    let mut p = policy();
-    p.request_order_signature(order(BASE, false));
-}
-
-#[cfg(feature = "day1-placeholder-digest")]
-mod placeholder {
+mod signing {
     use super::*;
     #[test]
     fn typed_ioc_price_band_and_mpc_request() {
@@ -353,11 +344,10 @@ mod placeholder {
     fn reductions_ignore_caps_cooldown_pause_and_stale_price() {
         let mut p = policy();
         p.signed_short_size = 100 * BASE;
-        p.paused = true;
         p.daily_usage = p.limits.per_day_notional_cap.0;
         p.last_increase = Some(5000);
-        at(KEEPER, 5000);
-        p.request_order_signature(order(100 * BASE, true));
+        at(OWNER, 5000);
+        p.emergency_reduce(U128(100 * BASE));
         success(&mut p, 5001);
         assert_eq!(p.signed_short_size, 100 * BASE);
         at(KEEPER, 5001);
@@ -382,17 +372,14 @@ mod placeholder {
         p.request_order_signature(order(BASE, true));
     }
     #[test]
-    fn failed_callback_retains_reservation_until_owner_ack() {
+    fn failed_callback_retains_reservation_without_owner_ack() {
         let mut p = policy();
         p.request_order_signature(order(BASE, false));
         callback(PromiseResult::Failed, 1001);
         assert!(!p.on_signature(U64(1)));
-        assert_eq!(p.pending.as_ref().unwrap().phase, Phase::Uncertain);
+        assert!(p.pending.is_none());
         assert_eq!(p.signed_short_size, BASE);
         assert_eq!(p.daily_usage, 5_050_000);
-        at(OWNER, 1002);
-        p.acknowledge_failed_signature(U64(1));
-        assert!(p.pending.is_none());
         at(KEEPER, 1060);
         p.request_order_signature(order(BASE, false));
         assert_eq!(p.operation_id, 2);
@@ -404,7 +391,7 @@ mod placeholder {
         p.request_order_signature(order(BASE, false));
         callback(PromiseResult::Successful(b"{}".to_vec()), 1001);
         assert!(!p.on_signature(U64(1)));
-        assert_eq!(p.pending.as_ref().unwrap().phase, Phase::Uncertain);
+        assert!(p.pending.is_none());
     }
     #[test]
     fn oversized_signature_callback_is_uncertain() {
@@ -412,17 +399,16 @@ mod placeholder {
         p.request_order_signature(order(BASE, false));
         callback(PromiseResult::Successful(vec![0; 2048]), 1001);
         assert!(!p.on_signature(U64(1)));
-        assert_eq!(p.pending.as_ref().unwrap().phase, Phase::Uncertain);
+        assert!(p.pending.is_none());
         assert_eq!(p.signed_short_size, BASE);
     }
     #[test]
-    #[should_panic(expected = "ERR_NO_PENDING")]
     fn completed_callback_cannot_replay() {
         let mut p = policy();
         p.request_order_signature(order(BASE, false));
         success(&mut p, 1001);
         callback(PromiseResult::Failed, 1002);
-        p.on_signature(U64(1));
+        assert!(!p.on_signature(U64(1)));
     }
     #[test]
     #[should_panic(expected = "ERR_PENDING_OPERATION")]
@@ -433,20 +419,12 @@ mod placeholder {
         p.withdraw_spot(account(OWNER), U128(BASE));
     }
     #[test]
-    #[should_panic(expected = "ERR_CALLBACK_ID")]
     fn stale_callback_id_rejected() {
         let mut p = policy();
         p.request_order_signature(order(BASE, false));
         callback(PromiseResult::Failed, 1001);
-        p.on_signature(U64(0));
-    }
-    #[test]
-    #[should_panic(expected = "ERR_PENDING_PHASE")]
-    fn cannot_ack_inflight_operation() {
-        let mut p = policy();
-        p.request_order_signature(order(BASE, false));
-        at(OWNER, 1001);
-        p.acknowledge_failed_signature(U64(1));
+        assert!(!p.on_signature(U64(0)));
+        assert_eq!(p.pending.as_ref().unwrap().id, 1);
     }
     #[test]
     fn reductions_never_recycle_signed_open_budget() {
@@ -478,4 +456,430 @@ mod placeholder {
         assert!(log.contains("Testnet"));
         success(&mut p, 1002);
     }
+}
+
+fn request_event() -> near_sdk::serde_json::Value {
+    get_logs()
+        .iter()
+        .filter_map(|l| l.strip_prefix("EVENT_JSON:"))
+        .map(|l| near_sdk::serde_json::from_str::<near_sdk::serde_json::Value>(l).unwrap())
+        .find(|e| e["event"] == "request")
+        .unwrap()["data"][0]
+        .clone()
+}
+fn rejected(f: impl FnOnce()) {
+    assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).is_err());
+}
+#[test]
+fn same_block_nonce_allocation_and_failed_callback_never_reuse() {
+    let mut p = policy();
+    p.request_cancel_signature(U64(1));
+    assert_eq!(p.last_nonce, 1_000_000);
+    assert_eq!(request_event()["payload"]["expiresAfter"], 1_060_000);
+    callback(PromiseResult::Failed, 1000);
+    assert!(!p.on_signature(U64(1)));
+    at(KEEPER, 1000);
+    p.request_cancel_signature(U64(2));
+    assert_eq!(p.last_nonce, 1_000_001);
+    assert_eq!(request_event()["payload"]["expiresAfter"], 1_060_000);
+    assert_eq!(p.outstanding.len(), 2);
+}
+#[test]
+#[should_panic(expected = "ERR_NONCE_DRIFT")]
+fn nonce_cannot_drift_ahead_of_clock() {
+    let mut p = policy();
+    p.last_nonce = 1_001_000;
+    p.request_cancel_signature(U64(0));
+}
+#[test]
+#[should_panic(expected = "ERR_NONCE_OVERFLOW")]
+fn nonce_overflow_fails_closed() {
+    let mut p = policy();
+    p.last_nonce = u64::MAX;
+    p.request_cancel_signature(U64(0));
+}
+#[test]
+fn keeper_block_limit_and_owner_reserved_emergency() {
+    let mut p = policy();
+    p.signing_limits.keeper_per_block = 1;
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1000);
+    at(KEEPER, 1000);
+    rejected(|| {
+        p.request_cancel_signature(U64(1));
+    });
+    at(OWNER, 1000);
+    p.emergency_reduce(U128(BASE));
+    assert_eq!(p.owner_requests.len(), 1);
+    assert_eq!(p.keeper_requests.len(), 1);
+}
+#[test]
+fn keeper_rolling_budget_counts_failed_requests_and_expires_at_boundary() {
+    let mut p = policy();
+    p.signing_limits.keeper_per_window = 2;
+    for t in [1000, 1001] {
+        at(KEEPER, t);
+        p.request_cancel_signature(U64(t));
+        callback(PromiseResult::Failed, t);
+        p.on_signature(U64(p.operation_id));
+    }
+    at(KEEPER, 1059);
+    rejected(|| {
+        p.request_cancel_signature(U64(3));
+    });
+    at(KEEPER, 1060);
+    p.request_cancel_signature(U64(4));
+    assert_eq!(p.keeper_requests.len(), 2);
+    assert_eq!(p.last_nonce, 1_060_000);
+}
+#[test]
+fn keeper_outstanding_cap_keeps_invalidation_capacity() {
+    let mut p = policy();
+    p.signing_limits.keeper_outstanding = 1;
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(KEEPER, 1002);
+    rejected(|| {
+        p.request_cancel_signature(U64(1));
+    });
+    at(OWNER, 1002);
+    p.set_paused(true);
+    assert!(matches!(
+        p.pending.as_ref().unwrap().kind,
+        OperationKind::Invalidation
+    ));
+    assert_eq!(p.outstanding.len(), 1);
+    assert_eq!(p.keeper_requests.len(), 1);
+    assert_eq!(p.owner_requests.len(), 1);
+}
+#[test]
+fn emergency_detaches_stuck_signer_and_late_callback_cannot_clear_new_slot() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    at(OWNER, 1001);
+    p.emergency_reduce(U128(BASE));
+    callback(PromiseResult::Failed, 1002);
+    assert!(!p.on_signature(U64(1)));
+    assert_eq!(p.pending.as_ref().unwrap().id, 2);
+    assert_eq!(p.signed_short_size, BASE);
+    success(&mut p, 1003);
+}
+#[test]
+fn expired_callback_is_discarded_and_missing_callback_recovers_permissionlessly() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    at("stranger.testnet", 1060);
+    p.expire_pending_signature();
+    assert!(p.pending.is_some()); // venue expiry is strictly after expiresAfter
+    at("stranger.testnet", 1061);
+    p.expire_pending_signature();
+    assert!(p.pending.is_none());
+    assert_eq!(p.signed_short_size, BASE);
+    at(KEEPER, 1061);
+    p.request_order_signature(order(BASE, true));
+    callback(PromiseResult::Failed, 1062);
+    assert!(!p.on_signature(U64(1)));
+    assert_eq!(p.pending.as_ref().unwrap().id, 2);
+}
+#[test]
+fn signer_success_after_expiry_never_emits_signature() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    let data = json_bytes(
+        near_sdk::serde_json::json!({"big_r":{"affine_point":format!("02{}", "11".repeat(32))},"s":{"scalar":"22".repeat(32)},"recovery_id":0}),
+    );
+    callback(PromiseResult::Successful(data), 1061);
+    assert!(!p.on_signature(U64(1)));
+    assert!(p.pending.is_none());
+    assert!(!get_logs().join("").contains("\"event\":\"signature\""));
+    assert_eq!(p.signed_short_size, BASE);
+}
+#[test]
+fn pause_invalidates_each_original_nonce_and_confirmation_controls_completion() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(KEEPER, 1002);
+    p.request_cancel_signature(U64(9));
+    success(&mut p, 1003);
+    let last = p.last_nonce;
+    at(OWNER, 1004);
+    p.set_paused(true);
+    assert_eq!(request_event()["payload"]["action"]["type"], "noop");
+    assert_eq!(request_event()["payload"]["nonce"], 1_000_000);
+    assert_eq!(request_event()["payload"]["expiresAfter"], 1_060_000);
+    assert_eq!(p.last_nonce, last);
+    assert!(!p.pause_complete());
+    success(&mut p, 1005);
+    at(OWNER, 1006);
+    p.report_invalidation(U64(1_000_000), true);
+    assert!(!p.pause_complete());
+    p.request_next_invalidation();
+    assert_eq!(request_event()["payload"]["nonce"], 1_002_000);
+    success(&mut p, 1007);
+    at(OWNER, 1008);
+    p.report_invalidation(U64(1_002_000), true);
+    assert!(p.pause_complete());
+    p.set_paused(false);
+    assert!(!p.paused);
+    assert_eq!(p.signed_short_size, BASE);
+}
+#[test]
+fn pause_discards_inflight_keeper_callback_and_retries_failed_invalidation() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    at(OWNER, 1001);
+    p.set_paused(true);
+    callback(PromiseResult::Failed, 1002);
+    assert!(!p.on_signature(U64(1)));
+    assert_eq!(p.pending.as_ref().unwrap().id, 2);
+    assert!(!p.on_signature(U64(2))); // noop signer failed
+    assert!(!p.outstanding[0].invalidation_requested);
+    at(OWNER, 1003);
+    p.request_next_invalidation();
+    success(&mut p, 1004);
+    at(OWNER, 1005);
+    p.report_invalidation(U64(1_000_000), false);
+    assert!(!p.pause_complete());
+    p.request_next_invalidation();
+    success(&mut p, 1006);
+    at(OWNER, 1007);
+    p.report_invalidation(U64(1_000_000), true);
+    assert!(p.pause_complete());
+}
+#[test]
+fn withheld_signature_keeps_pause_incomplete_until_expiry_without_confirmation() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(OWNER, 1002);
+    p.set_paused(true);
+    success(&mut p, 1003);
+    at(OWNER, 1060);
+    rejected(|| {
+        p.set_paused(false);
+    });
+    assert!(p.paused);
+    at(OWNER, 1061);
+    p.set_paused(false);
+    assert!(!p.paused);
+    assert!(p.pause_complete());
+    assert_eq!(p.signed_short_size, BASE);
+}
+#[test]
+fn pause_blocks_all_keeper_signing_but_owner_can_reduce() {
+    let mut p = policy();
+    p.signed_short_size = BASE;
+    at(OWNER, 1000);
+    p.set_paused(true);
+    at(KEEPER, 1000);
+    rejected(|| {
+        p.request_order_signature(order(BASE, true));
+    });
+    rejected(|| {
+        p.request_cancel_signature(U64(0));
+    });
+    at(OWNER, 1000);
+    p.emergency_reduce(U128(BASE));
+}
+#[test]
+fn public_rate_limit_cannot_consume_owner_capacity() {
+    let mut p = policy();
+    p.signed_short_size = BASE;
+    at("stranger.testnet", 1600);
+    p.deleverage();
+    success(&mut p, 1601);
+    at("another.testnet", 1602);
+    rejected(|| {
+        p.deleverage();
+    });
+    at(OWNER, 1602);
+    p.emergency_reduce(U128(BASE));
+    assert_eq!(p.owner_requests.len(), 1);
+}
+#[test]
+fn settlement_releases_partial_and_full_backing_but_never_daily_churn_budget() {
+    let mut p = policy();
+    p.spot_balance = 2 * BASE;
+    p.request_order_signature(order(2 * BASE, false));
+    success(&mut p, 1001);
+    at(KEEPER, 1002);
+    p.request_order_signature(order(BASE, true));
+    success(&mut p, 1003);
+    assert_eq!(p.signed_short_size, 2 * BASE); // signature is not a fill
+    at(OWNER, 1061);
+    p.settle_position(U128(BASE), U64(1_061_000));
+    assert_eq!(p.signed_short_size, BASE);
+    assert_eq!(p.daily_usage, 10_100_000);
+    p.withdraw_spot(account(OWNER), U128(BASE));
+    callback(PromiseResult::Successful(vec![]), 1062);
+    assert!(p.on_spot_withdrawal(U64(p.operation_id)));
+    assert_eq!(p.spot_balance, BASE);
+    at(OWNER, 1063);
+    p.settle_position(U128(0), U64(1_063_000));
+    at(KEEPER, 1063);
+    p.request_order_signature(order(BASE, false));
+    assert_eq!(p.signed_short_size, BASE);
+    assert_eq!(p.lifetime_opened, 3 * BASE);
+    assert_eq!(p.daily_usage, 15_150_000);
+}
+#[test]
+fn settlement_rejects_keeper_stale_observation_and_unexpired_open_replay() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(OWNER, 1002);
+    rejected(|| p.settle_position(U128(0), U64(1_002_000)));
+    at(KEEPER, 1061);
+    rejected(|| p.settle_position(U128(0), U64(1_061_000)));
+    at(OWNER, 1061);
+    rejected(|| p.settle_position(U128(0), U64(1_060_000)));
+    rejected(|| p.settle_position(U128(0), U64(1_062_000)));
+    at(OWNER, 1100);
+    rejected(|| p.settle_position(U128(0), U64(1_061_000)));
+    assert_eq!(p.signed_short_size, BASE);
+}
+#[test]
+fn settlement_cannot_ignore_a_newer_open_authorization() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(KEEPER, 1060);
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1061);
+    at(OWNER, 1062);
+    rejected(|| p.settle_position(U128(0), U64(1_062_000)));
+    at(OWNER, 1121);
+    p.settle_position(U128(0), U64(1_121_000));
+    assert_eq!(p.signed_short_size, 0);
+    assert_eq!(p.daily_usage, 10_100_000);
+}
+#[test]
+fn invalidation_confirmation_is_owner_only_and_requires_signed_request() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(OWNER, 1002);
+    rejected(|| p.report_invalidation(U64(1_000_000), true));
+    p.set_paused(true);
+    success(&mut p, 1003);
+    at(KEEPER, 1004);
+    rejected(|| p.report_invalidation(U64(1_000_000), true));
+    assert!(!p.pause_complete());
+}
+
+#[test]
+fn interrupted_invalidation_can_retry_same_nonce() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(OWNER, 1002);
+    p.set_paused(true);
+    assert!(p.outstanding[0].invalidation_requested);
+    at(OWNER, 1002);
+    p.emergency_reduce(U128(BASE));
+    assert!(!p.outstanding[0].invalidation_requested);
+    success(&mut p, 1003);
+    at(OWNER, 1004);
+    p.request_next_invalidation();
+    assert_eq!(request_event()["payload"]["nonce"], 1_000_000);
+}
+#[test]
+fn pause_also_tracks_existing_owner_and_public_l1_authorizations() {
+    let mut p = policy();
+    p.signed_short_size = BASE;
+    at(OWNER, 1600);
+    p.emergency_reduce(U128(BASE));
+    success(&mut p, 1601);
+    at("stranger.testnet", 1602);
+    p.deleverage();
+    success(&mut p, 1603);
+    at(OWNER, 1604);
+    p.set_paused(true);
+    assert_eq!(p.outstanding.iter().filter(|a| a.discarded).count(), 2);
+    assert!(!p.pause_complete());
+}
+#[test]
+fn exhausted_owner_budget_still_commits_local_pause_and_discards_keeper_callback() {
+    let mut p = policy();
+    p.owner_requests = vec![1_000_000; 16];
+    p.request_order_signature(order(BASE, false));
+    at(OWNER, 1001);
+    assert!(matches!(p.set_paused(true), PromiseOrValue::Value(false)));
+    assert!(p.paused);
+    assert!(p.pending.is_none());
+    assert!(!p.pause_complete());
+    at(OWNER, 1060);
+    p.request_next_invalidation();
+    assert_eq!(request_event()["payload"]["nonce"], 1_000_000);
+}
+#[test]
+fn public_cannot_interrupt_owner_emergency_or_invalidation() {
+    let mut p = policy();
+    p.signed_short_size = BASE;
+    at(OWNER, 1600);
+    p.emergency_reduce(U128(BASE));
+    at("stranger.testnet", 1601);
+    rejected(|| {
+        p.deleverage();
+    });
+    assert_eq!(p.pending.as_ref().unwrap().id, 1);
+    at(OWNER, 1602);
+    p.set_paused(true);
+    let id = p.pending.as_ref().unwrap().id;
+    at("stranger.testnet", 1603);
+    rejected(|| {
+        p.deleverage();
+    });
+    assert_eq!(p.pending.as_ref().unwrap().id, id);
+}
+#[test]
+fn missing_withdraw_callback_expires_locally_without_reusing_its_nonce() {
+    let mut p = policy();
+    at(OWNER, 1000);
+    p.request_evm_withdrawal(EVM.into(), U128(1_000_000));
+    assert!(p.pending.as_ref().unwrap().expires_after.is_none());
+    let old_nonce = p.last_nonce;
+    at("stranger.testnet", 1061);
+    p.expire_pending_signature();
+    assert!(p.pending.is_none());
+    at(KEEPER, 1061);
+    p.request_cancel_signature(U64(1));
+    assert!(p.last_nonce > old_nonce);
+    callback(PromiseResult::Failed, 1062);
+    assert!(!p.on_signature(U64(1)));
+    assert_eq!(p.pending.as_ref().unwrap().id, 2);
+}
+#[test]
+fn public_can_preempt_keeper_but_uses_separate_bounded_capacity() {
+    let mut p = policy();
+    at(KEEPER, 1600);
+    p.request_order_signature(order(BASE, false));
+    at("stranger.testnet", 1601);
+    p.deleverage();
+    assert!(!p.pending.as_ref().unwrap().keeper);
+    assert_eq!(p.keeper_requests.len(), 1);
+    assert!(p.owner_requests.is_empty());
+    assert_eq!(p.signed_short_size, BASE);
+}
+
+#[test]
+fn pause_commits_during_token_transfer_and_preserves_its_callback() {
+    let mut p = policy();
+    p.request_order_signature(order(BASE, false));
+    success(&mut p, 1001);
+    at(OWNER, 1002);
+    p.withdraw_spot(account(OWNER), U128(BASE));
+    at(OWNER, 1003);
+    assert!(matches!(p.set_paused(true), PromiseOrValue::Value(false)));
+    assert!(p.paused);
+    assert!(matches!(
+        p.pending.as_ref().unwrap().kind,
+        OperationKind::SpotWithdrawal
+    ));
+    callback(PromiseResult::Failed, 1004);
+    assert!(!p.on_spot_withdrawal(U64(2)));
+    at(OWNER, 1005);
+    p.request_next_invalidation();
+    assert_eq!(request_event()["payload"]["nonce"], 1_000_000);
 }

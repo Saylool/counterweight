@@ -1,4 +1,4 @@
-"""Key-free Wasm export check; run against the default signing-disabled build."""
+"""Key-free Wasm export check; run against the default production-feature build."""
 import pathlib
 import sys
 
@@ -35,7 +35,9 @@ required = {
     "new", "get_state", "set_config", "set_reference_price", "set_paused",
     "heartbeat", "ft_on_transfer", "request_order_signature", "deleverage",
     "request_evm_withdrawal", "withdraw_spot", "on_signature",
-    "on_spot_withdrawal", "acknowledge_failed_signature",
+    "on_spot_withdrawal", "request_cancel_signature", "emergency_reduce",
+    "request_next_invalidation", "report_invalidation", "settle_position",
+    "expire_pending_signature",
 }
 forbidden = {
     "sign", "sign_digest", "sign_hash", "request_signature", "upgrade",

@@ -10,6 +10,12 @@ pub struct MockSigner {
 
 #[near]
 impl MockSigner {
+    /// Minimal successful token receipt for policy-ledger tests; no real token.
+    #[payable]
+    pub fn ft_transfer(&mut self, receiver_id: String, amount: String, memo: String) {
+        assert!(!receiver_id.is_empty() && !memo.is_empty());
+        assert!(amount.parse::<u128>().unwrap() > 0);
+    }
     pub fn set_mode(&mut self, mode: u8) {
         self.mode = mode;
     }
