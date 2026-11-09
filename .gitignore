@@ -9,3 +9,6 @@ target/
 coverage/
 *.wasm
 !fixtures/**/*.wasm
+.tmp/
+
+*.tsbuildinfo

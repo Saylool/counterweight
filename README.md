@@ -8,6 +8,20 @@ move money; withdrawals go only to the owner's fixed addresses.
 
 Built for NEAR HACKATHON (November 2026). Work in progress; testnet only.
 
+## TypeScript signing proof
+
+```sh
+npm ci
+npm test
+npm run typecheck
+npm run build
+NEAR_ACCOUNT_ID=YOUR_ACCOUNT.testnet npm run prove:signing -- counterweight-1
+```
+
+The preparation script prints the owner-run NEAR keychain command. Submit its returned public MPC signature with
+`npm run prove:submit -- '<mpc-response-json>'`. See [the testnet procedure and evidence](docs/TESTNET.md).
+The 24 SDK digest vectors and live server-recovery control pass; the actual owner MPC signature proof remains pending.
+
 ## Status
 
 - [ ] Signing boundary: NEAR MPC signatures accepted by Hyperliquid

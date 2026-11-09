@@ -1,0 +1,44 @@
+{
+  "kind": "recycled-public-signature-control-NOT-owner-MPC-proof",
+  "capturedAt": "2026-11-09T19:58:26.548Z",
+  "signatureSource": "https://nearblocks.io/txns/C1BFVeNKTdGisszpssXMcg3qVnJatdcS4zh6Hxt3jxqY/execution",
+  "input": {
+    "scheme": "l1",
+    "network": "testnet",
+    "action": {
+      "type": "cancel",
+      "cancels": [
+        {
+          "a": 54,
+          "o": 0
+        }
+      ]
+    },
+    "nonce": 1794254306205
+  },
+  "digest": "0x31275a317f3cc491d3e00e5f5cdb3504c329871b75f0fd29518554364d7a7de0",
+  "httpStatus": 200,
+  "request": {
+    "action": {
+      "type": "cancel",
+      "cancels": [
+        {
+          "a": 54,
+          "o": 0
+        }
+      ]
+    },
+    "nonce": 1794254306205,
+    "signature": {
+      "r": "0x1b1dbaa86589149a89df3845df0de182ad3190925d66e87b82d4d91108d876c6",
+      "s": "0x04d417c672d65a5e5c1f826cf0cccd62343162a046a8169bb5b66e3797202798",
+      "v": 27
+    }
+  },
+  "response": {
+    "status": "err",
+    "response": "User or API Wallet 0xb5be443f995aadd4dd3b44acf78b051d6a1d86ce does not exist."
+  },
+  "recovered": "0xb5be443f995AAdD4dd3b44acF78B051D6a1D86Ce",
+  "verdict": "server-recovered-address-matches"
+}

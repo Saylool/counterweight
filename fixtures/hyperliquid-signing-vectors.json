@@ -1,0 +1,611 @@
+{
+  "provenance": {
+    "repository": "https://github.com/hyperliquid-dex/hyperliquid-python-sdk",
+    "sdkVersion": "0.24.0",
+    "commit": "2fdb18f9517675ea03695a0962bd19eece9c83f0",
+    "signingPySha256": "938ec0a1f9611874b423ca946696e19a71d32d14709f521ea5d526f4398c0b85",
+    "generator": "scripts/generate-signing-vectors.py",
+    "method": "Official sign_* entrypoints intercepted at wallet.sign_message; keccak(0x19 || version || domain separator || struct hash)",
+    "expectedSignatures": "Omitted to respect the blanket prohibition on handling private keys, including published test keys."
+  },
+  "vectors": [
+    {
+      "name": "testnet-order",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": false,
+            "p": "1.25",
+            "s": "10",
+            "r": false,
+            "t": {
+              "limit": {
+                "tif": "Alo"
+              }
+            }
+          }
+        ],
+        "grouping": "na"
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x81088cf22f97897098c6b666f3da089b30d3cf185e63dd6aa9704cdd51e10c39",
+      "digest": "0xfcb53ddb5cad7ef0935406819262be0e572f47f5468fc3f07de57139befea0e4"
+    },
+    {
+      "name": "testnet-trigger",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": true,
+            "p": "10",
+            "s": "1.2",
+            "r": true,
+            "t": {
+              "trigger": {
+                "isMarket": true,
+                "triggerPx": "9.5",
+                "tpsl": "sl"
+              }
+            },
+            "c": "0x1234567890abcdef1234567890abcdef"
+          }
+        ],
+        "grouping": "positionTpsl"
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x10e2aef435c68b25604eb820d34bf87b8319b9a91afa1d8bd8162e739f574f85",
+      "digest": "0xdffd6d7089fe7da2e9c3258358e45dc6689f6702cf43d701dcad8510582ff44c"
+    },
+    {
+      "name": "testnet-cancel",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "cancel",
+        "cancels": [
+          {
+            "a": 54,
+            "o": 1234567890123
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x7bbf71a5829fe7434dcb2a24040122433295d199987df5015730239b2504218e",
+      "digest": "0x5f7ddf89e5cd2d311d106c524ce3b01e06ba581b0f58e45b5447dec3f18b884e"
+    },
+    {
+      "name": "testnet-cloid",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "cancelByCloid",
+        "cancels": [
+          {
+            "asset": 54,
+            "cloid": "0x1234567890abcdef1234567890abcdef"
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x2a56939d8efdffe4fe2607cfb778dcdb0345134e6984433cb2c171be2ca1021d",
+      "digest": "0x3cfa2398555a5e76bdca0a33f9c7fb6053aa3b404117112b650c9cb107bbcb85"
+    },
+    {
+      "name": "testnet-vault",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": false,
+            "p": "1.25",
+            "s": "10",
+            "r": false,
+            "t": {
+              "limit": {
+                "tif": "Alo"
+              }
+            }
+          }
+        ],
+        "grouping": "na"
+      },
+      "nonce": 1700000000123,
+      "vaultAddress": "0x1234567890123456789012345678901234567890",
+      "actionHash": "0x08005aa6040f19603a54ede6134d8c18720e736cfa892f3b5586228ff6f82b65",
+      "digest": "0xccc7c7fdd15340b5de3b2d4c838b2b4b74e14ff079fc32114475664f3679a03c"
+    },
+    {
+      "name": "testnet-expiry",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "cancel",
+        "cancels": [
+          {
+            "a": 54,
+            "o": 1234567890123
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "expiresAfter": 1700000060123,
+      "actionHash": "0x2431c10f42b853966cb873859dd51c2d9e23eae0fc70c40881f84f1044aa14f9",
+      "digest": "0xc2a3e43bda6ecf741bbd5cf1236bda450b361a851bbecb1ee8a3e86315a698d2"
+    },
+    {
+      "name": "testnet-vault-expiry",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": false,
+            "p": "1.25",
+            "s": "10",
+            "r": false,
+            "t": {
+              "limit": {
+                "tif": "Alo"
+              }
+            }
+          }
+        ],
+        "grouping": "na"
+      },
+      "nonce": 1700000000123,
+      "vaultAddress": "0x1234567890123456789012345678901234567890",
+      "expiresAfter": 1700000060123,
+      "actionHash": "0x01076205d030fe7506fb3eb5561042ba8f6e6f6aaaaad29db3ddc161cd4cf634",
+      "digest": "0x8755df9fbb95ac11b26dbca934e8ea2b08c15155256c9ec8b1c87a1ebc753c9f"
+    },
+    {
+      "name": "testnet-msgpack-boundaries",
+      "scheme": "l1",
+      "network": "testnet",
+      "action": {
+        "type": "cancel",
+        "cancels": [
+          {
+            "a": 0,
+            "o": 0
+          },
+          {
+            "a": 127,
+            "o": 127
+          },
+          {
+            "a": 128,
+            "o": 128
+          },
+          {
+            "a": 255,
+            "o": 255
+          },
+          {
+            "a": 256,
+            "o": 256
+          },
+          {
+            "a": 65535,
+            "o": 65535
+          },
+          {
+            "a": 65536,
+            "o": 65536
+          },
+          {
+            "a": 4294967295,
+            "o": 4294967295
+          },
+          {
+            "a": 4294967296,
+            "o": 4294967296
+          },
+          {
+            "a": 9007199254740991,
+            "o": 9007199254740991
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x8b941df21f72ced0fc8032be303caea6a8d51a17be36344f9846038c3a5f803f",
+      "digest": "0xf8945d63e1cd8daaee238b04106f81c4d68d9b97780504710689b184578d63a2"
+    },
+    {
+      "name": "testnet-approveAgent",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "counterweight-test",
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "counterweight-test",
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0xf4baf5f2de57ed5839173206b4efcc325f44b81fd96386bc62c64104b22cc129"
+    },
+    {
+      "name": "testnet-approveAgent-empty-name",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "",
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "",
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0x54729581f8db13d72b08eab381404a6479322982c286b9c6dc28a6739ba95d8f"
+    },
+    {
+      "name": "testnet-withdraw3",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "withdraw3",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1.000001",
+        "time": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "withdraw3",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1.000001",
+        "time": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0x0ebc98abcf9eabd68537abdbda69074f8b4714c7b483b009a8a11d1ec464d083"
+    },
+    {
+      "name": "testnet-usdSend",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdSend",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1",
+        "time": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdSend",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1",
+        "time": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0x31d15c39711ed32ff77d570b1a1507633078a43a5f8c8eb1ead21964ff897f46"
+    },
+    {
+      "name": "mainnet-order",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": false,
+            "p": "1.25",
+            "s": "10",
+            "r": false,
+            "t": {
+              "limit": {
+                "tif": "Alo"
+              }
+            }
+          }
+        ],
+        "grouping": "na"
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x81088cf22f97897098c6b666f3da089b30d3cf185e63dd6aa9704cdd51e10c39",
+      "digest": "0x98bc245ef5acf3625faa8dd53a96bd7afa19402651fa2591f8308bfeea907717"
+    },
+    {
+      "name": "mainnet-trigger",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": true,
+            "p": "10",
+            "s": "1.2",
+            "r": true,
+            "t": {
+              "trigger": {
+                "isMarket": true,
+                "triggerPx": "9.5",
+                "tpsl": "sl"
+              }
+            },
+            "c": "0x1234567890abcdef1234567890abcdef"
+          }
+        ],
+        "grouping": "positionTpsl"
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x10e2aef435c68b25604eb820d34bf87b8319b9a91afa1d8bd8162e739f574f85",
+      "digest": "0xeb20f2095e363461202b2e30c5dd96c9cc7e63c1cbd7af41a9ec2a674b44ef5e"
+    },
+    {
+      "name": "mainnet-cancel",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "cancel",
+        "cancels": [
+          {
+            "a": 54,
+            "o": 1234567890123
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x7bbf71a5829fe7434dcb2a24040122433295d199987df5015730239b2504218e",
+      "digest": "0xe52164ee2a047edc780a75dd27be39c114a619a319e432281f27c494a6943fb8"
+    },
+    {
+      "name": "mainnet-cloid",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "cancelByCloid",
+        "cancels": [
+          {
+            "asset": 54,
+            "cloid": "0x1234567890abcdef1234567890abcdef"
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x2a56939d8efdffe4fe2607cfb778dcdb0345134e6984433cb2c171be2ca1021d",
+      "digest": "0xb53625051f35298c41d6ccb57fbeb2b5d7aa8979f3e185eeaaa87d913c566ee3"
+    },
+    {
+      "name": "mainnet-vault",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": false,
+            "p": "1.25",
+            "s": "10",
+            "r": false,
+            "t": {
+              "limit": {
+                "tif": "Alo"
+              }
+            }
+          }
+        ],
+        "grouping": "na"
+      },
+      "nonce": 1700000000123,
+      "vaultAddress": "0x1234567890123456789012345678901234567890",
+      "actionHash": "0x08005aa6040f19603a54ede6134d8c18720e736cfa892f3b5586228ff6f82b65",
+      "digest": "0x3df2bf09855f79440ae4b364618fc7f212265f0cf0eed31c9588c775b663f123"
+    },
+    {
+      "name": "mainnet-expiry",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "cancel",
+        "cancels": [
+          {
+            "a": 54,
+            "o": 1234567890123
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "expiresAfter": 1700000060123,
+      "actionHash": "0x2431c10f42b853966cb873859dd51c2d9e23eae0fc70c40881f84f1044aa14f9",
+      "digest": "0xfbd3d200065071ee3ed0f132048eb5a374366bdb95af081497dd8345371f08e2"
+    },
+    {
+      "name": "mainnet-vault-expiry",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "order",
+        "orders": [
+          {
+            "a": 54,
+            "b": false,
+            "p": "1.25",
+            "s": "10",
+            "r": false,
+            "t": {
+              "limit": {
+                "tif": "Alo"
+              }
+            }
+          }
+        ],
+        "grouping": "na"
+      },
+      "nonce": 1700000000123,
+      "vaultAddress": "0x1234567890123456789012345678901234567890",
+      "expiresAfter": 1700000060123,
+      "actionHash": "0x01076205d030fe7506fb3eb5561042ba8f6e6f6aaaaad29db3ddc161cd4cf634",
+      "digest": "0xd78250154429977a01cf5ebfe836600c5319b544d0156abf693aaebb49a0d885"
+    },
+    {
+      "name": "mainnet-msgpack-boundaries",
+      "scheme": "l1",
+      "network": "mainnet",
+      "action": {
+        "type": "cancel",
+        "cancels": [
+          {
+            "a": 0,
+            "o": 0
+          },
+          {
+            "a": 127,
+            "o": 127
+          },
+          {
+            "a": 128,
+            "o": 128
+          },
+          {
+            "a": 255,
+            "o": 255
+          },
+          {
+            "a": 256,
+            "o": 256
+          },
+          {
+            "a": 65535,
+            "o": 65535
+          },
+          {
+            "a": 65536,
+            "o": 65536
+          },
+          {
+            "a": 4294967295,
+            "o": 4294967295
+          },
+          {
+            "a": 4294967296,
+            "o": 4294967296
+          },
+          {
+            "a": 9007199254740991,
+            "o": 9007199254740991
+          }
+        ]
+      },
+      "nonce": 1700000000123,
+      "actionHash": "0x8b941df21f72ced0fc8032be303caea6a8d51a17be36344f9846038c3a5f803f",
+      "digest": "0x38dcd4b4861c2277012f4dcbaef7d6191424af3ce861a2df8e4f9d53aeca3d34"
+    },
+    {
+      "name": "mainnet-approveAgent",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "counterweight-test",
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "counterweight-test",
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0xd853388fdb372cfffe6effb9dbb0bc17f85b61dd6ef03c14611cdf2c353b0e02"
+    },
+    {
+      "name": "mainnet-approveAgent-empty-name",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "",
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "approveAgent",
+        "agentAddress": "0x1234567890123456789012345678901234567890",
+        "agentName": "",
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0xd8720c678411a734a5684697d236bda85999911feefdc9e12981be5cc0b62fdf"
+    },
+    {
+      "name": "mainnet-withdraw3",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "withdraw3",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1.000001",
+        "time": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "withdraw3",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1.000001",
+        "time": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0xd7962415cf7acfec8a5cc24510d3c829824c198482796788d5ab3325f2f63d70"
+    },
+    {
+      "name": "mainnet-usdSend",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdSend",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1",
+        "time": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdSend",
+        "destination": "0x1234567890123456789012345678901234567890",
+        "amount": "1",
+        "time": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0x154e13803eec829e39aa11fe86ec61ddd29ac2b0fcfe745348690b2dbff44cf4"
+    }
+  ]
+}

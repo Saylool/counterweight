@@ -1,0 +1,38 @@
+{
+  "capturedAt": "2026-11-09T19:58:25.628Z",
+  "rpcUrl": "https://rpc.testnet.near.org",
+  "contract": "v1.signer-prod.testnet",
+  "root": {
+    "value": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "blockHeight": 276966069,
+    "blockHash": "CbAFcT9jgA2bfkgupbAh6GPmHwj1BqSUqtwPRFToLbmT"
+  },
+  "provenance": [
+    "https://docs.near.org/chain-abstraction/chain-signatures/implementation",
+    "https://github.com/NearDeFi/chainsig.js/blob/main/src/utils/cryptography.ts"
+  ],
+  "examples": [
+    {
+      "predecessor": "example.near",
+      "path": "ethereum-1",
+      "rpcResponse": {
+        "value": "secp256k1:e1XZjunxuwHQ7VmGFSLLnxp2S4qdVdLVTgrDzXjvFVgD9BUpAaWA7eJVQpko4EvL4hjPa7zi7C7C5cB6MbRoMWQ",
+        "blockHeight": 276966074,
+        "blockHash": "4fMFxCojbs4NgZ8k1SVLwYQvd1FmhjQrfK5s6P4mWhME"
+      },
+      "address": "0x6787a751b4592a3871267c320c19ca01e5abaec4",
+      "publicKey": "0x041fea4c8fa95bb00054f2359c14d5a39d430cb99adc94cd7f7001c43242fb55c2aad609974389c32190ed24ac9f2b0e58a13c96d895eee629e35486aa4eff2ae9"
+    },
+    {
+      "predecessor": "example.near",
+      "path": "ethereum-2",
+      "rpcResponse": {
+        "value": "secp256k1:2U36qGY9S67BCexCn39PR2uhoi1PJLvQPbK5jphuVekKz2ZU8Cinw6v7Dug2TsuWG5guCgCbaxkiHWT7dYGXnYmN",
+        "blockHeight": 276966080,
+        "blockHash": "4o8d57c7hewJNHEPSXMe2ShqiN4f1mhQemFoSx7r2nVk"
+      },
+      "address": "0x83bef8135884a31035a654cad4305345d13d3dc2",
+      "publicKey": "0x044954fe4afdd1232435639f2d33135ac3f5f3d7ab796752109f88f0503b80f9cdd7146a9df1171e30b10baec5c2f5f807b79539cc550b35cddaad7a4815389071"
+    }
+  ]
+}
