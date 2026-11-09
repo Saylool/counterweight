@@ -1,0 +1,5 @@
+/target/
+/.cargo-home/
+/.tmp/
+/.rustup/
+!/artifacts/*.wasm
