@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { toHex } from 'viem';
-import { deriveEvmAddress, mpcToHyperliquidSignature, nearPublicKeyToHex, publicKeyToEvmAddress } from './chainsig.js';
+import * as crypto from 'node:crypto';
+vi.mock('node:crypto', async importOriginal => {
+  const actual = await importOriginal<typeof import('node:crypto')>();
+  return { ...actual, createHash: vi.fn(actual.createHash) };
+});
+import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { deriveTestnetAddress, testnetView, deriveEvmAddress, mpcToHyperliquidSignature, nearPublicKeyToHex, publicKeyToEvmAddress } from './chainsig.js';
 import { SECP256K1_ORDER } from './signing.js';
 const fixture = JSON.parse(readFileSync(new URL('../../../fixtures/chainsig-public-derivation.json', import.meta.url), 'utf8')) as {
  root: { value: string }; examples: { predecessor: string; path: string; address: string; publicKey: string; rpcResponse: { value: string } }[];
@@ -41,9 +47,67 @@ it('rejects non-secp256k1 or malformed public keys', () => {
   expect(() => publicKeyToEvmAddress('0x04')).toThrow();
 });
 
-it('converts the published MPC signature used by the recorded public control', () => {
-  const control = JSON.parse(readFileSync(new URL('../../../fixtures/hyperliquid-testnet-public-control.json', import.meta.url), 'utf8')) as { request: { signature: { r: string; s: string; v: number } } };
-  const { signature } = control.request;
-  expect(mpcToHyperliquidSignature({ scheme: 'Secp256k1', big_r: { affine_point: `02${signature.r.slice(2)}` },
-    s: { scalar: signature.s.slice(2) }, recovery_id: 0 })).toEqual(signature);
+
+describe('MPC Derivation Cross-Check & Curve Boundary Suite', () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+  function rpc(value: unknown, blockHash = 'pinned-root') {
+    return new Response(JSON.stringify({ result: { result: [...Buffer.from(JSON.stringify(value))], block_height: 42, block_hash: blockHash } }));
+  }
+  it('pins derived view to root block and domain zero across root rotation', async () => {
+    const example = fixture.examples[0]!;
+    const fetchMock = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      const { params } = JSON.parse(init.body as string);
+      if (params.method_name === 'public_key') return rpc(fixture.root.value);
+      // Simulates a new final root arriving between calls. Only a pinned view agrees.
+      return rpc(params.block_id === 'pinned-root' ? example.rpcResponse.value : fixture.root.value);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await deriveTestnetAddress(example.predecessor, example.path)).address).toBe(example.address);
+    const [root, derived] = fetchMock.mock.calls.map(call => JSON.parse((call[1] as RequestInit).body as string).params);
+    expect(JSON.parse(Buffer.from(root.args_base64, 'base64').toString())).toEqual({ domain_id: 0 });
+    expect(root.finality).toBe('final');
+    expect(derived.block_id).toBe('pinned-root');
+    expect(derived).not.toHaveProperty('finality');
+  });
+  it('rejects remote derived key mismatch and a mismatched block response', async () => {
+    const example = fixture.examples[0]!;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(rpc(fixture.root.value)).mockResolvedValueOnce(rpc(fixture.root.value)));
+    await expect(deriveTestnetAddress(example.predecessor, example.path)).rejects.toThrow('disagrees');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(rpc(fixture.root.value)).mockResolvedValueOnce(rpc(example.rpcResponse.value, 'wrong-block')));
+    await expect(deriveTestnetAddress(example.predecessor, example.path)).rejects.toThrow('block');
+  });
+  it.each([{}, { result: { result: [256], block_height: 1, block_hash: 'x' } }, { result: { result: [123], block_height: 1, block_hash: 'x' } }])('rejects malformed RPC payload %#', async value => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(value))));
+    await expect(testnetView('public_key', {})).rejects.toThrow();
+  });
+  it('rejects HTTP errors and non-string view results', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 503 })));
+    await expect(testnetView('public_key', {})).rejects.toThrow('HTTP 503');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(rpc(42)));
+    await expect(testnetView('public_key', {})).rejects.toThrow();
+  });
+  it('validates path type and uncompressed public key prefix', () => {
+    expect(() => deriveEvmAddress(fixture.root.value, 'example.near', undefined as unknown as string)).toThrow();
+    expect(() => publicKeyToEvmAddress(`0x${point}`)).toThrow();
+  });
+  it('rejects tweak at or above the scalar order', () => {
+    vi.mocked(crypto.createHash).mockReturnValueOnce({ update: () => ({ digest: () => SECP256K1_ORDER.toString(16) }) } as unknown as ReturnType<typeof crypto.createHash>);
+    expect(() => deriveEvmAddress(fixture.root.value, 'example.near', 'path')).toThrow('outside the scalar field');
+  });
+  it('rejects valid curve points with x at or above the scalar order and recovery IDs 2/3', () => {
+    let overflow = '';
+    for (let x = SECP256K1_ORDER; x < SECP256K1_ORDER + 100n; x++) {
+      const candidate = `02${x.toString(16).padStart(64, '0')}`;
+      try { secp256k1.Point.fromHex(candidate).assertValidity(); overflow = candidate; break; } catch { /* public point search */ }
+    }
+    expect(overflow).not.toBe('');
+    expect(() => mpcToHyperliquidSignature({ big_r: overflow, s: scalar, recovery_id: 0 })).toThrow('x-overflow');
+    for (const recovery_id of [2, 3]) expect(() => mpcToHyperliquidSignature({ big_r: point, s: scalar, recovery_id })).toThrow();
+  });
+  it('converts actual raw NearBlocks SignatureResponse JSON', () => {
+    const raw = JSON.parse(readFileSync(new URL('../../../fixtures/nearblocks-mpc-response.json', import.meta.url), 'utf8'));
+    const control = JSON.parse(readFileSync(new URL('../../../fixtures/hyperliquid-testnet-public-control.json', import.meta.url), 'utf8'));
+    expect(JSON.parse(Buffer.from(raw.successValueBase64, 'base64').toString())).toEqual(raw.signatureResponse);
+    expect(mpcToHyperliquidSignature(raw.signatureResponse)).toEqual(control.request.signature);
+  });
 });

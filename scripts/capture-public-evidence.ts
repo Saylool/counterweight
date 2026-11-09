@@ -1,13 +1,13 @@
 /** Public RPC views and a recycled public signature control. Never signs or accesses an account. */
 import { writeFile } from 'node:fs/promises';
-import { deriveEvmAddress, getSigningDigest, harmlessCancel, nearPublicKeyToHex, recoveredSigner,
+import { deriveEvmAddress, getSigningDigest, harmlessCancel, nearMarketIndex, nearPublicKeyToHex, recoveredSigner,
   submitTestnetProof, testnetMeta, testnetView, TESTNET_RPC, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
 async function main() {
-  const root = await testnetView('public_key', {});
+  const root = await testnetView('public_key', { domain_id: 0 });
   const examples = [];
   for (const path of ['ethereum-1', 'ethereum-2']) {
     const predecessor = 'example.near'; // Opaque predecessor text in a testnet view, not a mainnet call.
-    const remote = await testnetView('derived_public_key', { predecessor, path, domain_id: 0 });
+    const remote = await testnetView('derived_public_key', { predecessor, path, domain_id: 0 }, root.blockHash);
     const local = deriveEvmAddress(root.value, predecessor, path);
     if (local.publicKey !== nearPublicKeyToHex(remote.value)) throw new Error('Public derivation mismatch');
     examples.push({ predecessor, path, rpcResponse: remote, ...local });
@@ -17,8 +17,7 @@ async function main() {
       'https://github.com/NearDeFi/chainsig.js/blob/main/src/utils/cryptography.ts'], examples };
   await writeFile('fixtures/chainsig-public-derivation.json', `${JSON.stringify(derivation, null, 2)}\n`);
   const meta = await testnetMeta();
-  const index = meta.universe.findIndex(a => a.name === 'NEAR');
-  if (index < 0) throw new Error('NEAR market missing');
+  const index = nearMarketIndex(meta);
   const input = harmlessCancel(index, Date.now());
   // Already-public on-chain MPC signature, reused on an unrelated digest as a control.
   // There is no corresponding known signing key, and this is not our owner/MPC proof.

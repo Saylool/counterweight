@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getSigningDigest, deriveEvmAddress, type L1Input } from '../packages/hyperliquid/src/index.js';
+import { getSigningDigest, deriveEvmAddress, validateProofNonce, type L1Input } from '../packages/hyperliquid/src/index.js';
 export const PLAN_PATH = '.tmp/signing-proof-plan.json';
 export const planSchema = z.object({
   version: z.literal(1), predecessor: z.string(), path: z.string(), address: z.string().regex(/^0x[0-9a-f]{40}$/),
@@ -16,9 +16,13 @@ export function validatePlan(value: unknown): ProofPlan {
   if (derived.address !== plan.address || derived.publicKey !== plan.publicKey || getSigningDigest(plan.input as L1Input) !== plan.digest)
     throw new Error('Saved plan digest or derivation mismatch');
   // Conservative local usability limit; not a claim about the venue nonce window.
-  const age = Date.now() - plan.input.nonce;
-  if (age < -60_000 || age > 30 * 60_000) throw new Error('Proof plan is older than 30 minutes or from the future; prepare and sign a fresh plan');
+  validateProofNonce(plan.input.nonce);
   return plan;
+}
+/** Never expose V8 JSON.parse snippets from files or CLI input. */
+export function proofErrorMessage(error: unknown): string {
+  if (error instanceof SyntaxError) return 'Invalid JSON; provide only the public MPC signature object or a valid proof plan';
+  return error instanceof Error ? error.message : 'Proof failed';
 }
 export function shellQuote(value: string): string { return `'${value.replaceAll("'", "'\\''")}'`; }
 export function ownerSignCommand(plan: ProofPlan): string {

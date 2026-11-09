@@ -6,6 +6,8 @@
     "signingPySha256": "938ec0a1f9611874b423ca946696e19a71d32d14709f521ea5d526f4398c0b85",
     "generator": "scripts/generate-signing-vectors.py",
     "method": "Official sign_* entrypoints intercepted at wallet.sign_message; keccak(0x19 || version || domain separator || struct hash)",
+    "recoveryMethod": "Official SDK recover_* for every vector using an already-public MPC signature on unrelated digests; recovered addresses are codec parity checks, not our signer.",
+    "agentWireMethod": "Exchange.approve_agent with entropy/account construction replaced by public-address-only stubs",
     "expectedSignatures": "Omitted to respect the blanket prohibition on handling private keys, including published test keys."
   },
   "vectors": [
@@ -33,7 +35,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x81088cf22f97897098c6b666f3da089b30d3cf185e63dd6aa9704cdd51e10c39",
-      "digest": "0xfcb53ddb5cad7ef0935406819262be0e572f47f5468fc3f07de57139befea0e4"
+      "digest": "0xfcb53ddb5cad7ef0935406819262be0e572f47f5468fc3f07de57139befea0e4",
+      "sdkRecovered": "0x98dcbb91f1c5aa1353ea1868631687a17e581788"
     },
     {
       "name": "testnet-trigger",
@@ -62,7 +65,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x10e2aef435c68b25604eb820d34bf87b8319b9a91afa1d8bd8162e739f574f85",
-      "digest": "0xdffd6d7089fe7da2e9c3258358e45dc6689f6702cf43d701dcad8510582ff44c"
+      "digest": "0xdffd6d7089fe7da2e9c3258358e45dc6689f6702cf43d701dcad8510582ff44c",
+      "sdkRecovered": "0x9f8aa4b5d3ba655df373ca8729abf5386f3ea981"
     },
     {
       "name": "testnet-cancel",
@@ -79,7 +83,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x7bbf71a5829fe7434dcb2a24040122433295d199987df5015730239b2504218e",
-      "digest": "0x5f7ddf89e5cd2d311d106c524ce3b01e06ba581b0f58e45b5447dec3f18b884e"
+      "digest": "0x5f7ddf89e5cd2d311d106c524ce3b01e06ba581b0f58e45b5447dec3f18b884e",
+      "sdkRecovered": "0x5dd0f729455b3b608d46d5b3ee290fc63b236502"
     },
     {
       "name": "testnet-cloid",
@@ -96,7 +101,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x2a56939d8efdffe4fe2607cfb778dcdb0345134e6984433cb2c171be2ca1021d",
-      "digest": "0x3cfa2398555a5e76bdca0a33f9c7fb6053aa3b404117112b650c9cb107bbcb85"
+      "digest": "0x3cfa2398555a5e76bdca0a33f9c7fb6053aa3b404117112b650c9cb107bbcb85",
+      "sdkRecovered": "0x76ae9fb642c22a51d57da34f407b500554ac1ad8"
     },
     {
       "name": "testnet-vault",
@@ -123,7 +129,8 @@
       "nonce": 1700000000123,
       "vaultAddress": "0x1234567890123456789012345678901234567890",
       "actionHash": "0x08005aa6040f19603a54ede6134d8c18720e736cfa892f3b5586228ff6f82b65",
-      "digest": "0xccc7c7fdd15340b5de3b2d4c838b2b4b74e14ff079fc32114475664f3679a03c"
+      "digest": "0xccc7c7fdd15340b5de3b2d4c838b2b4b74e14ff079fc32114475664f3679a03c",
+      "sdkRecovered": "0xa859f36739d8fa77e3f7e7ef4bab4669f9416772"
     },
     {
       "name": "testnet-expiry",
@@ -141,7 +148,8 @@
       "nonce": 1700000000123,
       "expiresAfter": 1700000060123,
       "actionHash": "0x2431c10f42b853966cb873859dd51c2d9e23eae0fc70c40881f84f1044aa14f9",
-      "digest": "0xc2a3e43bda6ecf741bbd5cf1236bda450b361a851bbecb1ee8a3e86315a698d2"
+      "digest": "0xc2a3e43bda6ecf741bbd5cf1236bda450b361a851bbecb1ee8a3e86315a698d2",
+      "sdkRecovered": "0x571743ab04960a308bc501386ffec3d5d041c6da"
     },
     {
       "name": "testnet-vault-expiry",
@@ -169,7 +177,8 @@
       "vaultAddress": "0x1234567890123456789012345678901234567890",
       "expiresAfter": 1700000060123,
       "actionHash": "0x01076205d030fe7506fb3eb5561042ba8f6e6f6aaaaad29db3ddc161cd4cf634",
-      "digest": "0x8755df9fbb95ac11b26dbca934e8ea2b08c15155256c9ec8b1c87a1ebc753c9f"
+      "digest": "0x8755df9fbb95ac11b26dbca934e8ea2b08c15155256c9ec8b1c87a1ebc753c9f",
+      "sdkRecovered": "0xd08b971d0692ba878b419b895b16362999f8f393"
     },
     {
       "name": "testnet-msgpack-boundaries",
@@ -222,7 +231,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x8b941df21f72ced0fc8032be303caea6a8d51a17be36344f9846038c3a5f803f",
-      "digest": "0xf8945d63e1cd8daaee238b04106f81c4d68d9b97780504710689b184578d63a2"
+      "digest": "0xf8945d63e1cd8daaee238b04106f81c4d68d9b97780504710689b184578d63a2",
+      "sdkRecovered": "0x36663381c45243d3ccc1f4464c122e71c131bf5d"
     },
     {
       "name": "testnet-approveAgent",
@@ -243,7 +253,8 @@
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Testnet"
       },
-      "digest": "0xf4baf5f2de57ed5839173206b4efcc325f44b81fd96386bc62c64104b22cc129"
+      "digest": "0xf4baf5f2de57ed5839173206b4efcc325f44b81fd96386bc62c64104b22cc129",
+      "sdkRecovered": "0x05948465f02708f5c2d73dc617718f25564e90c3"
     },
     {
       "name": "testnet-approveAgent-empty-name",
@@ -259,12 +270,12 @@
       "wireAction": {
         "type": "approveAgent",
         "agentAddress": "0x1234567890123456789012345678901234567890",
-        "agentName": "",
         "nonce": 1700000000123,
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Testnet"
       },
-      "digest": "0x54729581f8db13d72b08eab381404a6479322982c286b9c6dc28a6739ba95d8f"
+      "digest": "0x54729581f8db13d72b08eab381404a6479322982c286b9c6dc28a6739ba95d8f",
+      "sdkRecovered": "0xbfa6e41b26baf5b37cf17bdfcf8aa7dd90297c87"
     },
     {
       "name": "testnet-withdraw3",
@@ -285,7 +296,8 @@
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Testnet"
       },
-      "digest": "0x0ebc98abcf9eabd68537abdbda69074f8b4714c7b483b009a8a11d1ec464d083"
+      "digest": "0x0ebc98abcf9eabd68537abdbda69074f8b4714c7b483b009a8a11d1ec464d083",
+      "sdkRecovered": "0x787551c8e1223801b328c0d58064e1f646c2cc4d"
     },
     {
       "name": "testnet-usdSend",
@@ -306,7 +318,8 @@
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Testnet"
       },
-      "digest": "0x31d15c39711ed32ff77d570b1a1507633078a43a5f8c8eb1ead21964ff897f46"
+      "digest": "0x31d15c39711ed32ff77d570b1a1507633078a43a5f8c8eb1ead21964ff897f46",
+      "sdkRecovered": "0x09a7958b5cc1b6310a596b7d5692a7d229dfe94f"
     },
     {
       "name": "mainnet-order",
@@ -332,7 +345,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x81088cf22f97897098c6b666f3da089b30d3cf185e63dd6aa9704cdd51e10c39",
-      "digest": "0x98bc245ef5acf3625faa8dd53a96bd7afa19402651fa2591f8308bfeea907717"
+      "digest": "0x98bc245ef5acf3625faa8dd53a96bd7afa19402651fa2591f8308bfeea907717",
+      "sdkRecovered": "0x567c59ae462e01f68cd21de0c2f84d8be6646d71"
     },
     {
       "name": "mainnet-trigger",
@@ -361,7 +375,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x10e2aef435c68b25604eb820d34bf87b8319b9a91afa1d8bd8162e739f574f85",
-      "digest": "0xeb20f2095e363461202b2e30c5dd96c9cc7e63c1cbd7af41a9ec2a674b44ef5e"
+      "digest": "0xeb20f2095e363461202b2e30c5dd96c9cc7e63c1cbd7af41a9ec2a674b44ef5e",
+      "sdkRecovered": "0xb35e99fa36fc104ac8ef52b4c31ae56e61348801"
     },
     {
       "name": "mainnet-cancel",
@@ -378,7 +393,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x7bbf71a5829fe7434dcb2a24040122433295d199987df5015730239b2504218e",
-      "digest": "0xe52164ee2a047edc780a75dd27be39c114a619a319e432281f27c494a6943fb8"
+      "digest": "0xe52164ee2a047edc780a75dd27be39c114a619a319e432281f27c494a6943fb8",
+      "sdkRecovered": "0x0ef856d363d1fcf7dd2cf65e17824cb097526981"
     },
     {
       "name": "mainnet-cloid",
@@ -395,7 +411,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x2a56939d8efdffe4fe2607cfb778dcdb0345134e6984433cb2c171be2ca1021d",
-      "digest": "0xb53625051f35298c41d6ccb57fbeb2b5d7aa8979f3e185eeaaa87d913c566ee3"
+      "digest": "0xb53625051f35298c41d6ccb57fbeb2b5d7aa8979f3e185eeaaa87d913c566ee3",
+      "sdkRecovered": "0x1726171924445be0ed1ca8b9d7a00e5b9238c26a"
     },
     {
       "name": "mainnet-vault",
@@ -422,7 +439,8 @@
       "nonce": 1700000000123,
       "vaultAddress": "0x1234567890123456789012345678901234567890",
       "actionHash": "0x08005aa6040f19603a54ede6134d8c18720e736cfa892f3b5586228ff6f82b65",
-      "digest": "0x3df2bf09855f79440ae4b364618fc7f212265f0cf0eed31c9588c775b663f123"
+      "digest": "0x3df2bf09855f79440ae4b364618fc7f212265f0cf0eed31c9588c775b663f123",
+      "sdkRecovered": "0xcf34cf090e956af1f7ef3f9648811570ae0c4126"
     },
     {
       "name": "mainnet-expiry",
@@ -440,7 +458,8 @@
       "nonce": 1700000000123,
       "expiresAfter": 1700000060123,
       "actionHash": "0x2431c10f42b853966cb873859dd51c2d9e23eae0fc70c40881f84f1044aa14f9",
-      "digest": "0xfbd3d200065071ee3ed0f132048eb5a374366bdb95af081497dd8345371f08e2"
+      "digest": "0xfbd3d200065071ee3ed0f132048eb5a374366bdb95af081497dd8345371f08e2",
+      "sdkRecovered": "0x24f3cf9b6c2e6b0a6b4b34b122ffceb0f3ba81fb"
     },
     {
       "name": "mainnet-vault-expiry",
@@ -468,7 +487,8 @@
       "vaultAddress": "0x1234567890123456789012345678901234567890",
       "expiresAfter": 1700000060123,
       "actionHash": "0x01076205d030fe7506fb3eb5561042ba8f6e6f6aaaaad29db3ddc161cd4cf634",
-      "digest": "0xd78250154429977a01cf5ebfe836600c5319b544d0156abf693aaebb49a0d885"
+      "digest": "0xd78250154429977a01cf5ebfe836600c5319b544d0156abf693aaebb49a0d885",
+      "sdkRecovered": "0x7d7ddb5246c29fd9957baa7cf91785cd2287c304"
     },
     {
       "name": "mainnet-msgpack-boundaries",
@@ -521,7 +541,8 @@
       },
       "nonce": 1700000000123,
       "actionHash": "0x8b941df21f72ced0fc8032be303caea6a8d51a17be36344f9846038c3a5f803f",
-      "digest": "0x38dcd4b4861c2277012f4dcbaef7d6191424af3ce861a2df8e4f9d53aeca3d34"
+      "digest": "0x38dcd4b4861c2277012f4dcbaef7d6191424af3ce861a2df8e4f9d53aeca3d34",
+      "sdkRecovered": "0xd659e0570c3f0334085cf531339b97af20446118"
     },
     {
       "name": "mainnet-approveAgent",
@@ -542,7 +563,8 @@
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Mainnet"
       },
-      "digest": "0xd853388fdb372cfffe6effb9dbb0bc17f85b61dd6ef03c14611cdf2c353b0e02"
+      "digest": "0xd853388fdb372cfffe6effb9dbb0bc17f85b61dd6ef03c14611cdf2c353b0e02",
+      "sdkRecovered": "0xfcd7b2cc5cde4711706b4fb82e23a1485e9598f3"
     },
     {
       "name": "mainnet-approveAgent-empty-name",
@@ -558,12 +580,12 @@
       "wireAction": {
         "type": "approveAgent",
         "agentAddress": "0x1234567890123456789012345678901234567890",
-        "agentName": "",
         "nonce": 1700000000123,
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Mainnet"
       },
-      "digest": "0xd8720c678411a734a5684697d236bda85999911feefdc9e12981be5cc0b62fdf"
+      "digest": "0xd8720c678411a734a5684697d236bda85999911feefdc9e12981be5cc0b62fdf",
+      "sdkRecovered": "0xa783d6bbc6be7a35b02d88cc0a257ef5ad50cd21"
     },
     {
       "name": "mainnet-withdraw3",
@@ -584,7 +606,8 @@
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Mainnet"
       },
-      "digest": "0xd7962415cf7acfec8a5cc24510d3c829824c198482796788d5ab3325f2f63d70"
+      "digest": "0xd7962415cf7acfec8a5cc24510d3c829824c198482796788d5ab3325f2f63d70",
+      "sdkRecovered": "0x9836d457c9db9da8f042d577e55e35ad37a10dd8"
     },
     {
       "name": "mainnet-usdSend",
@@ -605,7 +628,8 @@
         "signatureChainId": "0x66eee",
         "hyperliquidChain": "Mainnet"
       },
-      "digest": "0x154e13803eec829e39aa11fe86ec61ddd29ac2b0fcfe745348690b2dbff44cf4"
+      "digest": "0x154e13803eec829e39aa11fe86ec61ddd29ac2b0fcfe745348690b2dbff44cf4",
+      "sdkRecovered": "0x873c38ecb6b64d77680b503d9abb554dd6722269"
     }
   ]
 }

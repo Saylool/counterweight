@@ -1,0 +1,21 @@
+{
+  "source": "https://api.nearblocks.io/v3/txns/C1BFVeNKTdGisszpssXMcg3qVnJatdcS4zh6Hxt3jxqY/receipts",
+  "transactionHash": "C1BFVeNKTdGisszpssXMcg3qVnJatdcS4zh6Hxt3jxqY",
+  "receiptId": "QRFADchSjrizJduHYtFQHUF1kHu7ofi9t5g5UPM7vVD",
+  "block": {
+    "block_hash": "EmvXPe4LRCiWXusnLeaZBxCb16dijXn9r67Sk71MYfpQ",
+    "block_height": "222399828",
+    "block_timestamp": "1793437601901961572"
+  },
+  "successValueBase64": "eyJzY2hlbWUiOiJTZWNwMjU2azEiLCJiaWdfciI6eyJhZmZpbmVfcG9pbnQiOiIwMjFiMWRiYWE4NjU4OTE0OWE4OWRmMzg0NWRmMGRlMTgyYWQzMTkwOTI1ZDY2ZTg3YjgyZDRkOTExMDhkODc2YzYifSwicyI6eyJzY2FsYXIiOiIwNGQ0MTdjNjcyZDY1YTVlNWMxZjgyNmNmMGNjY2Q2MjM0MzE2MmEwNDZhODE2OWJiNWI2NmUzNzk3MjAyNzk4In0sInJlY292ZXJ5X2lkIjowfQ==",
+  "signatureResponse": {
+    "scheme": "Secp256k1",
+    "big_r": {
+      "affine_point": "021b1dbaa86589149a89df3845df0de182ad3190925d66e87b82d4d91108d876c6"
+    },
+    "s": {
+      "scalar": "04d417c672d65a5e5c1f826cf0cccd62343162a046a8169bb5b66e3797202798"
+    },
+    "recovery_id": 0
+  }
+}

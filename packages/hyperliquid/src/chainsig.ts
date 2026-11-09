@@ -16,12 +16,14 @@ export function nearPublicKeyToHex(publicKey: string): Hex {
   return result;
 }
 export function publicKeyToEvmAddress(publicKey: Hex): Hex {
+  z.string().regex(/^0x04[0-9a-fA-F]{128}$/).parse(publicKey);
   const point = secp256k1.Point.fromHex(publicKey.slice(2));
   return `0x${keccak256(point.toBytes(false).slice(1)).slice(-40)}`;
 }
 /** near/mpc derive_tweak: NIST SHA3-256, NOT Ethereum keccak256. Only public EC operations. */
 export function deriveEvmAddress(rootPublicKey: string, predecessor: string, path: string) {
   z.string().min(2).max(64).regex(/^[a-z0-9]+(?:[-_.][a-z0-9]+)*$/).parse(predecessor);
+  z.string().parse(path);
   const root = secp256k1.Point.fromHex(nearPublicKeyToHex(rootPublicKey).slice(2));
   const tweak = BigInt(`0x${createHash('sha3-256').update(`near-mpc-recovery v0.1.0 epsilon derivation:${predecessor},${path}`, 'utf8').digest('hex')}`);
   if (tweak >= SECP256K1_ORDER) throw new Error('Derivation tweak is outside the scalar field');
@@ -29,22 +31,23 @@ export function deriveEvmAddress(rootPublicKey: string, predecessor: string, pat
   const publicKey = toHex(derived.toBytes(false));
   return { address: publicKeyToEvmAddress(publicKey), publicKey };
 }
-export async function testnetView(method: 'public_key' | 'derived_public_key', args: Record<string, unknown>): Promise<{ value: string; blockHeight: number; blockHash: string }> {
+export async function testnetView(method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string): Promise<{ value: string; blockHeight: number; blockHash: string }> {
   const response = await fetch(TESTNET_RPC, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 'counterweight-public-view', method: 'query', params: {
-      request_type: 'call_function', finality: 'final', account_id: TESTNET_SIGNER, method_name: method,
+      request_type: 'call_function', ...(blockHash === undefined ? { finality: 'final' } : { block_id: blockHash }), account_id: TESTNET_SIGNER, method_name: method,
       args_base64: Buffer.from(JSON.stringify(args)).toString('base64'),
     } }), signal: AbortSignal.timeout(25_000) });
   if (!response.ok) throw new Error(`NEAR RPC HTTP ${response.status}`);
-  const result = z.object({ result: z.object({ result: z.array(z.number().int().min(0).max(255)), block_height: z.number(), block_hash: z.string() }) }).safeParse(await response.json());
+  const result = z.object({ result: z.object({ result: z.array(z.number().int().min(0).max(255)), block_height: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), block_hash: z.string().min(1) }) }).safeParse(await response.json());
   if (!result.success) throw new Error('NEAR view failed or returned an unexpected shape');
+  if (blockHash !== undefined && result.data.result.block_hash !== blockHash) throw new Error('NEAR view returned a different block');
   return { value: z.string().parse(JSON.parse(Buffer.from(result.data.result.result).toString('utf8'))),
     blockHeight: result.data.result.block_height, blockHash: result.data.result.block_hash };
 }
 export async function deriveTestnetAddress(predecessor: string, path: string) {
-  const root = await testnetView('public_key', {});
+  const root = await testnetView('public_key', { domain_id: 0 });
   const derived = deriveEvmAddress(root.value, predecessor, path);
-  const remote = await testnetView('derived_public_key', { predecessor, path, domain_id: 0 });
+  const remote = await testnetView('derived_public_key', { predecessor, path, domain_id: 0 }, root.blockHash);
   if (nearPublicKeyToHex(remote.value).toLowerCase() !== derived.publicKey.toLowerCase()) throw new Error('Local derivation disagrees with MPC view');
   return { ...derived, rootPublicKey: root.value, rootBlockHeight: root.blockHeight, derivedBlockHeight: remote.blockHeight };
 }
