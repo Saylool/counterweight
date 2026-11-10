@@ -133,12 +133,15 @@ export async function lifecycle(argv: string[]) {
         transaction: z.object({ hash: z.literal(hash), signer_id: z.literal(OWNER), receiver_id: z.literal(receiver), actions: z.array(z.object({ FunctionCall: z.object({ method_name: z.literal(method), args: z.string() }) })).length(1) }),
         receipts_outcome: z.array(z.object({ outcome: z.object({ executor_id: z.string(), logs: z.array(z.string()), status: z.record(z.string(), z.unknown()) }) })) }).parse(raw);
       const args = JSON.parse(Buffer.from(tx.transaction.actions[0]!.FunctionCall.args, 'base64').toString('utf8'));
-      if (option === 'spot-tx') z.object({ receiver_id: z.literal(NEXT_POLICY), amount: z.literal((5n * BASE).toString()), msg: z.literal('') }).passthrough().parse(args);
+      // The deposited amount is whatever the owner chose; the event below must match it exactly.
+      const deposited = option === 'spot-tx'
+        ? z.object({ receiver_id: z.literal(NEXT_POLICY), amount: z.string().regex(/^[1-9]\d*$/), msg: z.literal('') }).passthrough().parse(args).amount
+        : null;
       const eventName = option === 'spot-tx' ? 'deposit' : 'position_settlement';
       if (!tx.receipts_outcome.some(r => r.outcome.executor_id === NEXT_POLICY && !('Failure' in r.outcome.status) && r.outcome.logs.some(l => {
         if (!l.startsWith('EVENT_JSON:')) return false;
         const e = JSON.parse(l.slice(11));
-        return e.standard === 'counterweight' && e.event === eventName && (option !== 'spot-tx' || e.data?.[0]?.amount === (5n * BASE).toString());
+        return e.standard === 'counterweight' && e.event === eventName && (option !== 'spot-tx' || e.data?.[0]?.amount === deposited);
       }))) throw new Error('Contract successful deposit/settlement receipt missing');
       record[option] = raw; links.push(`https://testnet.nearblocks.io/txns/${hash}`);
     }
