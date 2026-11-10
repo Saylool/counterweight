@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { SECP256K1_ORDER, validateSignature, type HyperliquidSignature } from './signing.js';
 
 export const TESTNET_SIGNER = 'v1.signer-prod.testnet';
-export const TESTNET_RPC = 'https://rpc.testnet.near.org';
+// Override with NEAR_TESTNET_RPC (e.g. https://test.rpc.fastnear.com) when the public endpoint rate-limits.
+export const TESTNET_RPC = process.env.NEAR_TESTNET_RPC ?? 'https://rpc.testnet.near.org';
 export function nearPublicKeyToHex(publicKey: string): Hex {
   if (!publicKey.startsWith('secp256k1:')) throw new Error('Expected NEAR secp256k1 public key');
   const bytes = base58.decode(publicKey.slice('secp256k1:'.length));

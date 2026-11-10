@@ -1300,3 +1300,1447 @@ Public observations only. NEAR commands are printed for the lead; this script ne
 }
 ```
 
+# Testnet lifecycle status — 2026-11-10T17:28:36.621Z
+
+
+
+Public observations only. NEAR commands are printed for the lead; this script never signs or sends NEAR transactions. A signature is not a fill; bridge arrival is separate from withdrawal acceptance.
+
+```json
+{
+  "step": "status",
+  "capturedAt": "2026-11-10T17:28:36.621Z",
+  "network": "testnet",
+  "outcome": "failed-before-submission",
+  "commands": [],
+  "error": "NEAR RPC HTTP 429"
+}
+```
+
+# Testnet lifecycle status — 2026-11-10T17:29:57.755Z
+
+
+
+Public observations only. NEAR commands are printed for the lead; this script never signs or sends NEAR transactions. A signature is not a fill; bridge arrival is separate from withdrawal acceptance.
+
+```json
+{
+  "step": "status",
+  "capturedAt": "2026-11-10T17:29:57.755Z",
+  "network": "testnet",
+  "outcome": "failed-before-submission",
+  "commands": [],
+  "error": "NEAR RPC HTTP 429"
+}
+```
+
+# Testnet lifecycle status — 2026-11-10T17:30:18.846Z
+
+[Public explorer](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) · [Public explorer](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390) · [Public explorer](https://sepolia.arbiscan.io/address/0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a)
+
+Public observations only. NEAR commands are printed for the lead; this script never signs or sends NEAR transactions. A signature is not a fill; bridge arrival is separate from withdrawal acceptance.
+
+```json
+{
+  "step": "status",
+  "capturedAt": "2026-11-10T17:30:18.846Z",
+  "network": "testnet",
+  "outcome": "public-status-verified",
+  "commands": [],
+  "derived": {
+    "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+    "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277098287,
+    "derivedBlockHeight": 277098287
+  },
+  "market": {
+    "assetIndex": 54,
+    "szDecimals": 1,
+    "mark": "3.5185",
+    "funding": "0.0000125",
+    "capturedAt": "2026-11-10T17:30:19.793Z",
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "request": {
+      "type": "metaAndAssetCtxs"
+    }
+  },
+  "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+  "rebalance": null,
+  "preflight": {
+    "block": "C5g1TiKtsok5bKh8wshhQvQs8615FHFoXyA3AjX3uw71",
+    "state": {
+      "owner": "counterweight-samet.testnet",
+      "keeper": "keeper.counterweight-samet.testnet",
+      "coin": "NEAR",
+      "signer_account": "v1.signer-prod.testnet",
+      "wnear_account": "wrap.testnet",
+      "near_recipient": "counterweight-samet.testnet",
+      "derivation_path": "counterweight-1",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "asset_index": 54,
+      "size_decimals": 1,
+      "limits": {
+        "max_short_size": "5000000000000000000000000",
+        "per_order_notional_cap": "20000000",
+        "per_day_notional_cap": "40000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "spot_balance": "4000000000000000000000000",
+      "signed_short_size": "3500000000000000000000000",
+      "paused": false,
+      "pending": null,
+      "signing_limits": {
+        "keeper_per_block": 2,
+        "keeper_per_window": 8,
+        "keeper_outstanding": 8,
+        "owner_per_window": 16,
+        "window_ms": 60000,
+        "max_nonce_ahead_ms": 1000
+      },
+      "mpc_fee": "1",
+      "signer_gas_tgas": 230,
+      "callback_gas_tgas": 30,
+      "heartbeat_timeout_seconds": 3600,
+      "keeper_weight_limit": "5000",
+      "network": "Testnet",
+      "oracle": {
+        "account_id": null,
+        "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+        "max_age_seconds": 60,
+        "max_confidence_bps": 100,
+        "min_price": "2784560",
+        "max_price": "4176840"
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "daily_usage": "12408204",
+      "usage_day": 20767,
+      "operation_id": "3",
+      "last_keeper_heartbeat": "1794331679",
+      "reference_price": "3510100",
+      "reference_price_timestamp": "1794331599",
+      "last_nonce": "1794331685244",
+      "outstanding": [
+        {
+          "nonce": 1794331472735,
+          "expires_after": 1794504272736,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": false,
+          "withdrawal": false
+        }
+      ],
+      "pause_complete": true,
+      "lifetime_opened": "3500000000000000000000000",
+      "last_open_expiry": "1794331682790",
+      "keeper_weight_used": "10"
+    },
+    "keys": {
+      "block_hash": "C5g1TiKtsok5bKh8wshhQvQs8615FHFoXyA3AjX3uw71",
+      "block_height": 277098289,
+      "keys": []
+    },
+    "account": {
+      "amount": "7990836774916475399999997",
+      "block_hash": "C5g1TiKtsok5bKh8wshhQvQs8615FHFoXyA3AjX3uw71",
+      "block_height": 277098289,
+      "code_hash": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 634418
+    }
+  },
+  "before": {
+    "observedAtMs": 1794331819905,
+    "spotClearinghouseState": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    },
+    "clearinghouseState": {
+      "marginSummary": {
+        "accountValue": "48.957074",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "48.957074",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "48.957074",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "48.957074",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "48.957074",
+      "assetPositions": [],
+      "time": 1794331819840
+    },
+    "userFills": [
+      {
+        "coin": "NEAR",
+        "px": "3.5212",
+        "sz": "3.5",
+        "side": "B",
+        "time": 1794331700441,
+        "startPosition": "-3.5",
+        "dir": "Close Short",
+        "closedPnl": "-0.03185",
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "oid": 65016537461,
+        "crossed": true,
+        "fee": "0.005545",
+        "tid": 208398018647727,
+        "feeToken": "USDC",
+        "twapId": null
+      },
+      {
+        "coin": "NEAR",
+        "px": "3.5121",
+        "sz": "3.5",
+        "side": "A",
+        "time": 1794331636657,
+        "startPosition": "0.0",
+        "dir": "Open Short",
+        "closedPnl": "0.0",
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "oid": 65016476566,
+        "crossed": true,
+        "fee": "0.005531",
+        "tid": 779931913856026,
+        "feeToken": "USDC",
+        "twapId": null
+      }
+    ],
+    "ledger": [
+      {
+        "time": 1794330483597,
+        "hash": "0x44c06110b210b2c4463a042dd1e71301020078f64d13d196e8890c6371148cae",
+        "delta": {
+          "type": "send",
+          "user": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+          "destination": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+          "sourceDex": "spot",
+          "destinationDex": "spot",
+          "token": "USDC",
+          "amount": "50.0",
+          "usdcValue": "50.0",
+          "fee": "1.0",
+          "nativeTokenFee": "0.0",
+          "nonce": 1794330429670,
+          "feeToken": "USDC"
+        }
+      },
+      {
+        "time": 1794331491898,
+        "hash": "0x326745dbd188e26333e1042dd228a20106005dc16c8c0135d62ff12e908cbc4d",
+        "delta": {
+          "type": "accountClassTransfer",
+          "usdc": "49.0",
+          "toPerp": true
+        }
+      }
+    ],
+    "funding": [],
+    "openOrders": [],
+    "account": {
+      "equityText": "48.957074",
+      "equity": 48.957074,
+      "marginUsed": 0,
+      "withdrawable": 48.957074,
+      "signedSize": 0,
+      "signedSizeText": "0",
+      "funding": null,
+      "otherPositions": []
+    },
+    "fills": [
+      {
+        "coin": "NEAR",
+        "oid": 65016537461,
+        "time": 1794331700441,
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "side": "B",
+        "sz": "3.5",
+        "px": "3.5212",
+        "fee": "0.005545",
+        "closedPnl": "-0.03185"
+      },
+      {
+        "coin": "NEAR",
+        "oid": 65016476566,
+        "time": 1794331636657,
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "side": "A",
+        "sz": "3.5",
+        "px": "3.5121",
+        "fee": "0.005531",
+        "closedPnl": "0.0"
+      }
+    ]
+  },
+  "spot": {
+    "contract": "4000000000000000000000000",
+    "token": "4000000000000000000000000",
+    "near": "4"
+  },
+  "risk": {
+    "leverage": 0,
+    "reserve": 0.1,
+    "stressedMaintenance": 0,
+    "headroom": 48.857074
+  },
+  "riskNote": "Shared stressMetrics model H in USDC; mainnet NEAR maintenance assumptions, not a venue liquidation guarantee. Live venue equity/margin and funding are recorded separately.",
+  "openOrders": [],
+  "settlementRequired": {
+    "afterMs": 1794331682790,
+    "command": "near contract call-function as-transaction policy-v2.counterweight-samet.testnet settle_position json-args '{\"short_size\":\"0\",\"observed_at_ms\":\"1794331819905\"}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send",
+    "note": "Run only after last_open_expiry, no open orders/remaining short, and within 30s of this public observation. Regenerate status if stale. Owner attestation releases reserved exposure; it is not an on-chain Hyperliquid proof."
+  }
+}
+```
+
+# Testnet lifecycle status — 2026-11-10T17:30:33.391Z
+
+[Public explorer](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) · [Public explorer](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390) · [Public explorer](https://sepolia.arbiscan.io/address/0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a)
+
+Public observations only. NEAR commands are printed for the lead; this script never signs or sends NEAR transactions. A signature is not a fill; bridge arrival is separate from withdrawal acceptance.
+
+```json
+{
+  "step": "status",
+  "capturedAt": "2026-11-10T17:30:33.391Z",
+  "network": "testnet",
+  "outcome": "public-status-verified",
+  "commands": [],
+  "derived": {
+    "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+    "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277098316,
+    "derivedBlockHeight": 277098316
+  },
+  "market": {
+    "assetIndex": 54,
+    "szDecimals": 1,
+    "mark": "3.5245",
+    "funding": "0.0000125",
+    "capturedAt": "2026-11-10T17:30:34.337Z",
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "request": {
+      "type": "metaAndAssetCtxs"
+    }
+  },
+  "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+  "rebalance": null,
+  "preflight": {
+    "block": "CvrjAWFRkBAsSFiGh6SWDdMmW3WVm8JGgrnm2Emm32xU",
+    "state": {
+      "owner": "counterweight-samet.testnet",
+      "keeper": "keeper.counterweight-samet.testnet",
+      "coin": "NEAR",
+      "signer_account": "v1.signer-prod.testnet",
+      "wnear_account": "wrap.testnet",
+      "near_recipient": "counterweight-samet.testnet",
+      "derivation_path": "counterweight-1",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "asset_index": 54,
+      "size_decimals": 1,
+      "limits": {
+        "max_short_size": "5000000000000000000000000",
+        "per_order_notional_cap": "20000000",
+        "per_day_notional_cap": "40000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "spot_balance": "4000000000000000000000000",
+      "signed_short_size": "3500000000000000000000000",
+      "paused": false,
+      "pending": null,
+      "signing_limits": {
+        "keeper_per_block": 2,
+        "keeper_per_window": 8,
+        "keeper_outstanding": 8,
+        "owner_per_window": 16,
+        "window_ms": 60000,
+        "max_nonce_ahead_ms": 1000
+      },
+      "mpc_fee": "1",
+      "signer_gas_tgas": 230,
+      "callback_gas_tgas": 30,
+      "heartbeat_timeout_seconds": 3600,
+      "keeper_weight_limit": "5000",
+      "network": "Testnet",
+      "oracle": {
+        "account_id": null,
+        "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+        "max_age_seconds": 60,
+        "max_confidence_bps": 100,
+        "min_price": "2784560",
+        "max_price": "4176840"
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "daily_usage": "12408204",
+      "usage_day": 20767,
+      "operation_id": "3",
+      "last_keeper_heartbeat": "1794331679",
+      "reference_price": "3510100",
+      "reference_price_timestamp": "1794331599",
+      "last_nonce": "1794331685244",
+      "outstanding": [
+        {
+          "nonce": 1794331472735,
+          "expires_after": 1794504272736,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": false,
+          "withdrawal": false
+        }
+      ],
+      "pause_complete": true,
+      "lifetime_opened": "3500000000000000000000000",
+      "last_open_expiry": "1794331682790",
+      "keeper_weight_used": "10"
+    },
+    "keys": {
+      "block_hash": "CvrjAWFRkBAsSFiGh6SWDdMmW3WVm8JGgrnm2Emm32xU",
+      "block_height": 277098318,
+      "keys": []
+    },
+    "account": {
+      "amount": "7990836774916475399999997",
+      "block_hash": "CvrjAWFRkBAsSFiGh6SWDdMmW3WVm8JGgrnm2Emm32xU",
+      "block_height": 277098318,
+      "code_hash": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 634418
+    }
+  },
+  "before": {
+    "observedAtMs": 1794331834476,
+    "spotClearinghouseState": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    },
+    "clearinghouseState": {
+      "marginSummary": {
+        "accountValue": "48.957074",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "48.957074",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "48.957074",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "48.957074",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "48.957074",
+      "assetPositions": [],
+      "time": 1794331834332
+    },
+    "userFills": [
+      {
+        "coin": "NEAR",
+        "px": "3.5212",
+        "sz": "3.5",
+        "side": "B",
+        "time": 1794331700441,
+        "startPosition": "-3.5",
+        "dir": "Close Short",
+        "closedPnl": "-0.03185",
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "oid": 65016537461,
+        "crossed": true,
+        "fee": "0.005545",
+        "tid": 208398018647727,
+        "feeToken": "USDC",
+        "twapId": null
+      },
+      {
+        "coin": "NEAR",
+        "px": "3.5121",
+        "sz": "3.5",
+        "side": "A",
+        "time": 1794331636657,
+        "startPosition": "0.0",
+        "dir": "Open Short",
+        "closedPnl": "0.0",
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "oid": 65016476566,
+        "crossed": true,
+        "fee": "0.005531",
+        "tid": 779931913856026,
+        "feeToken": "USDC",
+        "twapId": null
+      }
+    ],
+    "ledger": [
+      {
+        "time": 1794330483597,
+        "hash": "0x44c06110b210b2c4463a042dd1e71301020078f64d13d196e8890c6371148cae",
+        "delta": {
+          "type": "send",
+          "user": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+          "destination": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+          "sourceDex": "spot",
+          "destinationDex": "spot",
+          "token": "USDC",
+          "amount": "50.0",
+          "usdcValue": "50.0",
+          "fee": "1.0",
+          "nativeTokenFee": "0.0",
+          "nonce": 1794330429670,
+          "feeToken": "USDC"
+        }
+      },
+      {
+        "time": 1794331491898,
+        "hash": "0x326745dbd188e26333e1042dd228a20106005dc16c8c0135d62ff12e908cbc4d",
+        "delta": {
+          "type": "accountClassTransfer",
+          "usdc": "49.0",
+          "toPerp": true
+        }
+      }
+    ],
+    "funding": [],
+    "openOrders": [],
+    "account": {
+      "equityText": "48.957074",
+      "equity": 48.957074,
+      "marginUsed": 0,
+      "withdrawable": 48.957074,
+      "signedSize": 0,
+      "signedSizeText": "0",
+      "funding": null,
+      "otherPositions": []
+    },
+    "fills": [
+      {
+        "coin": "NEAR",
+        "oid": 65016537461,
+        "time": 1794331700441,
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "side": "B",
+        "sz": "3.5",
+        "px": "3.5212",
+        "fee": "0.005545",
+        "closedPnl": "-0.03185"
+      },
+      {
+        "coin": "NEAR",
+        "oid": 65016476566,
+        "time": 1794331636657,
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "side": "A",
+        "sz": "3.5",
+        "px": "3.5121",
+        "fee": "0.005531",
+        "closedPnl": "0.0"
+      }
+    ]
+  },
+  "spot": {
+    "contract": "4000000000000000000000000",
+    "token": "4000000000000000000000000",
+    "near": "4"
+  },
+  "risk": {
+    "leverage": 0,
+    "reserve": 0.1,
+    "stressedMaintenance": 0,
+    "headroom": 48.857074
+  },
+  "riskNote": "Shared stressMetrics model H in USDC; mainnet NEAR maintenance assumptions, not a venue liquidation guarantee. Live venue equity/margin and funding are recorded separately.",
+  "openOrders": [],
+  "settlementRequired": {
+    "afterMs": 1794331682790,
+    "command": "near contract call-function as-transaction policy-v2.counterweight-samet.testnet settle_position json-args '{\"short_size\":\"0\",\"observed_at_ms\":\"1794331834476\"}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send",
+    "note": "Run only after last_open_expiry, no open orders/remaining short, and within 30s of this public observation. Regenerate status if stale. Owner attestation releases reserved exposure; it is not an on-chain Hyperliquid proof."
+  }
+}
+```
+
+# Testnet lifecycle status — 2026-11-10T17:30:40.720Z
+
+[Public explorer](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) · [Public explorer](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390) · [Public explorer](https://sepolia.arbiscan.io/address/0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a) · [Public explorer](https://testnet.nearblocks.io/txns/FDepMaKNUmLZP8g6DzXzVcUsqV91V6Borv9Rh8uKNob8)
+
+Public observations only. NEAR commands are printed for the lead; this script never signs or sends NEAR transactions. A signature is not a fill; bridge arrival is separate from withdrawal acceptance.
+
+```json
+{
+  "step": "status",
+  "capturedAt": "2026-11-10T17:30:40.720Z",
+  "network": "testnet",
+  "outcome": "public-status-verified",
+  "commands": [],
+  "derived": {
+    "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+    "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277098328,
+    "derivedBlockHeight": 277098328
+  },
+  "market": {
+    "assetIndex": 54,
+    "szDecimals": 1,
+    "mark": "3.5245",
+    "funding": "0.0000125",
+    "capturedAt": "2026-11-10T17:30:41.812Z",
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "request": {
+      "type": "metaAndAssetCtxs"
+    }
+  },
+  "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+  "rebalance": null,
+  "preflight": {
+    "block": "EUxZ4FrEZ3u4kwveDFX2fa3XcMBqeCF7CRWf777jUhu2",
+    "state": {
+      "owner": "counterweight-samet.testnet",
+      "keeper": "keeper.counterweight-samet.testnet",
+      "coin": "NEAR",
+      "signer_account": "v1.signer-prod.testnet",
+      "wnear_account": "wrap.testnet",
+      "near_recipient": "counterweight-samet.testnet",
+      "derivation_path": "counterweight-1",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "asset_index": 54,
+      "size_decimals": 1,
+      "limits": {
+        "max_short_size": "5000000000000000000000000",
+        "per_order_notional_cap": "20000000",
+        "per_day_notional_cap": "40000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "spot_balance": "4000000000000000000000000",
+      "signed_short_size": "0",
+      "paused": false,
+      "pending": null,
+      "signing_limits": {
+        "keeper_per_block": 2,
+        "keeper_per_window": 8,
+        "keeper_outstanding": 8,
+        "owner_per_window": 16,
+        "window_ms": 60000,
+        "max_nonce_ahead_ms": 1000
+      },
+      "mpc_fee": "1",
+      "signer_gas_tgas": 230,
+      "callback_gas_tgas": 30,
+      "heartbeat_timeout_seconds": 3600,
+      "keeper_weight_limit": "5000",
+      "network": "Testnet",
+      "oracle": {
+        "account_id": null,
+        "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+        "max_age_seconds": 60,
+        "max_confidence_bps": 100,
+        "min_price": "2784560",
+        "max_price": "4176840"
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "daily_usage": "12408204",
+      "usage_day": 20767,
+      "operation_id": "3",
+      "last_keeper_heartbeat": "1794331679",
+      "reference_price": "3510100",
+      "reference_price_timestamp": "1794331599",
+      "last_nonce": "1794331685244",
+      "outstanding": [
+        {
+          "nonce": 1794331472735,
+          "expires_after": 1794504272736,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": false,
+          "withdrawal": false
+        }
+      ],
+      "pause_complete": true,
+      "lifetime_opened": "3500000000000000000000000",
+      "last_open_expiry": "1794331682790",
+      "keeper_weight_used": "10"
+    },
+    "keys": {
+      "block_hash": "EUxZ4FrEZ3u4kwveDFX2fa3XcMBqeCF7CRWf777jUhu2",
+      "block_height": 277098330,
+      "keys": []
+    },
+    "account": {
+      "amount": "7990836774916475399999997",
+      "block_hash": "EUxZ4FrEZ3u4kwveDFX2fa3XcMBqeCF7CRWf777jUhu2",
+      "block_height": 277098330,
+      "code_hash": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 634380
+    }
+  },
+  "before": {
+    "observedAtMs": 1794331841893,
+    "spotClearinghouseState": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    },
+    "clearinghouseState": {
+      "marginSummary": {
+        "accountValue": "48.957074",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "48.957074",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "48.957074",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "48.957074",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "48.957074",
+      "assetPositions": [],
+      "time": 1794331841743
+    },
+    "userFills": [
+      {
+        "coin": "NEAR",
+        "px": "3.5212",
+        "sz": "3.5",
+        "side": "B",
+        "time": 1794331700441,
+        "startPosition": "-3.5",
+        "dir": "Close Short",
+        "closedPnl": "-0.03185",
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "oid": 65016537461,
+        "crossed": true,
+        "fee": "0.005545",
+        "tid": 208398018647727,
+        "feeToken": "USDC",
+        "twapId": null
+      },
+      {
+        "coin": "NEAR",
+        "px": "3.5121",
+        "sz": "3.5",
+        "side": "A",
+        "time": 1794331636657,
+        "startPosition": "0.0",
+        "dir": "Open Short",
+        "closedPnl": "0.0",
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "oid": 65016476566,
+        "crossed": true,
+        "fee": "0.005531",
+        "tid": 779931913856026,
+        "feeToken": "USDC",
+        "twapId": null
+      }
+    ],
+    "ledger": [
+      {
+        "time": 1794330483597,
+        "hash": "0x44c06110b210b2c4463a042dd1e71301020078f64d13d196e8890c6371148cae",
+        "delta": {
+          "type": "send",
+          "user": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+          "destination": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+          "sourceDex": "spot",
+          "destinationDex": "spot",
+          "token": "USDC",
+          "amount": "50.0",
+          "usdcValue": "50.0",
+          "fee": "1.0",
+          "nativeTokenFee": "0.0",
+          "nonce": 1794330429670,
+          "feeToken": "USDC"
+        }
+      },
+      {
+        "time": 1794331491898,
+        "hash": "0x326745dbd188e26333e1042dd228a20106005dc16c8c0135d62ff12e908cbc4d",
+        "delta": {
+          "type": "accountClassTransfer",
+          "usdc": "49.0",
+          "toPerp": true
+        }
+      }
+    ],
+    "funding": [],
+    "openOrders": [],
+    "account": {
+      "equityText": "48.957074",
+      "equity": 48.957074,
+      "marginUsed": 0,
+      "withdrawable": 48.957074,
+      "signedSize": 0,
+      "signedSizeText": "0",
+      "funding": null,
+      "otherPositions": []
+    },
+    "fills": [
+      {
+        "coin": "NEAR",
+        "oid": 65016537461,
+        "time": 1794331700441,
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "side": "B",
+        "sz": "3.5",
+        "px": "3.5212",
+        "fee": "0.005545",
+        "closedPnl": "-0.03185"
+      },
+      {
+        "coin": "NEAR",
+        "oid": 65016476566,
+        "time": 1794331636657,
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "side": "A",
+        "sz": "3.5",
+        "px": "3.5121",
+        "fee": "0.005531",
+        "closedPnl": "0.0"
+      }
+    ]
+  },
+  "spot": {
+    "contract": "4000000000000000000000000",
+    "token": "4000000000000000000000000",
+    "near": "4"
+  },
+  "risk": {
+    "leverage": 0,
+    "reserve": 0.1,
+    "stressedMaintenance": 0,
+    "headroom": 48.857074
+  },
+  "riskNote": "Shared stressMetrics model H in USDC; mainnet NEAR maintenance assumptions, not a venue liquidation guarantee. Live venue equity/margin and funding are recorded separately.",
+  "settle-tx": {
+    "final_execution_status": "FINAL",
+    "receipts_outcome": [
+      {
+        "block_hash": "FwHfm93Rmez6qm6v2FNkHNGw88crVMz8uq29z6U4nbn9",
+        "id": "7a7FwQ3kbVXhtGDowPJVRJaKfcDT7csYYpEEyTHV1huf",
+        "outcome": {
+          "executor_id": "policy-v2.counterweight-samet.testnet",
+          "gas_burnt": 2087546363015,
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"3500000000000000000000000\",\"observed_at_ms\":\"1794331834476\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
+          ],
+          "metadata": {
+            "contracts": [
+              {
+                "local": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M"
+              }
+            ],
+            "gas_profile": [
+              {
+                "cost": "BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "3441985443"
+              },
+              {
+                "cost": "CONTRACT_LOADING_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "35445963"
+              },
+              {
+                "cost": "CONTRACT_LOADING_BYTES",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "690134829495"
+              },
+              {
+                "cost": "LOG_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "3543313050"
+              },
+              {
+                "cost": "LOG_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "3246902586"
+              },
+              {
+                "cost": "READ_CACHED_TRIE_NODE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "2280000000"
+              },
+              {
+                "cost": "READ_MEMORY_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "10439452800"
+              },
+              {
+                "cost": "READ_MEMORY_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "3535239690"
+              },
+              {
+                "cost": "READ_REGISTER_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "7551495558"
+              },
+              {
+                "cost": "READ_REGISTER_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "77863980"
+              },
+              {
+                "cost": "STORAGE_READ_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "56356845749"
+              },
+              {
+                "cost": "STORAGE_READ_KEY_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "154762665"
+              },
+              {
+                "cost": "STORAGE_READ_VALUE_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "3995034848"
+              },
+              {
+                "cost": "STORAGE_WRITE_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "64196736000"
+              },
+              {
+                "cost": "STORAGE_WRITE_EVICTED_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "22867522584"
+              },
+              {
+                "cost": "STORAGE_WRITE_KEY_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "352414335"
+              },
+              {
+                "cost": "STORAGE_WRITE_VALUE_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "20906495286"
+              },
+              {
+                "cost": "TOUCHING_TRIE_NODE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "54720000000"
+              },
+              {
+                "cost": "UTF8_DECODING_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "3111779061"
+              },
+              {
+                "cost": "UTF8_DECODING_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "71728797834"
+              },
+              {
+                "cost": "WASM_INSTRUCTION",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "146273675460"
+              },
+              {
+                "cost": "WRITE_MEMORY_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "11215179444"
+              },
+              {
+                "cost": "WRITE_MEMORY_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "2195360232"
+              },
+              {
+                "cost": "WRITE_REGISTER_BASE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "11462089944"
+              },
+              {
+                "cost": "WRITE_REGISTER_BYTE",
+                "cost_category": "WASM_HOST_COST",
+                "gas_used": "5516069364"
+              }
+            ],
+            "version": 4
+          },
+          "receipt_ids": [
+            "AoQsKr9QpRTjHFWWH2r2EHq7hJF3EEyZ7gRMDAVx2eGz"
+          ],
+          "status": {
+            "SuccessValue": ""
+          },
+          "tokens_burnt": "208754636301500000000"
+        },
+        "proof": [
+          {
+            "direction": "Left",
+            "hash": "7Hyd1MGkXr55uNg3m3o8chydTqqFMG5irq1m9h97JUyi"
+          },
+          {
+            "direction": "Left",
+            "hash": "5BD5uUzHp9GiUtAh6q9fV8bEWuW6QEiX16kjByxaFdan"
+          },
+          {
+            "direction": "Right",
+            "hash": "pZaAxSxkCXjmDKYeoaBMcjLQWa6avKnPfYvBgfgFGGi"
+          }
+        ]
+      },
+      {
+        "block_hash": "ApCAqySZFScz87Dt6oib8K8K5zwTUKDNJD11Z16XDm6m",
+        "id": "AoQsKr9QpRTjHFWWH2r2EHq7hJF3EEyZ7gRMDAVx2eGz",
+        "outcome": {
+          "executor_id": "counterweight-samet.testnet",
+          "gas_burnt": 223182562500,
+          "logs": [],
+          "metadata": {
+            "contracts": [
+              null
+            ],
+            "gas_profile": [],
+            "version": 4
+          },
+          "receipt_ids": [],
+          "status": {
+            "SuccessValue": ""
+          },
+          "tokens_burnt": "0"
+        },
+        "proof": []
+      }
+    ],
+    "status": {
+      "SuccessValue": ""
+    },
+    "transaction": {
+      "actions": [
+        {
+          "FunctionCall": {
+            "args": "eyJvYnNlcnZlZF9hdF9tcyI6IjE3OTQzMzE4MzQ0NzYiLCJzaG9ydF9zaXplIjoiMCJ9",
+            "deposit": "0",
+            "gas": 30000000000000,
+            "method_name": "settle_position"
+          }
+        }
+      ],
+      "hash": "FDepMaKNUmLZP8g6DzXzVcUsqV91V6Borv9Rh8uKNob8",
+      "nonce": 277052380000012,
+      "priority_fee": 0,
+      "public_key": "ed25519:G6Wmxh6djy5Uh5hMAYPAreERcBXgCp73XsruiRoSRNCi",
+      "receiver_id": "policy-v2.counterweight-samet.testnet",
+      "signature": "ed25519:2k2HLCYYe6Pbv4DtEJk2cyQ91DzDFMHYYc8pL6Nv7DLCp6eRFdNjAafv1tLu3Xbs3YtTAj97WT2uADwA1ZxwhxwQ",
+      "signer_id": "counterweight-samet.testnet"
+    },
+    "transaction_outcome": {
+      "block_hash": "4C9acftnowVVvAUAnfEvM7cHKZjKFZzYPTFzQyyNe4d4",
+      "id": "FDepMaKNUmLZP8g6DzXzVcUsqV91V6Borv9Rh8uKNob8",
+      "outcome": {
+        "executor_id": "counterweight-samet.testnet",
+        "gas_burnt": 311206625190,
+        "logs": [],
+        "metadata": {
+          "gas_profile": null,
+          "version": 1
+        },
+        "receipt_ids": [
+          "7a7FwQ3kbVXhtGDowPJVRJaKfcDT7csYYpEEyTHV1huf"
+        ],
+        "status": {
+          "SuccessReceiptId": "7a7FwQ3kbVXhtGDowPJVRJaKfcDT7csYYpEEyTHV1huf"
+        },
+        "tokens_burnt": "31120662519000000000"
+      },
+      "proof": [
+        {
+          "direction": "Right",
+          "hash": "WXNTvMkJNTwNFSnrHzt1NbaAAkpHq5nRMMtCpMyUHLk"
+        },
+        {
+          "direction": "Right",
+          "hash": "aKa61mdWpa9Qn3JNVaDwuE5YrCBSoyzPAxoGUriLiUp"
+        },
+        {
+          "direction": "Right",
+          "hash": "AQrMDCW5T2ZDdbkv1fNN1oNEvwGrEEEAfzJU6riqkEyc"
+        }
+      ]
+    }
+  },
+  "openOrders": [],
+  "withdrawalSetup": {
+    "command": "near contract call-function as-transaction policy-v2.counterweight-samet.testnet configure_rebalancing json-args '{\"limits\":{\"adapter\":\"disabled-routes.policy-v2.counterweight-samet.testnet\",\"strategy_margin_address\":\"0x3e72c8963761c3f436710df9b891d8e3a74b5390\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"1\",\"daily_sale_near\":\"1\",\"max_fee_usdc\":\"1\",\"max_impact_bps\":0,\"quote_age_ms\":30000,\"completion_ms\":60000,\"max_mismatch_near\":\"1\",\"per_withdrawal_usdc\":\"60000000\",\"daily_withdrawal_usdc\":\"60000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"11138240\"}}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send",
+    "note": "Owner runs once after close. Existing WASM requires this for withdraw3. Adapter is an uncreated child of the keyless policy; no route is invoked. Sale caps are 1 yoctoNEAR, withdrawal caps $60, residual equity $1. This setup ends the run; do not reopen without a separate plan."
+  }
+}
+```
+
+# Testnet lifecycle status — 2026-11-10T17:35:14.988Z
+
+[Public explorer](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) · [Public explorer](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390) · [Public explorer](https://sepolia.arbiscan.io/address/0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a)
+
+Public observations only. NEAR commands are printed for the lead; this script never signs or sends NEAR transactions. A signature is not a fill; bridge arrival is separate from withdrawal acceptance.
+
+```json
+{
+  "step": "status",
+  "capturedAt": "2026-11-10T17:35:14.988Z",
+  "network": "testnet",
+  "outcome": "failed-before-submission",
+  "commands": [],
+  "derived": {
+    "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+    "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277098796,
+    "derivedBlockHeight": 277098796
+  },
+  "market": {
+    "assetIndex": 54,
+    "szDecimals": 1,
+    "mark": "3.5275",
+    "funding": "0.0000125",
+    "capturedAt": "2026-11-10T17:35:15.403Z",
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "request": {
+      "type": "metaAndAssetCtxs"
+    }
+  },
+  "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+  "rebalance": {
+    "processed_receipts": [],
+    "withdrawal": {
+      "nonce": "1794331863418",
+      "amount": "47957074"
+    },
+    "acquisition_budget_usdc": "0",
+    "acquired_near": "0",
+    "reentry_required": false,
+    "limits": {
+      "adapter": "disabled-routes.policy-v2.counterweight-samet.testnet",
+      "strategy_margin_address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+      "destination_token": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+      "per_sale_near": "1",
+      "daily_sale_near": "1",
+      "max_fee_usdc": "1",
+      "max_impact_bps": 0,
+      "quote_age_ms": 30000,
+      "completion_ms": 60000,
+      "max_mismatch_near": "1",
+      "per_withdrawal_usdc": "60000000",
+      "daily_withdrawal_usdc": "60000000",
+      "min_residual_equity_usdc": "1000000",
+      "min_headroom_bps": 1000,
+      "lower_headroom_bps": 3000,
+      "target_headroom_bps": 6000,
+      "upper_headroom_bps": 9000,
+      "fee_reserve_usdc": "100000",
+      "original_target_usdc": "11138240"
+    },
+    "initial_inventory": "4000000000000000000000000",
+    "sold_inventory": "0",
+    "reduced_inventory": "0",
+    "usable_margin": "1000000",
+    "withdrawable": "1000000",
+    "observed_at_ms": "1794331852657",
+    "next_route_id": "0",
+    "route": null,
+    "sales": [],
+    "withdrawals": [
+      [
+        1794331863418,
+        47957074
+      ]
+    ]
+  },
+  "preflight": {
+    "block": "4QnoBXaTYdzuzUQS8VsiyTjCuQDvcR46XQop9Un54L3N",
+    "state": {
+      "owner": "counterweight-samet.testnet",
+      "keeper": "keeper.counterweight-samet.testnet",
+      "coin": "NEAR",
+      "signer_account": "v1.signer-prod.testnet",
+      "wnear_account": "wrap.testnet",
+      "near_recipient": "counterweight-samet.testnet",
+      "derivation_path": "counterweight-1",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "asset_index": 54,
+      "size_decimals": 1,
+      "limits": {
+        "max_short_size": "5000000000000000000000000",
+        "per_order_notional_cap": "20000000",
+        "per_day_notional_cap": "40000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "spot_balance": "4000000000000000000000000",
+      "signed_short_size": "0",
+      "paused": false,
+      "pending": null,
+      "signing_limits": {
+        "keeper_per_block": 2,
+        "keeper_per_window": 8,
+        "keeper_outstanding": 8,
+        "owner_per_window": 16,
+        "window_ms": 60000,
+        "max_nonce_ahead_ms": 1000
+      },
+      "mpc_fee": "1",
+      "signer_gas_tgas": 230,
+      "callback_gas_tgas": 30,
+      "heartbeat_timeout_seconds": 3600,
+      "keeper_weight_limit": "5000",
+      "network": "Testnet",
+      "oracle": {
+        "account_id": null,
+        "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+        "max_age_seconds": 60,
+        "max_confidence_bps": 100,
+        "min_price": "2784560",
+        "max_price": "4176840"
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "daily_usage": "12408204",
+      "usage_day": 20767,
+      "operation_id": "4",
+      "last_keeper_heartbeat": "1794331679",
+      "reference_price": "3528000",
+      "reference_price_timestamp": "1794331854",
+      "last_nonce": "1794331863418",
+      "outstanding": [
+        {
+          "nonce": 1794331472735,
+          "expires_after": 1794504272736,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": false,
+          "withdrawal": false
+        },
+        {
+          "nonce": 1794331863418,
+          "expires_after": 1794504663419,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": false,
+          "withdrawal": true
+        }
+      ],
+      "pause_complete": true,
+      "lifetime_opened": "3500000000000000000000000",
+      "last_open_expiry": "1794331682790",
+      "keeper_weight_used": "10"
+    },
+    "keys": {
+      "block_hash": "4QnoBXaTYdzuzUQS8VsiyTjCuQDvcR46XQop9Un54L3N",
+      "block_height": 277098796,
+      "keys": []
+    },
+    "account": {
+      "amount": "7990836774916475399999996",
+      "block_hash": "4QnoBXaTYdzuzUQS8VsiyTjCuQDvcR46XQop9Un54L3N",
+      "block_height": 277098796,
+      "code_hash": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M",
+      "locked": "0",
+      "storage_paid_at": 0,
+      "storage_usage": 634934
+    }
+  },
+  "before": {
+    "observedAtMs": 1794332115524,
+    "spotClearinghouseState": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    },
+    "clearinghouseState": {
+      "marginSummary": {
+        "accountValue": "1.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "1.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "1.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "1.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "1.0",
+      "assetPositions": [],
+      "time": 1794332115415
+    },
+    "userFills": [
+      {
+        "coin": "NEAR",
+        "px": "3.5212",
+        "sz": "3.5",
+        "side": "B",
+        "time": 1794331700441,
+        "startPosition": "-3.5",
+        "dir": "Close Short",
+        "closedPnl": "-0.03185",
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "oid": 65016537461,
+        "crossed": true,
+        "fee": "0.005545",
+        "tid": 208398018647727,
+        "feeToken": "USDC",
+        "twapId": null
+      },
+      {
+        "coin": "NEAR",
+        "px": "3.5121",
+        "sz": "3.5",
+        "side": "A",
+        "time": 1794331636657,
+        "startPosition": "0.0",
+        "dir": "Open Short",
+        "closedPnl": "0.0",
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "oid": 65016476566,
+        "crossed": true,
+        "fee": "0.005531",
+        "tid": 779931913856026,
+        "feeToken": "USDC",
+        "twapId": null
+      }
+    ],
+    "ledger": [
+      {
+        "time": 1794330483597,
+        "hash": "0x44c06110b210b2c4463a042dd1e71301020078f64d13d196e8890c6371148cae",
+        "delta": {
+          "type": "send",
+          "user": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+          "destination": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+          "sourceDex": "spot",
+          "destinationDex": "spot",
+          "token": "USDC",
+          "amount": "50.0",
+          "usdcValue": "50.0",
+          "fee": "1.0",
+          "nativeTokenFee": "0.0",
+          "nonce": 1794330429670,
+          "feeToken": "USDC"
+        }
+      },
+      {
+        "time": 1794331491898,
+        "hash": "0x326745dbd188e26333e1042dd228a20106005dc16c8c0135d62ff12e908cbc4d",
+        "delta": {
+          "type": "accountClassTransfer",
+          "usdc": "49.0",
+          "toPerp": true
+        }
+      },
+      {
+        "time": 1794332099146,
+        "hash": "0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0",
+        "delta": {
+          "type": "withdraw",
+          "usdc": "46.957074",
+          "nonce": 1794331863418000,
+          "fee": "1.0"
+        }
+      }
+    ],
+    "funding": [],
+    "openOrders": [],
+    "account": {
+      "equityText": "1.0",
+      "equity": 1,
+      "marginUsed": 0,
+      "withdrawable": 1,
+      "signedSize": 0,
+      "signedSizeText": "0",
+      "funding": null,
+      "otherPositions": []
+    },
+    "fills": [
+      {
+        "coin": "NEAR",
+        "oid": 65016537461,
+        "time": 1794331700441,
+        "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+        "side": "B",
+        "sz": "3.5",
+        "px": "3.5212",
+        "fee": "0.005545",
+        "closedPnl": "-0.03185"
+      },
+      {
+        "coin": "NEAR",
+        "oid": 65016476566,
+        "time": 1794331636657,
+        "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+        "side": "A",
+        "sz": "3.5",
+        "px": "3.5121",
+        "fee": "0.005531",
+        "closedPnl": "0.0"
+      }
+    ]
+  },
+  "spot": {
+    "contract": "4000000000000000000000000",
+    "token": "4000000000000000000000000",
+    "near": "4"
+  },
+  "risk": {
+    "leverage": 0,
+    "reserve": 0.1,
+    "stressedMaintenance": 0,
+    "headroom": 0.9
+  },
+  "riskNote": "Shared stressMetrics model H in USDC; mainnet NEAR maintenance assumptions, not a venue liquidation guarantee. Live venue equity/margin and funding are recorded separately.",
+  "openOrders": [],
+  "error": "Hyperliquid withdrawal not yet verified in public ledger; do not resubmit signature"
+}
+```
+
