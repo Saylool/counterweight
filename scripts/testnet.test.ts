@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { base58 } from '@scure/base';
 import { getSigningDigest, type L1Input } from '../packages/hyperliquid/src/index.js';
 import { assertFreshContractProof, parseContractProof, proofKeys, proofOptions, REHEARSAL_NOTICE } from './prove-contract.js';
-import { deploymentSteps, initialization } from './testnet-plan.js';
+import { upgradeSteps, deploymentSteps, initialization } from './testnet-plan.js';
 import { checkKeys, planConfigMatches, policyStateSchema, verifyTestnet } from './testnet-verify.js';
 import { committedWasm, DEPLOYED_SHA256, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, PROBE_ADDRESS, publicKey, rpc, SIGNING_LIMITS, txHash } from './testnet-common.js';
 import { deriveEvmAddress } from '../packages/hyperliquid/src/index.js';
@@ -54,6 +54,14 @@ describe('auditable deployment command builder', () => {
       expect(step.command).not.toMatch(/sign-with-(?:plaintext|access-key|legacy)|autogenerate|v1.signer-prod.testnet sign /);
     }
   });
+  it('upgrades initialized v2 without creating or initializing an account and retains saved plan', () => {
+    const steps = upgradeSteps('a'.repeat(64));
+    expect(steps[0]!.command).toContain(`near contract deploy ${NEXT_POLICY}`);
+    expect(steps[0]!.command).toContain('without-init-call');
+    expect(steps.map(s => s.command).join('\n')).not.toMatch(/create-account| new json-args/);
+    expect(steps[1]!.command).toContain('--plan=docs/evidence/policy-v2-plan.json');
+    expect(steps[2]!.command).toBe('npm run lifecycle -- --step=to-perp --amount=49');
+  });
   it('leaves public key placeholders that fail closed when unset', () => {
     const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS, '3.6348'), 'a'.repeat(64));
     expect(steps[0]!.command).toContain('${POLICY_PUBLIC_KEY:?');
@@ -74,7 +82,7 @@ describe('auditable deployment command builder', () => {
   });
   it('verifies artifact bytes against the committed SHA-256 manifest and converts to NEAR base58', async () => {
     const result = await committedWasm();
-    expect(result.sha256).toBe('d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1');
+    expect(result.sha256).toBe('1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a');
     expect(Buffer.from(base58.decode(result.codeHash)).toString('hex')).toBe(result.sha256);
   });
 });

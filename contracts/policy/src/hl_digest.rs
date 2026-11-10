@@ -7,6 +7,23 @@ pub const IMPLEMENTATION: &str = "HYPERLIQUID_MSGPACK_EIP712_V1";
 type Result<T> = std::result::Result<T, &'static str>;
 
 pub fn digest(payload: &SigningPayload, mainnet: bool) -> Result<[u8; 32]> {
+    if let HlAction::UsdClassTransfer {
+        hyperliquid_chain,
+        signature_chain_id,
+        amount,
+        to_perp,
+        nonce,
+    } = &payload.action
+    {
+        if hyperliquid_chain != if mainnet { "Mainnet" } else { "Testnet" }
+            || signature_chain_id != "0x66eee"
+            || *nonce != payload.nonce
+            || payload.expires_after.is_some()
+        {
+            return Err("ERR_CLASS_TRANSFER_DOMAIN");
+        }
+        return usd_class_transfer_digest(amount, *to_perp, *nonce, mainnet);
+    }
     if let HlAction::Withdraw {
         hyperliquid_chain,
         signature_chain_id,
@@ -86,6 +103,20 @@ pub fn withdraw_digest(
         keccak(b"HyperliquidTransaction:Withdraw(string hyperliquidChain,string destination,string amount,uint64 time)"),
         keccak(if mainnet { b"Mainnet" } else { b"Testnet" }),
         keccak(destination.as_bytes()), keccak(amount.as_bytes()), word(time),
+    ])))
+}
+pub fn usd_class_transfer_digest(
+    amount: &str,
+    to_perp: bool,
+    nonce: u64,
+    mainnet: bool,
+) -> Result<[u8; 32]> {
+    safe_integer(nonce)?;
+    decimal(amount, true)?;
+    Ok(typed(domain("HyperliquidSignTransaction", 421614), hash_words(&[
+        keccak(b"HyperliquidTransaction:UsdClassTransfer(string hyperliquidChain,string amount,bool toPerp,uint64 nonce)"),
+        keccak(if mainnet { b"Mainnet" } else { b"Testnet" }),
+        keccak(amount.as_bytes()), word(u64::from(to_perp)), word(nonce),
     ])))
 }
 pub fn action_hash(
@@ -315,7 +346,7 @@ pub fn canonical_msgpack(action: &HlAction) -> Result<Vec<u8>> {
             m.str("type")?;
             m.str("noop")?;
         }
-        HlAction::Withdraw { .. } => return Err("ERR_NOT_L1"),
+        HlAction::Withdraw { .. } | HlAction::UsdClassTransfer { .. } => return Err("ERR_NOT_L1"),
     }
     Ok(m.0)
 }
@@ -361,6 +392,13 @@ mod tests {
                     mainnet,
                 )
                 .unwrap()
+            } else if action["type"] == "usdClassTransfer" {
+                let payload = SigningPayload {
+                    action: serde_json::from_value(v["wireAction"].clone()).unwrap(),
+                    nonce: v["nonce"].as_u64().unwrap(),
+                    expires_after: None,
+                };
+                digest(&payload, mainnet).unwrap()
             } else {
                 continue;
             };
@@ -373,7 +411,7 @@ mod tests {
             checked += 1;
         }
         assert_eq!(
-            checked, 22,
+            checked, 28,
             "all order/trigger/cancel/cloid/vault/expiry/boundary/withdraw vectors"
         );
     }

@@ -13,7 +13,7 @@ export function parseAccount(raw: unknown) {
       marginUsed: numeric, cumFunding: z.object({ allTime: numeric, sinceOpen: numeric, sinceChange: numeric }) }) })) }).parse(raw);
   const near = result.assetPositions.filter(p => p.position.coin === 'NEAR');
   if (near.length > 1) throw new Error('Hyperliquid duplicate NEAR position');
-  return { equity: Number(result.marginSummary.accountValue), marginUsed: Number(result.marginSummary.totalMarginUsed),
+  return { equityText: result.marginSummary.accountValue, equity: Number(result.marginSummary.accountValue), marginUsed: Number(result.marginSummary.totalMarginUsed),
     withdrawable: Number(result.withdrawable), signedSize: Number(near[0]?.position.szi ?? '0'),
     signedSizeText: near[0]?.position.szi ?? '0', funding: near[0]?.position.cumFunding ?? null,
     otherPositions: result.assetPositions.filter(p => p.position.coin !== 'NEAR' && Number(p.position.szi) !== 0) };
@@ -46,7 +46,22 @@ export function parseWithdrawal(raw: unknown, ledgerRaw: unknown, amount: string
   if (entries.length !== 1) throw new Error('Hyperliquid withdrawal not yet verified in public ledger; do not resubmit signature');
   return entries[0]!;
 }
-export interface ExpectedCall { method: 'request_order_signature' | 'request_evm_withdrawal'; args: Record<string, unknown>; caller: string;
+export function spotUsdc(raw: unknown) {
+  const balances = z.object({ balances: z.array(z.object({ coin: z.string(), total: numeric.refine(s => Number(s) >= 0), hold: numeric })) }).parse(raw).balances;
+  const usdc = balances.filter(b => b.coin === 'USDC');
+  if (usdc.length > 1) throw new Error('Hyperliquid duplicate spot USDC');
+  return { total: units(usdc[0]?.total ?? '0', 6), hold: units(usdc[0]?.hold ?? '0', 6) };
+}
+export function verifyClassTransfer(raw: unknown, beforeSpot: unknown, afterSpot: unknown,
+  before: ReturnType<typeof parseAccount>, after: ReturnType<typeof parseAccount>, amount: string) {
+  z.object({ status: z.literal('ok'), response: z.object({ type: z.literal('default') }) }).parse(raw);
+  const wanted = units(amount, 6), old = spotUsdc(beforeSpot), current = spotUsdc(afterSpot);
+  if (old.total - current.total !== wanted || units(after.equityText, 6) - units(before.equityText, 6) !== wanted
+    || before.signedSize !== 0 || after.signedSize !== 0 || before.otherPositions.length || after.otherPositions.length)
+    throw new Error('Hyperliquid spot/perps transfer balance deltas not yet verified; do not resubmit signature');
+  return { amount, spotBefore: old.total.toString(), spotAfter: current.total.toString(), perpsBefore: before.equity, perpsAfter: after.equity };
+}
+export interface ExpectedCall { method: 'request_order_signature' | 'request_evm_withdrawal' | 'request_usd_class_transfer'; args: Record<string, unknown>; caller: string;
   policy: string; asset: number; reduceOnly: boolean; size: string; price: string; recipient: string; amount: string }
 /** Require successful final callback, exact caller/ABI args, unique policy events and matching digest. */
 export function parseLifecycleReceipt(raw: unknown, hash: string, expected: ExpectedCall) {
@@ -64,7 +79,7 @@ export function parseLifecycleReceipt(raw: unknown, hash: string, expected: Expe
         data: z.array(z.unknown()).length(1) }).parse(JSON.parse(l.slice(11))) })));
   const requests = events.filter(e => e.event.event === 'request'), signatures = events.filter(e => e.event.event === 'signature');
   if (requests.length !== 1 || signatures.length !== 1) throw new Error('Contract needs one request and one signature');
-  const req = z.object({ id: decUint, caller: z.literal(expected.caller), kind: z.literal(expected.method === 'request_evm_withdrawal' ? 'EvmWithdrawal' : expected.reduceOnly ? 'Reduce' : 'Increase'),
+  const req = z.object({ id: decUint, caller: z.literal(expected.caller), kind: z.literal(expected.method === 'request_usd_class_transfer' ? 'UsdClassTransfer' : expected.method === 'request_evm_withdrawal' ? 'EvmWithdrawal' : expected.reduceOnly ? 'Reduce' : 'Increase'),
     digest: z.string().regex(/^[0-9a-f]{64}$/), payload: z.object({ action: z.unknown(), nonce: uint, expiresAfter: uint.nullable().optional() }).strict() }).parse(requests[0]!.event.data[0]);
   const sig = z.object({ id: decUint, nonce: decUint, expiresAfter: decUint.nullable(), signature: z.unknown() }).parse(signatures[0]!.event.data[0]);
   if (req.id !== sig.id || req.payload.nonce !== sig.nonce || (req.payload.expiresAfter ?? null) !== sig.expiresAfter ||
@@ -78,6 +93,11 @@ export function parseLifecycleReceipt(raw: unknown, hash: string, expected: Expe
     const expiry = uint.parse(req.payload.expiresAfter);
     if (expiry <= req.payload.nonce || expiry - req.payload.nonce > 60000) throw new Error('Contract order expiry exceeds 60s');
     input = { scheme: 'l1', network: 'testnet', action, nonce: req.payload.nonce, expiresAfter: expiry };
+  } else if (expected.method === 'request_usd_class_transfer') {
+    const action = z.object({ type: z.literal('usdClassTransfer'), amount: z.literal(expected.amount), toPerp: z.literal(true),
+      nonce: z.literal(req.payload.nonce), hyperliquidChain: z.literal('Testnet'), signatureChainId: z.literal('0x66eee') }).strict().parse(req.payload.action);
+    if (req.payload.expiresAfter != null) throw new Error('Contract usdClassTransfer must not have expiresAfter');
+    input = { scheme: 'user', network: 'testnet', action: { type: 'usdClassTransfer', amount: action.amount, toPerp: action.toPerp, nonce: action.nonce } };
   } else {
     const action = z.object({ type: z.literal('withdraw3'), destination: z.literal(expected.recipient), amount: z.literal(expected.amount),
       time: z.literal(req.payload.nonce), hyperliquidChain: z.literal('Testnet'), signatureChainId: z.literal('0x66eee') }).strict().parse(req.payload.action);

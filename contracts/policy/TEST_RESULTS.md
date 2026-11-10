@@ -1,9 +1,13 @@
-# Blind-review gap closure validation — 2026-11-10
+# Class-transfer upgrade validation — 2026-11-10
+
+Current validation and exact upgrade commands: [upgrade evidence](../../docs/evidence/2026-11-10-v2-upgrade-validation.md). The results below are historical for the old `d85b2f91…` artifact, which is now deployed on initialized v2. The new artifact keeps that state layout and upgrades in place without init.
+
+# Historical blind-review validation — 2026-11-10
 
 Validated in the current working directory on macOS arm64, Node 26.9.0 and Rust
 1.98.1. No git command, real private key, wallet/keychain operation, deployment,
 key deletion or testnet send was performed. near-workspaces used disposable
-localhost accounts only. These results supersede the previous release totals.
+localhost accounts only. These historical results are superseded by the upgrade validation linked above.
 
 | Check | Result |
 |---|---|
@@ -52,8 +56,7 @@ Production artifact: **627,961 bytes**, SHA-256:
 d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1
 ```
 
-SHA256SUMS, local-demo pin and provenance assertions agree. It is **not deployed**.
-The new state layout has no migration ABI: use a fresh controller. The init ABI
+At that historical release, SHA256SUMS, local-demo pin and provenance assertions agreed. That baseline is now deployed on initialized v2. The current upgrade preserves its state layout and needs no migration or init. The init ABI
 adds immutable `network` and `oracle`; the exact policy-v2 plan is documented in
 [TESTNET-DEPLOYMENT](../../docs/TESTNET-DEPLOYMENT.md). Public reads and tests do not
 prove live funding, venue fills, bridge finality or removal of deployed account keys.

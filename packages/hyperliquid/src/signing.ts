@@ -12,7 +12,8 @@ export type L1Action = { type: 'order'; orders: OrderWire[]; grouping: 'na' | 'n
   | { type: 'cancel'; cancels: { a: number; o: number }[] }
   | { type: 'cancelByCloid'; cancels: { asset: number; cloid: Hex }[] }
   | { type: 'noop' };
-export type UserAction = { type: 'approveAgent'; agentAddress: Hex; agentName: string; nonce: number }
+export type UserAction = { type: 'usdClassTransfer'; amount: string; toPerp: boolean; nonce: number }
+  | { type: 'approveAgent'; agentAddress: Hex; agentName: string; nonce: number }
   | { type: 'withdraw3' | 'usdSend'; destination: string; amount: string; time: number };
 export interface L1Input { scheme: 'l1'; network: Network; action: L1Action; nonce: number; vaultAddress?: Hex; expiresAfter?: number }
 export interface UserInput { scheme: 'user'; network: Network; action: UserAction }
@@ -39,6 +40,7 @@ const l1Schema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('cancelByCloid'), cancels: z.array(z.object({ asset: uint, cloid }).strict()).min(1) }).strict(),
 ]);
 const userSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('usdClassTransfer'), amount: positiveDecimal, toPerp: z.boolean(), nonce: uint }).strict(),
   z.object({ type: z.literal('approveAgent'), agentAddress: address, agentName: z.string(), nonce: uint }).strict(),
   z.object({ type: z.literal('withdraw3'), destination: address, amount: positiveDecimal, time: uint }).strict(),
   z.object({ type: z.literal('usdSend'), destination: address, amount: positiveDecimal, time: uint }).strict(),
@@ -47,6 +49,10 @@ const domain = { name: 'Exchange', version: '1', chainId: 1337, verifyingContrac
 const transferTypes = [
   { name: 'hyperliquidChain', type: 'string' }, { name: 'destination', type: 'string' },
   { name: 'amount', type: 'string' }, { name: 'time', type: 'uint64' },
+] as const;
+const classTransferTypes = [
+  { name: 'hyperliquidChain', type: 'string' }, { name: 'amount', type: 'string' },
+  { name: 'toPerp', type: 'bool' }, { name: 'nonce', type: 'uint64' },
 ] as const;
 const agentTypes = [
   { name: 'hyperliquidChain', type: 'string' }, { name: 'agentAddress', type: 'address' },
@@ -93,9 +99,10 @@ export function getSigningDigest(input: SigningInput): Hex {
   }
   const action = userActionForNetwork(input.action, input.network);
   const primaryType = action.type === 'approveAgent' ? 'HyperliquidTransaction:ApproveAgent'
+    : action.type === 'usdClassTransfer' ? 'HyperliquidTransaction:UsdClassTransfer'
     : action.type === 'withdraw3' ? 'HyperliquidTransaction:Withdraw' : 'HyperliquidTransaction:UsdSend';
   return hashTypedData({ domain: { ...domain, name: 'HyperliquidSignTransaction', chainId: Number(BigInt(action.signatureChainId)) },
-    types: { [primaryType]: action.type === 'approveAgent' ? agentTypes : transferTypes }, primaryType, message: action });
+    types: { [primaryType]: action.type === 'approveAgent' ? agentTypes : action.type === 'usdClassTransfer' ? classTransferTypes : transferTypes }, primaryType, message: action });
 }
 export function digestToSign(input: SigningInput): Uint8Array { return hexToBytes(getSigningDigest(input)); }
 
@@ -113,7 +120,7 @@ export function assembleRequest(input: SigningInput, signature: HyperliquidSigna
     const action = userActionForNetwork(input.action, input.network);
     const wire: ExchangeRequest['action'] = action.type === 'approveAgent' && action.agentName === ''
       ? (({ agentName: _name, ...rest }) => rest)(action) : action;
-    return { action: wire, nonce: input.action.type === 'approveAgent' ? input.action.nonce : input.action.time, signature: { ...signature } };
+    return { action: wire, nonce: 'nonce' in input.action ? input.action.nonce : input.action.time, signature: { ...signature } };
   }
   return { action: canonicalAction(input.action), nonce: input.nonce, signature: { ...signature },
     ...(input.vaultAddress === undefined ? {} : { vaultAddress: input.vaultAddress }),

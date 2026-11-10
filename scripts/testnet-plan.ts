@@ -1,9 +1,9 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
 import { shellQuote } from './proof-plan.js';
-import { committedWasm, KEEPER, ORACLE, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, publicCli, publicKey, SIGNING_LIMITS, testnetAccount, WASM } from './testnet-common.js';
+import { committedWasm, KEEPER, ORACLE, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, publicCli, publicKey, V2_BASELINE_SHA256, SIGNING_LIMITS, testnetAccount, WASM } from './testnet-common.js';
 import { BASE, FUNDED_LIMITS, liveMarket, priceBounds } from './lifecycle-config.js';
 
 export function initialization(assetIndex: number, decimals: number, ownerEvm: string, mark: string) {
@@ -52,8 +52,8 @@ export function deploymentSteps(init: ReturnType<typeof initialization>, sha256:
     { expect: 'Verify code/config/derivation and exactly one temporary full-access key against saved plan.',
       command: `npm run testnet:verify -- --before-key-removal=true --policy=${policy} --owner-evm=${init.evm_recipient} --plan=docs/evidence/policy-v2-plan.json` },
     ...spotSteps(policy),
-    { expect: 'OWNER UI FUNDING: connect your own eligible wallet, claim mock USDC, then Send 50 mock USDC to the derived address printed above (perpetual balance). Verify equity >= $50 and no positions before freezing keys.',
-      command: 'npm run lifecycle -- --step=status' },
+    { expect: 'OWNER UI FUNDING: connect your own eligible wallet, claim mock USDC, then Send 50 mock USDC to the derived address printed above (SPOT balance). Then run to-perp to move 49 into perps. Verify equity >= $49 and no positions before freezing keys.',
+      command: 'npm run lifecycle -- --step=to-perp --amount=49' },
     { expect: 'SEPARATE FINAL DEPLOYMENT STEP — IRREVERSIBLE: review config, spot, recipient and funding first. Deletes the sole policy key, preventing redeploy, deletion and key restoration. Stop if extra keys exist.',
       command: `near account delete-keys ${policy} public-keys ${pk} ${suffix}` },
     { expect: 'Verify zero keys and matching saved config before trading.',
@@ -67,8 +67,31 @@ export function deploymentSteps(init: ReturnType<typeof initialization>, sha256:
     { expect: 'Record final position, margin, funding and withdrawal ledger. Bridge arrival needs a separate destination receipt.', command: 'npm run lifecycle -- --step=status' },
   ];
 }
+/** Already initialized v2: upgrade code only. The original initializer plan is retained. */
+export function upgradeSteps(sha256: string) {
+  z.string().regex(/^[a-f0-9]{64}$/).parse(sha256);
+  return [
+    { expect: 'Existing initialized v2, full-access policy key still present. Check checksum and deploy code only; NEVER call new again.',
+      command: `test "$(shasum -a 256 ${WASM} | cut -d ' ' -f 1)" = '${sha256}' && near contract deploy ${NEXT_POLICY} use-file ${WASM} without-init-call ${suffix}` },
+    { expect: 'Verify new code and original saved config while the single temporary policy key remains.',
+      command: `npm run testnet:verify -- --policy=${NEXT_POLICY} --before-key-removal=true --plan=docs/evidence/policy-v2-plan.json` },
+    { expect: 'UI Send credited spot. Start relay, run its printed OWNER signature request in terminal B, paste only tx hash immediately. Verify spot falls 49 and perps rises 49.',
+      command: 'npm run lifecycle -- --step=to-perp --amount=49' },
+    { expect: 'Inspect public balances and evidence before the separate final key-removal step in the original deployment plan.',
+      command: 'npm run lifecycle -- --step=status' },
+  ];
+}
 export async function testnetPlan(argv: string[]) {
-  const options = parseOptions(argv, ['owner-evm', 'policy-public-key', 'keeper-public-key', 'policy', 'recover-v1']);
+  const options = parseOptions(argv, ['owner-evm', 'policy-public-key', 'keeper-public-key', 'policy', 'recover-v1', 'upgrade-v2']);
+  if (options['upgrade-v2'] !== undefined) {
+    if (options['upgrade-v2'] !== 'true' || (options.policy && options.policy !== NEXT_POLICY) || options['recover-v1'])
+      throw new Error('Expected --upgrade-v2=true for initialized policy-v2 only');
+    const [artifact, saved] = await Promise.all([committedWasm(), readFile('docs/evidence/policy-v2-plan.json', 'utf8').then(JSON.parse)]);
+    z.object({ policy: z.literal(NEXT_POLICY), artifact: z.object({ sha256: z.literal(V2_BASELINE_SHA256) }) }).passthrough().parse(saved);
+    console.log('Upgrade initialized v2 in place. Retain original plan, account, derivation and state. No init call. Commands only; lead executes.');
+    for (const [i, step] of upgradeSteps(artifact.sha256).entries()) console.log(`\n${i + 1}. Expect: ${step.expect}\n${step.command}`);
+    return;
+  }
   if (!options['owner-evm']) throw new Error('Usage: testnet:plan -- --owner-evm=0xYOUR_OWN_WALLET [--recover-v1=true]');
   if (options['recover-v1'] !== undefined && options['recover-v1'] !== 'true') throw new Error('Expected --recover-v1=true');
   const policy = testnetAccount(options.policy ?? NEXT_POLICY);
@@ -88,7 +111,7 @@ export async function testnetPlan(argv: string[]) {
   console.log(`Source: POST ${market.source} ${JSON.stringify(market.request)} at ${market.capturedAt}. NEAR mark $${market.mark}, reference ${init.reference_price} micro-USD; immutable bounds $${Number(init.oracle.min_price)/1e6}–$${Number(init.oracle.max_price)/1e6} (80–120% of mark).`);
   console.log('Keeper fallback: oracle account null; keeper may set_keeper_price only with observations <=60s old, nondecreasing timestamps, inside immutable bounds. Fetch a fresh TESTNET mark before each order. Opens cannot override price; close uses bounded reference_price hint. Outside bounds: stop and review; bounds cannot ratchet.');
   console.log('Limits: 5 NEAR maximum signed short, $20/order, $40/rolling day, 60s cooldown, 1% IOC price band. Open targets $12 (above $10 venue minimum), never exceeds spot. Fund venue with 50 mock USDC, plus 5 wNEAR spot; no bridge from NEAR is implied.');
-  console.log(`Owner UI: unlock and claim faucet with your own wallet at https://app.hyperliquid-testnet.xyz/drip, then Send 50 mock USDC to ${derived.address} and choose its perpetual USDC balance. Verify with lifecycle status before opening. Fixed withdraw3 recipient is ${init.evm_recipient} (Arbitrum Sepolia withdrawal, not a HyperCore Send).`);
+  console.log(`Owner UI: unlock and claim faucet with your own wallet at https://app.hyperliquid-testnet.xyz/drip, then Send 50 mock USDC to ${derived.address} which credits SPOT USDC. Run lifecycle --step=to-perp --amount=49, then verify perps equity with lifecycle status before opening. Fixed withdraw3 recipient is ${init.evm_recipient} (Arbitrum Sepolia withdrawal, not a HyperCore Send).`);
   if (options['recover-v1']) console.log(`\nOPTIONAL — deletes policy v1 permanently, ONLY if full-access key remains and no funds/obligations remain. Recover native testnet NEAR to owner:\nnear account delete-account ${POLICY} beneficiary ${OWNER} ${suffix}`);
   for (const [i, step] of steps.entries())
     console.log(`\n${i + 1}. Expect: ${step.expect}\n${step.command}`);

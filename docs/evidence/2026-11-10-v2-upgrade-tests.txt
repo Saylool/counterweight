@@ -1,0 +1,9 @@
+   Compiling counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.92s
+     Running tests/sandbox.rs (target/debug/deps/sandbox-5e0c267313568655)
+
+running 1 test
+test sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 21 filtered out; finished in 5.99s
+

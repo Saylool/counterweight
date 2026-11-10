@@ -1,0 +1,185 @@
+{
+  "capturedAt": "2026-11-10T17:23:13.694276+00:00",
+  "outcome": "local-validation-passed; lead-upgrade-and-live-transfer-not-executed",
+  "artifact": {
+    "sha256": "1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a",
+    "bytes": 633561
+  },
+  "oldArtifact": {
+    "path": "contracts/policy/tests/fixtures/policy-v2-d85b2f91.wasm",
+    "sha256": "d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1"
+  },
+  "stateCompatibility": "Policy fields unchanged; OperationKind appended at Borsh discriminant 6; exact old production init/deposit then new production deploy/get_state/owner signature passed",
+  "tests": {
+    "rustDefault": 119,
+    "rustTestUtils": 119,
+    "sandbox": 22,
+    "typescript": 420,
+    "frontend": 28,
+    "pythonCustody": 1
+  },
+  "otherChecks": [
+    "typecheck",
+    "cargo fmt --all --check",
+    "clippy --workspace --all-targets --all-features -D warnings",
+    "npm run build",
+    "npm run test:demo",
+    "production rebuild byte comparison",
+    "SHA256SUMS",
+    "35 required exports; no raw signing/test exports"
+  ],
+  "sdk": {
+    "repository": "https://github.com/hyperliquid-dex/hyperliquid-python-sdk",
+    "sdkVersion": "0.24.0",
+    "commit": "2fdb18f9517675ea03695a0962bd19eece9c83f0",
+    "signingPySha256": "938ec0a1f9611874b423ca946696e19a71d32d14709f521ea5d526f4398c0b85",
+    "exchangePySha256": "0bd885c5b64fd77893db58d4982b0d24e92b5be5036d0e9d6d05c40a1812d432",
+    "classTransferWireMethod": "Exchange.usd_class_transfer with vault_address=None and fixed timestamp; no suffix for same-account transfers",
+    "generator": "contracts/policy/tools/generate-signing-vectors.py",
+    "method": "Official sign_* entrypoints intercepted at wallet.sign_message; keccak(0x19 || version || domain separator || struct hash)",
+    "recoveryMethod": "Official SDK recover_* for every vector using an already-public MPC signature on unrelated digests; recovered addresses are codec parity checks, not our signer.",
+    "agentWireMethod": "Exchange.approve_agent with entropy/account construction replaced by public-address-only stubs",
+    "expectedSignatures": "Omitted to respect the blanket prohibition on handling private keys, including published test keys."
+  },
+  "classTransferVectors": [
+    {
+      "name": "testnet-usdClassTransfer-to-perp",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0xcca63cb0cec93fd3bc806da0929478a659fb2615bb050fe4135867cc783a3e2a",
+      "sdkRecovered": "0x7159582474f96ac496ee4ad6ba6b0e5059c3b471"
+    },
+    {
+      "name": "testnet-usdClassTransfer-to-spot",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0x7cea6ba0f955b30f8b16d233b3fa55e46c29c27e4e11436b3d946d15d008af30",
+      "sdkRecovered": "0xb0b883abfe30c50413367181378ddffc2146d57c"
+    },
+    {
+      "name": "testnet-usdClassTransfer-minimum",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0xb0873e00ce5b856c30cd70aee421b7a4592ad5475323332e9fa60c57c746f00d",
+      "sdkRecovered": "0x65d69829b87a6c2f0078abbc65d6e99422afc028"
+    },
+    {
+      "name": "mainnet-usdClassTransfer-to-perp",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0x9b40f0ce1363cccb18ad91b5bba9f38ce9a859c20a0e47ad8380ccac82e3e977",
+      "sdkRecovered": "0x304332c9f7a28b978a7d8c0682888d5f7b3f51a5"
+    },
+    {
+      "name": "mainnet-usdClassTransfer-to-spot",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0xe2aa42dc920acdb457275208efb8ec76a646029c59d1a1822d39e192daeb028a",
+      "sdkRecovered": "0x231d3c8080e7e36c5076fae79074412213de3178"
+    },
+    {
+      "name": "mainnet-usdClassTransfer-minimum",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0x0f3d04d66d9ea1c41a2f804e57bfdf5f7d5703de0307f231b6de3c34a57c8e2b",
+      "sdkRecovered": "0x2cb48318bcfa7068d29b8756561d124b2902a9d0"
+    }
+  ],
+  "liveExecution": {
+    "nearTransactionsSent": false,
+    "hyperliquidExchangeSubmissions": false,
+    "realPrivateKeysUsed": false,
+    "disposableLocalSandboxOnly": true
+  },
+  "relayEvidence": "Lead execution writes docs/evidence/<UTC-date>-lifecycle-to-perp.md and exclusive lifecycle-relay-<NEAR-hash>.json, including both spot/perps balances and exact verified owner receipt."
+}

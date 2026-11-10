@@ -4,8 +4,7 @@ The funded policy-v2 run now uses [FUNDED-LIFECYCLE](FUNDED-LIFECYCLE.md). The o
 
 Run from the repository root. TypeScript tools never invoke `near`, read wallets,
 access the keychain, generate keys, sign, or submit NEAR transactions. The team
-lead runs the printed near-cli-rs commands. The relay sends only the validated
-public order-zero cancellation to Hyperliquid **testnet**.
+lead runs the printed near-cli-rs commands. The relay sends validated contract-authorized actions to Hyperliquid **testnet**.
 
 ## Current deployment and next artifact
 
@@ -16,17 +15,66 @@ there is no final keyless proof yet. Keeper signature request
 `5ThwVx4mRcfAKBWCqWEcF2kUqMuUsqAL887yVtbqzaP9` emitted a signature but is now
 expired. A fresh keeper request is required; no script can extend its expiry.
 
-The rebuilt default artifact is **627,961 bytes**, SHA-256:
+## Upgrade the already initialized v2 (current run)
 
-```text
-d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1
+The deployed `policy-v2.counterweight-samet.testnet` runs baseline
+`d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1`.
+Its full-access policy key is still present. The new artifact is **633,561 bytes**,
+SHA-256 `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`. The main persisted `Policy` struct is unchanged;
+`OperationKind::UsdClassTransfer` is appended after all existing enum variants.
+No new state fields or migration are required. The sandbox upgrade regression
+uses the exact old production WASM, initializes it, deposits 5 mock wNEAR,
+upgrades to the new production WASM and verifies every `get_state` field plus
+successful owner-only signing.
+
+Run from the repository root; the lead executes all printed NEAR commands:
+
+```sh
+npm run testnet:plan -- --upgrade-v2=true
+test "$(shasum -a 256 contracts/policy/artifacts/counterweight_policy.wasm | cut -d ' ' -f 1)" = '1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a' && near contract deploy policy-v2.counterweight-samet.testnet use-file contracts/policy/artifacts/counterweight_policy.wasm without-init-call network-config testnet sign-with-keychain send
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --before-key-removal=true --plan=docs/evidence/policy-v2-plan.json
+npm run lifecycle -- --step=to-perp --amount=49
 ```
 
-It adds bounded reserve-funded MPC signing. It has **not** been deployed. The next
-plan defaults to a fresh `policy-v2.counterweight-samet.testnet`, reusing
-`keeper.counterweight-samet.testnet`. The old account will be frozen by key
-deletion; do not plan to upgrade it afterward. A new predecessor derives a new
-strategy EVM address even with the same `counterweight-1` path.
+**Do not call `new`, recreate the account, or overwrite `policy-v2-plan.json`.**
+Verification retains the saved baseline initializer and checks the current WASM
+against SHA256SUMS. Upgrade preserves the predecessor, path, recipient and derived
+address `0x3e72c8963761c3f436710df9b891d8e3a74b5390`.
+
+Hyperliquid UI **Send credits SPOT USDC**; it offers no perp destination. The 50
+mock USDC already sent therefore needs this owner-only `usdClassTransfer` to move
+49 into perps, leaving 1 in spot. Start the lifecycle command in terminal A. Run
+its one printed owner `request_usd_class_transfer` near-cli command in terminal B,
+then immediately paste only that transaction hash into A. The script checks exact
+owner/arguments/events/digest, receipt-block code/config/keys and recovered signer,
+claims the hash exclusively, posts once to Hyperliquid testnet, and checks both
+spot debit and perps equity credit. It records JSON plus Markdown in `docs/evidence/`.
+No contract USDC balance is invented; `spot_balance` remains the NEAR wNEAR ledger.
+
+The request takes micro-USDC (`49000000`), internally selects the nonce, and caps
+amounts at $60. `to_perp:false` is also owner-only and requires zero reserved short
+and expired opening authorizations. An active signing callback or rebalance route/
+withdrawal blocks transfer. Rate/fee/nonce/outstanding rules remain enforced.
+The SDK user-signed action has **no venue `expiresAfter`**. The callback has a local
+60s deadline; the relay refuses signatures older than 57s and never retries an
+uncertain submission. A signature already disclosed can remain usable beyond that
+local deadline; inspect evidence/public balances before any new request.
+
+A single retained full-access key or zero keys is allowed only for this owner
+funding step; this is not a final keyless proof. After verified perps funding,
+review config and evidence, then follow the separate final key-removal step before
+trading. Orders/withdrawals still require zero policy keys.
+
+SDK sources: [exact EIP-712 types and primary type](https://github.com/hyperliquid-dex/hyperliquid-python-sdk/blob/2fdb18f9517675ea03695a0962bd19eece9c83f0/hyperliquid/utils/signing.py),
+[Exchange wire format](https://github.com/hyperliquid-dex/hyperliquid-python-sdk/blob/2fdb18f9517675ea03695a0962bd19eece9c83f0/hyperliquid/exchange.py).
+Domain `HyperliquidSignTransaction`, version `1`, chain ID 421614, zero verifying
+contract; primary type `HyperliquidTransaction:UsdClassTransfer`; ordered fields
+`hyperliquidChain:string, amount:string, toPerp:bool, nonce:uint64`.
+`signatureChainId` is `0x66eee`. Exchange appends ` subaccount:<vault>` to amount
+only when a vault address is supplied. This ABI supports the same derived account
+only: plain amount `"49"`, no vault/subaccount suffix or destination. Six golden
+vectors cover both directions, both networks and the minimum micro-unit through
+the actual pinned SDK Exchange path, with no signing keys.
 
 ## Rehearse on the existing policy
 

@@ -920,3 +920,5 @@ fn oracle_config() -> OracleConfig {
     }
 }
 mod oracle;
+
+mod class_transfer;

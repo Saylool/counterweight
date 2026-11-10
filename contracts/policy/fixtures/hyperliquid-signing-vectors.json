@@ -4,6 +4,8 @@
     "sdkVersion": "0.24.0",
     "commit": "2fdb18f9517675ea03695a0962bd19eece9c83f0",
     "signingPySha256": "938ec0a1f9611874b423ca946696e19a71d32d14709f521ea5d526f4398c0b85",
+    "exchangePySha256": "0bd885c5b64fd77893db58d4982b0d24e92b5be5036d0e9d6d05c40a1812d432",
+    "classTransferWireMethod": "Exchange.usd_class_transfer with vault_address=None and fixed timestamp; no suffix for same-account transfers",
     "generator": "contracts/policy/tools/generate-signing-vectors.py",
     "method": "Official sign_* entrypoints intercepted at wallet.sign_message; keccak(0x19 || version || domain separator || struct hash)",
     "recoveryMethod": "Official SDK recover_* for every vector using an already-public MPC signature on unrelated digests; recovered addresses are codec parity checks, not our signer.",
@@ -347,6 +349,72 @@
       "sdkRecovered": "0x09a7958b5cc1b6310a596b7d5692a7d229dfe94f"
     },
     {
+      "name": "testnet-usdClassTransfer-to-perp",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0xcca63cb0cec93fd3bc806da0929478a659fb2615bb050fe4135867cc783a3e2a",
+      "sdkRecovered": "0x7159582474f96ac496ee4ad6ba6b0e5059c3b471"
+    },
+    {
+      "name": "testnet-usdClassTransfer-to-spot",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0x7cea6ba0f955b30f8b16d233b3fa55e46c29c27e4e11436b3d946d15d008af30",
+      "sdkRecovered": "0xb0b883abfe30c50413367181378ddffc2146d57c"
+    },
+    {
+      "name": "testnet-usdClassTransfer-minimum",
+      "scheme": "user",
+      "network": "testnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Testnet"
+      },
+      "digest": "0xb0873e00ce5b856c30cd70aee421b7a4592ad5475323332e9fa60c57c746f00d",
+      "sdkRecovered": "0x65d69829b87a6c2f0078abbc65d6e99422afc028"
+    },
+    {
       "name": "mainnet-noop",
       "scheme": "l1",
       "network": "mainnet",
@@ -680,6 +748,72 @@
       },
       "digest": "0x154e13803eec829e39aa11fe86ec61ddd29ac2b0fcfe745348690b2dbff44cf4",
       "sdkRecovered": "0x873c38ecb6b64d77680b503d9abb554dd6722269"
+    },
+    {
+      "name": "mainnet-usdClassTransfer-to-perp",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "49",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0x9b40f0ce1363cccb18ad91b5bba9f38ce9a859c20a0e47ad8380ccac82e3e977",
+      "sdkRecovered": "0x304332c9f7a28b978a7d8c0682888d5f7b3f51a5"
+    },
+    {
+      "name": "mainnet-usdClassTransfer-to-spot",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "1.000001",
+        "toPerp": false,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0xe2aa42dc920acdb457275208efb8ec76a646029c59d1a1822d39e192daeb028a",
+      "sdkRecovered": "0x231d3c8080e7e36c5076fae79074412213de3178"
+    },
+    {
+      "name": "mainnet-usdClassTransfer-minimum",
+      "scheme": "user",
+      "network": "mainnet",
+      "action": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123
+      },
+      "nonce": 1700000000123,
+      "wireAction": {
+        "type": "usdClassTransfer",
+        "amount": "0.000001",
+        "toPerp": true,
+        "nonce": 1700000000123,
+        "signatureChainId": "0x66eee",
+        "hyperliquidChain": "Mainnet"
+      },
+      "digest": "0x0f3d04d66d9ea1c41a2f804e57bfdf5f7d5703de0307f231b6de3c34a57c8e2b",
+      "sdkRecovered": "0x2cb48318bcfa7068d29b8756561d124b2902a9d0"
     }
   ]
 }

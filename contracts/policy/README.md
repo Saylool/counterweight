@@ -10,6 +10,20 @@ Owner-run testnet deployment commands and public-RPC verification are in
 prints keychain-signing commands only; `npm run prove:contract -- --tx=...` checks
 the actual contract's public events before relaying a harmless testnet cancellation.
 
+## Initialized v2 class-transfer upgrade
+
+The production main state layout is unchanged. The appended operation enum variant
+preserves existing Borsh discriminants. `request_usd_class_transfer(amount: U128,
+to_perp: bool)` is owner-only, same-account only and bounded to 1–60,000,000 USDC
+micro-units. Existing signing rate/resource/nonce/pending rules apply. Public request
+and signature events bind the payload. User-signed actions have no venue expiry;
+local callback deadlines do not revoke disclosed signatures. See the
+[upgrade runbook](../../docs/FUNDED-LIFECYCLE.md).
+
+The exact old production binary is retained in `tests/fixtures/policy-v2-d85b2f91.wasm`.
+The sandbox initializes/deposits under that code before upgrading to the new
+`artifacts/counterweight_policy.wasm`, with no init or migration call.
+
 ## Reproduce
 
 Run **from `contracts/policy/`**: Cargo discovers `.cargo/config.toml` from the

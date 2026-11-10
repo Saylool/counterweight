@@ -1072,3 +1072,105 @@ async fn sandbox_public_oracle_age_confidence_and_absent_fallback() -> Result<()
     assert!(result.logs().iter().any(|l| l.contains("\"p\":\"5.05\"")));
     Ok(())
 }
+
+/// Exact deployed production bytes, initialized before upgrading; no migration/init on new code.
+#[tokio::test]
+async fn sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer() -> Result<()> {
+    anyhow::ensure!(
+        std::env::var("COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS").as_deref() == Ok("1"),
+        "local disposable keys only"
+    );
+    let worker = near_workspaces::sandbox().await?;
+    anyhow::ensure!(
+        worker.rpc_addr().starts_with("http://127.0.0.1:"),
+        "loopback only"
+    );
+    let owner = worker.dev_create_account().await?;
+    let keeper = worker.dev_create_account().await?;
+    // Patch only disposable localhost accounts to .testnet names so the OLD default
+    // production binary's network guard executes unchanged (no test-utils bypass).
+    let mut named = Vec::new();
+    for name in ["upgrade-policy.testnet", "upgrade-signer.testnet"] {
+        let donor = worker.dev_create_account().await?;
+        let id = name.parse()?;
+        worker
+            .patch(&id)
+            .account(near_workspaces::types::AccountDetailsPatch::from(
+                donor.view_account().await?,
+            ))
+            .access_key(
+                donor.secret_key().public_key(),
+                near_workspaces::AccessKey::full_access(),
+            )
+            .transact()
+            .await?;
+        named.push(Account::from_secret_key(
+            id,
+            donor.secret_key().clone(),
+            &worker,
+        ));
+    }
+    near_sdk::testing_env!(near_sdk::test_utils::VMContextBuilder::new().build());
+    let old = include_bytes!("fixtures/policy-v2-d85b2f91.wasm");
+    // Assert exact old binary, independently of whatever source is now checked out.
+    assert_eq!(
+        near_sdk::env::sha256_array(old),
+        [
+            0xd8, 0x5b, 0x2f, 0x91, 0xa1, 0x82, 0x40, 0x2f, 0xd1, 0x08, 0x9a, 0xd6, 0x35, 0x3e,
+            0x17, 0x4a, 0x5b, 0x3d, 0xe7, 0x61, 0x15, 0x34, 0xcc, 0x83, 0x9e, 0x60, 0x1d, 0x78,
+            0x40, 0x1e, 0xab, 0xe1
+        ]
+    );
+    let contract = named[0].deploy(old).await?.into_result()?;
+    let signer = named[1]
+        .deploy(&std::fs::read(
+            "target/wasm32-unknown-unknown/release/counterweight_mock_signer.wasm",
+        )?)
+        .await?
+        .into_result()?;
+    owner.call(contract.id(), "new").args_json(json!({
+        "owner":owner.id(), "keeper":keeper.id(), "asset_index":4, "size_decimals":2,
+        "derivation_path":"counterweight-1", "evm_recipient":EVM, "signer_account":signer.id(),
+        "wnear_account":signer.id(), "limits":limits(60), "heartbeat_timeout_seconds":600,
+        "network":"Testnet", "reference_price":"5000000", "signing_limits":null,
+        "oracle":{"account_id":null,"feed_id":"c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750","max_age_seconds":300,"max_confidence_bps":100,"min_price":"4000000","max_price":"7000000"}
+    })).transact().await?.into_result()?;
+    owner.call(signer.id(), "deposit_to").args_json(json!({"policy":contract.id(),"sender_id":owner.id(),"amount":(5*BASE).to_string(),"msg":""})).max_gas().transact().await?.into_result()?;
+    let before: Value = contract.view("get_state").await?.json()?;
+    assert_eq!(before["spot_balance"], (5 * BASE).to_string());
+    named[0]
+        .deploy(&std::fs::read("artifacts/counterweight_policy.wasm")?)
+        .await?
+        .into_result()?;
+    let after: Value = contract.view("get_state").await?.json()?;
+    assert_eq!(
+        after, before,
+        "all state fields survive exact old -> new upgrade"
+    );
+    for caller in [&keeper, &named[1]] {
+        rejects(
+            caller
+                .call(contract.id(), "request_usd_class_transfer")
+                .args_json(json!({"amount":"49000000","to_perp":true}))
+                .max_gas()
+                .transact()
+                .await?,
+            "ERR_CALLER_NOT_OWNER",
+        );
+    }
+    let result = owner
+        .call(contract.id(), "request_usd_class_transfer")
+        .args_json(json!({"amount":"49000000","to_perp":true}))
+        .deposit(NearToken::from_yoctonear(1))
+        .max_gas()
+        .transact()
+        .await?;
+    verify_request_digest(&request(&result));
+    assert!(result.json::<bool>()?);
+    let after: Value = contract.view("get_state").await?.json()?;
+    assert_eq!(after["spot_balance"], before["spot_balance"]);
+    assert_eq!(after["owner"], before["owner"]);
+    assert_eq!(after["pending"], Value::Null);
+    assert!(after["last_nonce"].as_str().unwrap().parse::<u64>()? > 0);
+    Ok(())
+}

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, nearMarketIndex, testnetMeta, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
-import { committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
+import { NEXT_POLICY, V2_BASELINE_SHA256, committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
 
 export const policyStateSchema = z.object({ owner: z.literal(OWNER), keeper: z.literal(KEEPER), coin: z.literal('NEAR'),
   signer_account: z.literal(TESTNET_SIGNER), wnear_account: z.literal('wrap.testnet'), near_recipient: z.literal(OWNER),
@@ -37,7 +37,7 @@ export async function verifyTestnet(argv: string[]) {
   const artifact = await committedWasm();
   const saved = options.plan ? JSON.parse(await readFile(options.plan, 'utf8')) : undefined;
   if (saved && saved.policy !== policy) throw new Error('Policy plan account mismatch');
-  if (saved && saved.artifact?.sha256 !== artifact.sha256) throw new Error('Policy plan artifact mismatch');
+  if (saved && saved.artifact?.sha256 !== artifact.sha256 && !(policy === NEXT_POLICY && saved.artifact?.sha256 === V2_BASELINE_SHA256)) throw new Error('Policy plan artifact mismatch');
   let accountExists = false;
   const checks: { check: string; ok: boolean; details: unknown }[] = [];
   const record = async (name: string, run: () => Promise<{ ok: boolean; details: unknown }>) => {

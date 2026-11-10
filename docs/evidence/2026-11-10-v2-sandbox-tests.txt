@@ -1,0 +1,31 @@
+   Compiling near-workspaces v0.24.0
+   Compiling counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.82s
+     Running tests/sandbox.rs (target/debug/deps/sandbox-5e0c267313568655)
+
+running 22 tests
+test sandbox_authenticated_deposits_and_token_failure_restoration ... ok
+test sandbox_exact_sale_route_finality_and_replay ... ok
+test sandbox_failed_signing_budget_exhaustion_preserves_owner_emergency ... ok
+test sandbox_fixed_recipient_rejection ... ok
+test sandbox_function_call_keeper_uses_contract_fee_reserve ... ok
+test sandbox_keeper_caps_and_cooldown ... ok
+test sandbox_malformed_callback_and_private_endpoint ... ok
+test sandbox_outstanding_limit_and_failed_transaction_do_not_advance_nonce ... ok
+test sandbox_owner_only_config ... ok
+test sandbox_partial_settlement_releases_only_matching_spot ... ok
+test sandbox_pause_blocks_keeper_but_allows_owner_emergency ... ok
+test sandbox_pause_invalidates_all_nonces_confirmation_failure_and_expiry ... ok
+test sandbox_pending_duplicate_and_failed_callback ... ok
+test sandbox_public_heartbeat_timeout_deleverage ... ok
+test sandbox_public_oracle_age_confidence_and_absent_fallback ... ok
+test sandbox_rally_precision_and_cumulative_address_budget ... ok
+test sandbox_real_order_cancel_withdraw_digests_and_expiries ... ok
+test sandbox_reduce_signatures_do_not_prove_fills ... ok
+test sandbox_settlement_releases_backing_and_opening_capacity_after_expiry ... ok
+test sandbox_short_spot_invariant ... ok
+test sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer ... ok
+test sandbox_withdrawal_nonce_requires_confirmed_invalidation ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 329.65s
+

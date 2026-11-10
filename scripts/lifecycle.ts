@@ -5,9 +5,9 @@ import { z } from 'zod';
 import { assembleRequest, deriveTestnetAddress, recoveredSigner, TESTNET_API } from '../packages/hyperliquid/src/index.js';
 import { stressMetrics } from '../packages/domain/src/index.js';
 import { BASE, decimal, info, liveMarket, orderPrice, units, withdrawalConfig } from './lifecycle-config.js';
-import { parseAccount, parseFills, parseLifecycleReceipt, parseWithdrawal, verifyFill, type ExpectedCall } from './lifecycle-parsing.js';
+import { parseAccount, parseFills, parseLifecycleReceipt, parseWithdrawal, verifyFill, spotUsdc, verifyClassTransfer, type ExpectedCall } from './lifecycle-parsing.js';
 import { callCommand, initialization } from './testnet-plan.js';
-import { committedWasm, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, publicCli, rpc, stateAt, txHash } from './testnet-common.js';
+import { committedWasm, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, publicCli, V2_BASELINE_SHA256, rpc, stateAt, txHash } from './testnet-common.js';
 import { checkKeys, planConfigMatches, policyStateSchema } from './testnet-verify.js';
 import { assertFreshContractProof } from './prove-contract.js';
 import { isDeepStrictEqual } from 'node:util';
@@ -72,18 +72,21 @@ async function readHash() {
 }
 async function snapshot(address: string) {
   const observedAtMs = Date.now();
-  const [clearinghouseState, userFills, ledger, funding, openOrders] = await Promise.all([
+  const [clearinghouseState, userFills, ledger, funding, openOrders, spotClearinghouseState] = await Promise.all([
     info({ type: 'clearinghouseState', user: address }), info({ type: 'userFills', user: address }),
     info({ type: 'userNonFundingLedgerUpdates', user: address, startTime: Date.now() - 86400000 }),
     info({ type: 'userFunding', user: address, startTime: Date.now() - 86400000 }),
-    info({ type: 'openOrders', user: address }),
+    info({ type: 'openOrders', user: address }), info({ type: 'spotClearinghouseState', user: address }),
   ]);
-  return { observedAtMs, clearinghouseState, userFills, ledger, funding, openOrders: z.array(z.unknown()).parse(openOrders),
+  return { observedAtMs, spotClearinghouseState, clearinghouseState, userFills, ledger, funding, openOrders: z.array(z.unknown()).parse(openOrders),
     account: parseAccount(clearinghouseState), fills: parseFills(userFills) };
 }
 export async function lifecycle(argv: string[]) {
-  const options = parseOptions(argv, ['step', 'plan', 'spot-tx', 'settle-tx', 'relay-tx']);
-  const step = z.enum(['open', 'status', 'close', 'withdraw']).parse(options.step);
+  const options = parseOptions(argv, ['step', 'amount', 'plan', 'spot-tx', 'settle-tx', 'relay-tx']);
+  const step = z.enum(['open', 'status', 'close', 'withdraw', 'to-perp']).parse(options.step);
+  if (options.amount !== undefined && step !== 'to-perp') throw new Error('Expected --amount only with --step=to-perp');
+  const transferAmount = step === 'to-perp' ? units(z.string().regex(/^(0|[1-9]\d*)(\.\d{1,6})?$/).parse(options.amount), 6) : 0n;
+  if (step === 'to-perp' && (transferAmount <= 0n || transferAmount > 60_000_000n)) throw new Error('Expected transfer amount >0 and <=60 USDC');
   if (options['relay-tx'] && step !== 'status') throw new Error('Expected --relay-tx only with --step=status (read-only verification)');
   await mkdir('docs/evidence', { recursive: true });
   const record: Record<string, unknown> = { step, capturedAt: new Date().toISOString(), network: 'testnet', outcome: 'pending' };
@@ -96,7 +99,7 @@ export async function lifecycle(argv: string[]) {
   try {
     const [plan, artifact, derived, market] = await Promise.all([loadPlan(options.plan ?? 'docs/evidence/policy-v2-plan.json'), committedWasm(),
       deriveTestnetAddress(NEXT_POLICY, PATH), liveMarket()]);
-    if (plan.artifact.sha256 !== artifact.sha256 || derived.address !== plan.derived.address || market.assetIndex !== plan.init.asset_index || market.szDecimals !== plan.init.size_decimals) throw new Error('Policy plan/artifact/derivation/metadata mismatch');
+    if ((plan.artifact.sha256 !== artifact.sha256 && plan.artifact.sha256 !== V2_BASELINE_SHA256) || derived.address !== plan.derived.address || market.assetIndex !== plan.init.asset_index || market.szDecimals !== plan.init.size_decimals) throw new Error('Policy plan/artifact/derivation/metadata mismatch');
     record.derived = derived; record.market = market; record.recipient = plan.init.evm_recipient;
     links.push(`https://testnet.nearblocks.io/address/${NEXT_POLICY}`, `https://app.hyperliquid-testnet.xyz/explorer/address/${derived.address}`,
       `https://sepolia.arbiscan.io/address/${plan.init.evm_recipient}`);
@@ -108,12 +111,12 @@ export async function lifecycle(argv: string[]) {
       ]);
       z.object({ code_hash: z.literal(artifact.codeHash), block_hash: z.literal(at) }).parse(rawAccount);
       z.object({ block_hash: z.literal(at) }).parse(keys);
-      if (!checkKeys(keys, !requireKeyless).ok && !(step === 'status' && checkKeys(keys).ok)) throw new Error('Policy custody key list mismatch');
+      if (!checkKeys(keys, !requireKeyless).ok && !((step === 'status' || step === 'to-perp') && checkKeys(keys).ok)) throw new Error('Policy custody key list mismatch');
       const state = policyStateSchema.parse(rawState);
       if (!planConfigMatches(state, plan.init) || state.evm_recipient !== plan.init.evm_recipient) throw new Error('Policy config differs from saved plan');
       return { block: at, state, keys, account: rawAccount };
     }
-    const [preflight, before, token, rebalance] = await Promise.all([checkBlock(block, step !== 'status'), snapshot(derived.address),
+    const [preflight, before, token, rebalance] = await Promise.all([checkBlock(block, step !== 'status' && step !== 'to-perp'), snapshot(derived.address),
       view('ft_balance_of', { account_id: NEXT_POLICY }, 'wrap.testnet', block), view('get_rebalance', {}, NEXT_POLICY, block)]);
     const state = preflight.state;
     const spot = z.string().regex(/^\d+$/).parse(token);
@@ -148,26 +151,28 @@ export async function lifecycle(argv: string[]) {
       record.openOrders = before.openOrders;
       if (options['relay-tx']) {
         const hash = txHash(options['relay-tx']);
-        const saved = z.object({ step: z.enum(['open', 'close', 'withdraw']), txHash: z.literal(hash),
-          expected: z.object({ method: z.enum(['request_order_signature', 'request_evm_withdrawal']), args: z.record(z.string(), z.unknown()),
+        const saved = z.object({ step: z.enum(['open', 'close', 'withdraw', 'to-perp']), txHash: z.literal(hash),
+          expected: z.object({ method: z.enum(['request_order_signature', 'request_evm_withdrawal', 'request_usd_class_transfer']), args: z.record(z.string(), z.unknown()),
             caller: z.string(), policy: z.literal(NEXT_POLICY), asset: z.literal(market.assetIndex), reduceOnly: z.boolean(), size: z.string(),
             price: z.string(), recipient: z.literal(state.evm_recipient), amount: z.string() }),
-          before: z.object({ clearinghouseState: z.unknown() }), hyperliquidResponse: z.unknown(),
+          before: z.object({ clearinghouseState: z.unknown(), spotClearinghouseState: z.unknown().optional() }), hyperliquidResponse: z.unknown(),
         }).parse(JSON.parse(await readFile(`docs/evidence/lifecycle-relay-${hash}.json`, 'utf8')));
-        if (saved.expected.caller !== (saved.step === 'withdraw' ? OWNER : KEEPER)
-          || saved.expected.method !== (saved.step === 'withdraw' ? 'request_evm_withdrawal' : 'request_order_signature')
+        if (saved.expected.caller !== ((saved.step === 'withdraw' || saved.step === 'to-perp') ? OWNER : KEEPER)
+          || saved.expected.method !== (saved.step === 'to-perp' ? 'request_usd_class_transfer' : saved.step === 'withdraw' ? 'request_evm_withdrawal' : 'request_order_signature')
           || saved.expected.reduceOnly !== (saved.step === 'close')) throw new Error('Policy saved relay identity mismatch');
         const nearResponse = await rpc('tx', { tx_hash: hash, sender_account_id: saved.expected.caller, wait_until: 'FINAL' });
         const parsed = parseLifecycleReceipt(nearResponse, hash, saved.expected);
         if ((await recoveredSigner(parsed.digest, parsed.signature)).toLowerCase() !== derived.address) throw new Error('Contract recorded relay signature mismatch');
-        const verification = saved.step === 'withdraw'
+        const verification = saved.step === 'to-perp'
+          ? verifyClassTransfer(saved.hyperliquidResponse, saved.before.spotClearinghouseState, before.spotClearinghouseState, parseAccount(saved.before.clearinghouseState), before.account, saved.expected.amount)
+          : saved.step === 'withdraw'
           ? parseWithdrawal(saved.hyperliquidResponse, before.ledger, saved.expected.amount, parsed.nonce)
           : verifyFill(saved.hyperliquidResponse, before.userFills, parseAccount(saved.before.clearinghouseState), before.account,
             saved.expected.size, saved.expected.reduceOnly, parsed.nonce);
         record.relayVerification = { step: saved.step, txHash: hash, nearResponse, verification,
           note: 'Read-only recheck. Position-delta checks require rechecking an order before a later order changes its position. Withdrawal ledger confirmation does not prove bridge arrival.' };
         links.push(`https://testnet.nearblocks.io/txns/${hash}`);
-        const hashes = saved.step === 'withdraw' ? [z.object({ hash: z.string() }).parse(verification)]
+        const hashes = saved.step === 'to-perp' ? [] : saved.step === 'withdraw' ? [z.object({ hash: z.string() }).parse(verification)]
           : z.object({ fills: z.array(z.object({ hash: z.string() })) }).parse(verification).fills;
         for (const entry of hashes) links.push(`https://app.hyperliquid-testnet.xyz/explorer/tx/${entry.hash}`);
       }
@@ -187,7 +192,15 @@ export async function lifecycle(argv: string[]) {
     }
     if (Date.now() - Date.parse(market.capturedAt) > 30000) throw new Error('Hyperliquid mark too old; restart for fresh commands');
     let expected: ExpectedCall;
-    if (step === 'withdraw') {
+    if (step === 'to-perp') {
+      if (state.pending !== null || before.account.signedSize !== 0 || before.account.otherPositions.length || before.openOrders.length || rebalance !== null)
+        throw new Error('Policy transfer requires idle policy and flat venue before withdrawal setup');
+      const balance = spotUsdc(before.spotClearinghouseState);
+      if (balance.total - balance.hold < transferAmount) throw new Error('Hyperliquid insufficient available spot USDC');
+      expected = { method: 'request_usd_class_transfer', args: { amount: transferAmount.toString(), to_perp: true }, caller: OWNER,
+        policy: NEXT_POLICY, asset: market.assetIndex, reduceOnly: false, size: '0', price: '0', recipient: state.evm_recipient, amount: decimal(transferAmount, 6) };
+      console.log('Owner moves spot USDC into perps within the SAME derived account. Relay deadline is local 60s; venue user-signed actions have no expiresAfter. Temporary full-access key is permitted for this funding step.');
+    } else if (step === 'withdraw') {
       if (before.account.signedSize !== 0 || before.account.otherPositions.length || state.signed_short_size !== '0' || state.pending !== null) throw new Error('Policy withdrawal requires flat venue AND owner-settled contract; run status and its settlement command');
       if (!withdrawalSetupReady(state, before.account, before.observedAtMs, before.openOrders)) throw new Error('Policy withdrawal requires expired opening authorizations and zero open orders');
       if (withdrawalLimits === null) throw new Error('Policy withdrawal setup requires spot inventory');
@@ -230,10 +243,10 @@ export async function lifecycle(argv: string[]) {
     const parsed = parseLifecycleReceipt(raw, hash, expected); record.parsed = parsed;
     const assertFresh = () => {
       if (parsed.input.scheme === 'l1') assertFreshContractProof(parsed.input);
-      else if (parsed.nonce > Date.now() + 1000 || parsed.nonce < Date.now() - 57000) throw new Error('Contract withdrawal callback is too old; do not relay');
+      else if (parsed.nonce > Date.now() + 1000 || parsed.nonce < Date.now() - 57000) throw new Error('Contract user-signed callback is too old; do not relay');
     };
     assertFresh();
-    const [checks, recovered] = await Promise.all([Promise.all(parsed.blocks.map(b => checkBlock(b, true))), recoveredSigner(parsed.digest, parsed.signature)]);
+    const [checks, recovered] = await Promise.all([Promise.all(parsed.blocks.map(b => checkBlock(b, step !== 'to-perp'))), recoveredSigner(parsed.digest, parsed.signature)]);
     if (recovered.toLowerCase() !== derived.address.toLowerCase()) throw new Error('Contract signature does not recover derived address');
     record.checks = checks; record.recovered = recovered;
     const request = assembleRequest(parsed.input, parsed.signature); record.request = request;
@@ -252,7 +265,8 @@ export async function lifecycle(argv: string[]) {
     for (let attempt = 0; attempt < 6; attempt++) {
       const after = await snapshot(derived.address); record.after = after;
       try {
-        if (step === 'withdraw') verification = parseWithdrawal(exchange, after.ledger, expected.amount, parsed.nonce);
+        if (step === 'to-perp') verification = verifyClassTransfer(exchange, before.spotClearinghouseState, after.spotClearinghouseState, before.account, after.account, expected.amount);
+        else if (step === 'withdraw') verification = parseWithdrawal(exchange, after.ledger, expected.amount, parsed.nonce);
         else verification = verifyFill(exchange, after.userFills, before.account, after.account, expected.size, expected.reduceOnly, parsed.nonce);
         break;
       } catch (error) { lastError = error; }
@@ -260,9 +274,9 @@ export async function lifecycle(argv: string[]) {
     }
     if (!verification) throw lastError;
     record.verification = verification;
-    const fills = step === 'withdraw' ? [z.object({ hash: z.string() }).parse(verification)] : z.object({ fills: z.array(z.object({ hash: z.string() })) }).parse(verification).fills;
+    const fills = step === 'to-perp' ? [] : step === 'withdraw' ? [z.object({ hash: z.string() }).parse(verification)] : z.object({ fills: z.array(z.object({ hash: z.string() })) }).parse(verification).fills;
     for (const f of fills) links.push(`https://app.hyperliquid-testnet.xyz/explorer/tx/${f.hash}`);
-    record.outcome = step === 'withdraw' ? 'venue-withdrawal-ledger-verified-bridge-arrival-unverified' : 'public-fill-and-position-verified';
+    record.outcome = step === 'to-perp' ? 'spot-to-perps-balances-verified' : step === 'withdraw' ? 'venue-withdrawal-ledger-verified-bridge-arrival-unverified' : 'public-fill-and-position-verified';
     await writeFile(claim, `${JSON.stringify(record, null, 2)}\n`);
     console.log(JSON.stringify({ outcome: record.outcome, verification, evidence, next: step === 'close' ? 'Run status after open expiry, execute owner settlement command, then withdraw.' : 'Run status for current margin/funding/H.' }, null, 2));
   } catch (error) {

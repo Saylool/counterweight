@@ -1,0 +1,64 @@
+{
+  "policy": "policy-v2.counterweight-samet.testnet",
+  "capturedAt": "2026-11-10T17:08:59.093Z",
+  "market": {
+    "assetIndex": 54,
+    "szDecimals": 1,
+    "mark": "3.4807",
+    "funding": "0.0000125",
+    "capturedAt": "2026-11-10T17:08:59.093Z",
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "request": {
+      "type": "metaAndAssetCtxs"
+    }
+  },
+  "derived": {
+    "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+    "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277096139,
+    "derivedBlockHeight": 277096139
+  },
+  "artifact": {
+    "sha256": "d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1",
+    "codeHash": "FZZi4RZz25yYPHhDhjAfvfQw1R3FQhSgtr1rg8SFXJTi",
+    "bytes": 627961
+  },
+  "init": {
+    "owner": "counterweight-samet.testnet",
+    "keeper": "keeper.counterweight-samet.testnet",
+    "asset_index": 54,
+    "size_decimals": 1,
+    "derivation_path": "counterweight-1",
+    "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+    "signer_account": "v1.signer-prod.testnet",
+    "wnear_account": "wrap.testnet",
+    "network": "Testnet",
+    "oracle": {
+      "account_id": null,
+      "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+      "max_age_seconds": 60,
+      "max_confidence_bps": 100,
+      "min_price": "2784560",
+      "max_price": "4176840"
+    },
+    "limits": {
+      "max_short_size": "5000000000000000000000000",
+      "per_order_notional_cap": "20000000",
+      "per_day_notional_cap": "40000000",
+      "cooldown_seconds": 60,
+      "price_band_bps": 100,
+      "price_max_age_seconds": 60
+    },
+    "heartbeat_timeout_seconds": 3600,
+    "reference_price": "3480700",
+    "signing_limits": {
+      "keeper_per_block": 2,
+      "keeper_per_window": 8,
+      "keeper_outstanding": 8,
+      "owner_per_window": 16,
+      "window_ms": 60000,
+      "max_nonce_ahead_ms": 1000
+    }
+  }
+}

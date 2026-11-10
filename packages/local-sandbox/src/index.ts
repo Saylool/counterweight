@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker, type NearAccount, type TransactionResult } from 'near-workspaces';
 
-export const POLICY_SHA256 = 'd85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1';
+export const POLICY_SHA256 = '1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a';
 export const MOCK_SHA256 = '69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f';
 export const BASE = 10n ** 24n;
 export const GAS = 300n * 10n ** 12n;

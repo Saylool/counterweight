@@ -42,7 +42,7 @@ const account = (size: string) => ({ marginSummary: { accountValue: '50', totalM
   assetPositions: size === '0' ? [] : [{ position: { coin: 'NEAR', szi: size, positionValue: '12', marginUsed: '1',
     cumFunding: { allTime: '0', sinceOpen: '0', sinceChange: '0' } } }] });
 
-async function setup(step: 'open' | 'close' | 'withdraw', badKeys = false, expired = false, transportFailure = false) {
+async function setup(step: 'open' | 'close' | 'withdraw' | 'to-perp', badKeys = false, expired = false, transportFailure = false) {
   const init = initialization(0, 1, recipient, '3.6348'), artifact = await committedWasm();
   const market = { assetIndex: 0, szDecimals: 1, mark: '3.6348', funding: '0', capturedAt: new Date(now).toISOString(), source: 'test', request: { type: 'metaAndAssetCtxs' } };
   const state = policyStateSchema.parse({ ...init, coin: 'NEAR', near_recipient: OWNER, spot_balance: String(5n * BASE),
@@ -50,24 +50,24 @@ async function setup(step: 'open' | 'close' | 'withdraw', badKeys = false, expir
     paused: false, pending: null, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000' });
   memory.plan = JSON.stringify({ policy: NEXT_POLICY, capturedAt: market.capturedAt, market, init, derived: { address }, artifact });
   const beforeSize = step === 'close' ? '-3.4' : '0';
-  const order = step === 'withdraw' ? null : buildOrder(state, market, parseAccount(account(beforeSize)), step === 'close');
-  const args = order?.args ?? { recipient, amount: '49000000' };
+  const order = (step === 'withdraw' || step === 'to-perp') ? null : buildOrder(state, market, parseAccount(account(beforeSize)), step === 'close');
+  const args = order?.args ?? (step === 'to-perp' ? { amount: '49000000', to_perp: true } : { recipient, amount: '49000000' });
   const nonce = expired ? now - 60000 : now;
   const action = order ? { type: 'order' as const, grouping: 'na' as const, orders: [{ a: 0, b: step === 'close', r: step === 'close',
     p: order.price, s: order.size, t: { limit: { tif: 'Ioc' as const } } }] }
-    : { type: 'withdraw3' as const, destination: recipient, amount: '49', time: nonce };
+    : step === 'to-perp' ? { type: 'usdClassTransfer' as const, amount: '49', toPerp: true, nonce } : { type: 'withdraw3' as const, destination: recipient, amount: '49', time: nonce };
   const input = action.type === 'order' ? { scheme: 'l1' as const, network: 'testnet' as const, action, nonce, expiresAfter: nonce + 60000 }
     : { scheme: 'user' as const, network: 'testnet' as const, action };
   const payload = { action: action.type === 'order' ? action : { ...action, hyperliquidChain: 'Testnet', signatureChainId: '0x66eee' },
     nonce, ...(order ? { expiresAfter: nonce + 60000 } : {}) };
-  const method = step === 'withdraw' ? 'request_evm_withdrawal' : 'request_order_signature';
-  const caller = step === 'withdraw' ? OWNER : KEEPER;
+  const method = step === 'to-perp' ? 'request_usd_class_transfer' : step === 'withdraw' ? 'request_evm_withdrawal' : 'request_order_signature';
+  const caller = (step === 'withdraw' || step === 'to-perp') ? OWNER : KEEPER;
   const event = (name: string, data: unknown) => ({ id: name, block_hash: name, outcome: { executor_id: NEXT_POLICY,
     status: { SuccessValue: 'dHJ1ZQ==' }, logs: [`EVENT_JSON:${JSON.stringify({ standard: 'counterweight', version: '1.0.0', event: name, data: [data] })}`] } });
   const transaction = { final_execution_status: 'FINAL', status: { SuccessValue: 'dHJ1ZQ==' },
     transaction: { hash, signer_id: caller, receiver_id: NEXT_POLICY, actions: [{ FunctionCall: { method_name: method, deposit: '0',
       args: Buffer.from(JSON.stringify(args)).toString('base64') } }] }, receipts_outcome: [
-      event('request', { id: '1', caller, kind: step === 'withdraw' ? 'EvmWithdrawal' : step === 'close' ? 'Reduce' : 'Increase', payload, digest: getSigningDigest(input).slice(2) }),
+      event('request', { id: '1', caller, kind: step === 'to-perp' ? 'UsdClassTransfer' : step === 'withdraw' ? 'EvmWithdrawal' : step === 'close' ? 'Reduce' : 'Increase', payload, digest: getSigningDigest(input).slice(2) }),
       event('signature', { id: '1', nonce: String(nonce), expiresAfter: order ? String(nonce + 60000) : null, signature }),
     ] };
   let submitted = false;
@@ -76,11 +76,13 @@ async function setup(step: 'open' | 'close' | 'withdraw', badKeys = false, expir
     if (String(url).endsWith('/exchange')) {
       submitted = true;
       if (transportFailure) throw new Error('connection lost');
-      return json(step === 'withdraw' ? { status: 'ok', response: { type: 'default' } }
+      return json((step === 'withdraw' || step === 'to-perp') ? { status: 'ok', response: { type: 'default' } }
         : { status: 'ok', response: { type: 'order', data: { statuses: [{ filled: { oid: 42, totalSz: order!.size, avgPx: market.mark } }] } } });
     }
     if (String(url).endsWith('/info')) {
       if (body.type === 'metaAndAssetCtxs') return json([{ universe: [{ name: 'NEAR', szDecimals: 1 }] }, [{ markPx: market.mark, funding: '0' }]]);
+      if (body.type === 'spotClearinghouseState') return json({ balances: [{ coin: 'USDC', total: submitted && step === 'to-perp' ? '1' : '50', hold: '0' }] });
+      if (body.type === 'clearinghouseState' && step === 'to-perp') return json({ ...account('0'), marginSummary: { accountValue: submitted ? '49' : '0', totalMarginUsed: '0' } });
       if (body.type === 'clearinghouseState') return json(account(submitted ? step === 'open' ? '-3.4' : '0' : beforeSize));
       if (body.type === 'userFills') return json(submitted && order ? [{ coin: 'NEAR', oid: 42, time: nonce, hash: hlHash, side: step === 'close' ? 'B' : 'A', sz: order.size, px: market.mark, fee: '0.01', closedPnl: '0' }] : []);
       if (body.type === 'userNonFundingLedgerUpdates') return json(submitted && step === 'withdraw' ? [{ hash: hlHash, time: nonce, delta: { type: 'withdraw', usdc: '49' } }] : []);
@@ -90,7 +92,7 @@ async function setup(step: 'open' | 'close' | 'withdraw', badKeys = false, expir
     if (body.method === 'block') return json({ result: { header: { hash: 'finalized' } } });
     if (body.method === 'tx') return json({ result: transaction });
     if (p.request_type === 'view_account') return json({ result: { block_hash: p.block_id, code_hash: artifact.codeHash } });
-    if (p.request_type === 'view_access_key_list') return json({ result: { block_hash: p.block_id, keys: badKeys && p.block_id === 'signature' ? [{ public_key: 'public', access_key: { permission: 'FullAccess' } }] : [] } });
+    if (p.request_type === 'view_access_key_list') return json({ result: { block_hash: p.block_id, keys: (step === 'to-perp' || (badKeys && p.block_id === 'signature')) ? [{ public_key: 'public', access_key: { permission: 'FullAccess' } }] : [] } });
     if (p.request_type === 'call_function') {
       const value = p.method_name === 'get_state' ? state : p.method_name === 'ft_balance_of' ? String(5n * BASE)
         : step === 'withdraw' ? { limits: withdrawalConfig(address, String(5n * BASE), init.oracle.min_price, NEXT_POLICY), route: null, withdrawal: null, withdrawals: [] } : null;
@@ -111,16 +113,39 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 describe('funded lifecycle relay (offline public API fixtures)', () => {
-  it.each(['open', 'close', 'withdraw'] as const)('relays %s once and persists actual public verification', async step => {
+  it.each(['open', 'close', 'withdraw', 'to-perp'] as const)('relays %s once and persists actual public verification', async step => {
     const fetcher = await setup(step);
-    await lifecycle([`--step=${step}`]);
+    await lifecycle([`--step=${step}`, ...(step === 'to-perp' ? ['--amount=49'] : [])]);
     const record = JSON.parse(memory.files.get(`docs/evidence/lifecycle-relay-${hash}.json`)!);
-    expect(record.outcome).toBe(step === 'withdraw' ? 'venue-withdrawal-ledger-verified-bridge-arrival-unverified' : 'public-fill-and-position-verified');
-    expect(record.commands).toHaveLength(3);
+    expect(record.outcome).toBe(step === 'to-perp' ? 'spot-to-perps-balances-verified' : step === 'withdraw' ? 'venue-withdrawal-ledger-verified-bridge-arrival-unverified' : 'public-fill-and-position-verified');
+    expect(record.commands).toHaveLength(step === 'to-perp' ? 1 : 3);
     expect(record.commands.every((c: string) => c.includes('sign-with-keychain'))).toBe(true);
-    expect([...memory.files.entries()].find(([p]) => p.endsWith(`-lifecycle-${step}.md`))?.[1]).toContain(hlHash);
-    await expect(lifecycle([`--step=${step}`])).rejects.toThrow();
+    expect([...memory.files.entries()].find(([p]) => p.endsWith(`-lifecycle-${step}.md`))?.[1]).toContain(step === 'to-perp' ? 'perpsAfter' : hlHash);
+    if (step === 'to-perp') {
+      expect(record.commands[0]).toContain(`sign-as ${OWNER}`);
+      expect(record.request.action).toMatchObject({ type: 'usdClassTransfer', amount: '49', toPerp: true });
+      expect(record.request.expiresAfter).toBeUndefined();
+      expect(record.request.vaultAddress).toBeUndefined();
+    }
+    await expect(lifecycle([`--step=${step}`, ...(step === 'to-perp' ? ['--amount=49'] : [])])).rejects.toThrow();
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/exchange'))).toHaveLength(1);
+  });
+  it('retains the deployed baseline plan after upgrading code', async () => {
+    await setup('to-perp');
+    const saved = JSON.parse(memory.plan);
+    saved.artifact.sha256 = 'd85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1';
+    memory.plan = JSON.stringify(saved);
+    await lifecycle(['--step=to-perp', '--amount=49']);
+    expect(memory.plan).toBe(JSON.stringify(saved));
+    expect(JSON.parse(memory.files.get(`docs/evidence/lifecycle-relay-${hash}.json`)!).outcome).toBe('spot-to-perps-balances-verified');
+  });
+  it('rejects an expired class transfer before exchange submission', async () => {
+    const fetcher = await setup('to-perp', false, true);
+    await expect(lifecycle(['--step=to-perp', '--amount=49'])).rejects.toThrow('too old');
+    expect(fetcher.mock.calls.some(([url]) => String(url).endsWith('/exchange'))).toBe(false);
+  });
+  it.each(['0', '60.000001', '-1', '1e1', '0.0000001'])('rejects invalid transfer amount %s', async amount => {
+    await expect(lifecycle(['--step=to-perp', `--amount=${amount}`])).rejects.toThrow();
   });
   it('does not print withdrawal setup at the initial funded flat status', async () => {
     const fetcher = await setup('open');
@@ -143,13 +168,13 @@ describe('funded lifecycle relay (offline public API fixtures)', () => {
     await expect(lifecycle(['--step=open'])).rejects.toThrow();
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/exchange'))).toHaveLength(1);
   });
-  it('rechecks a recorded withdrawal using only public reads', async () => {
-    const fetcher = await setup('withdraw');
-    await lifecycle(['--step=withdraw']);
+  it.each(['withdraw', 'to-perp'] as const)('rechecks a recorded %s using only public reads', async step => {
+    const fetcher = await setup(step);
+    await lifecycle([`--step=${step}`, ...(step === 'to-perp' ? ['--amount=49'] : [])]);
     await lifecycle(['--step=status', `--relay-tx=${hash}`]);
     const evidence = [...memory.files.entries()].find(([p]) => p.endsWith('-lifecycle-status.md'))![1];
     expect(evidence).toContain('relayVerification');
-    expect(evidence).toContain(hlHash);
+    expect(evidence).toContain(step === 'to-perp' ? 'perpsAfter' : hlHash);
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/exchange'))).toHaveLength(1);
   });
 });

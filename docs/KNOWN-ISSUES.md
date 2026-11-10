@@ -1,5 +1,21 @@
 # Known issues
 
+## UI Send funds spot; owner class-transfer upgrade prepared
+
+The owner reports 50 mock USDC at policy-v2's derived address in
+`spotClearinghouseState`, with perps accountValue 0. UI Send offers no perp
+destination. Use the [in-place upgrade and to-perp instructions](FUNDED-LIFECYCLE.md#upgrade-the-already-initialized-v2-current-run)
+to move 49 USDC within that same account. The old deployed `d85b2f91…` code cannot
+do this. The new artifact is prepared locally and has not been deployed by this
+change. Full-access key retention permits upgrade; do not delete it until the
+lead has deployed and checked the new code. Do not reinitialize v2.
+
+`usdClassTransfer` is user-signed with no venue expiry; the local 60s callback
+and relay freshness checks do not revoke an already disclosed signature. Relay
+claims prevent repeat submission of a NEAR tx hash. Never retry an uncertain
+transfer; inspect both spot and perps balances and the saved evidence.
+
+
 ## 1. Delegated function-call key MPC fee — fixed in the next artifact
 
 Zero-deposit signing now pays the configured MPC fee from the policy's native
@@ -17,9 +33,9 @@ allow only intended keeper methods, and have sufficient gas allowance.
 The previous deployment `policy.counterweight-samet.testnet` still runs
 `698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289` and still
 requires an attached fee. Its full-access policy key is intentionally retained
-until final code freeze. This fix is **not deployed**. The next default artifact is
-`d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1`;
-use a fresh account such as `policy-v2.counterweight-samet.testnet`.
+until final code freeze. The reserve-funded fix is deployed on initialized v2 at `d85b2f91…`.
+The new same-account transfer artifact is `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`;
+upgrade existing v2 without init as documented above.
 Deleting all keys freezes that account's code irreversibly under this ABI.
 
 The local demo uses library-managed disposable local keeper keys, attaches zero
@@ -87,6 +103,8 @@ have a separate worst-case 10 NEAR lifetime ceiling at the per-request fee maxim
 Network is now an immutable `Testnet` / `Mainnet` init enum, binding both account
 checks and signing domains. Mainnet deployment/operation is untested and not claimed.
 The shared Hyperliquid package now handles noop; the duplicate relay codec is removed.
-The new state layout requires a fresh controller: there is no migration/upgrade ABI.
+That historical network/oracle layout required a fresh controller when moving from v1.
+Initialized v2 already uses it. The current class-transfer upgrade preserves that
+layout and uses the retained full-access key for code deployment without init.
 No deployment, key removal, funded venue lifecycle, or testnet send was performed
 in this revision. Existing dated on-chain evidence still describes the old artifact.

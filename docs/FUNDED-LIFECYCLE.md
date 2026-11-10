@@ -6,7 +6,68 @@ Policy: `policy-v2.counterweight-samet.testnet`; keeper: `keeper.counterweight-s
 
 Public derivation cross-checked 2026-11-10: **`0x3e72c8963761c3f436710df9b891d8e3a74b5390`**. Recheck it immediately before funding.
 
-## Ordered command list
+## Upgrade the already initialized v2 (current run)
+
+The deployed `policy-v2.counterweight-samet.testnet` runs baseline
+`d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1`.
+Its full-access policy key is still present. The new artifact is **633,561 bytes**,
+SHA-256 `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`. The main persisted `Policy` struct is unchanged;
+`OperationKind::UsdClassTransfer` is appended after all existing enum variants.
+No new state fields or migration are required. The sandbox upgrade regression
+uses the exact old production WASM, initializes it, deposits 5 mock wNEAR,
+upgrades to the new production WASM and verifies every `get_state` field plus
+successful owner-only signing.
+
+Run from the repository root; the lead executes all printed NEAR commands:
+
+```sh
+npm run testnet:plan -- --upgrade-v2=true
+test "$(shasum -a 256 contracts/policy/artifacts/counterweight_policy.wasm | cut -d ' ' -f 1)" = '1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a' && near contract deploy policy-v2.counterweight-samet.testnet use-file contracts/policy/artifacts/counterweight_policy.wasm without-init-call network-config testnet sign-with-keychain send
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --before-key-removal=true --plan=docs/evidence/policy-v2-plan.json
+npm run lifecycle -- --step=to-perp --amount=49
+```
+
+**Do not call `new`, recreate the account, or overwrite `policy-v2-plan.json`.**
+Verification retains the saved baseline initializer and checks the current WASM
+against SHA256SUMS. Upgrade preserves the predecessor, path, recipient and derived
+address `0x3e72c8963761c3f436710df9b891d8e3a74b5390`.
+
+Hyperliquid UI **Send credits SPOT USDC**; it offers no perp destination. The 50
+mock USDC already sent therefore needs this owner-only `usdClassTransfer` to move
+49 into perps, leaving 1 in spot. Start the lifecycle command in terminal A. Run
+its one printed owner `request_usd_class_transfer` near-cli command in terminal B,
+then immediately paste only that transaction hash into A. The script checks exact
+owner/arguments/events/digest, receipt-block code/config/keys and recovered signer,
+claims the hash exclusively, posts once to Hyperliquid testnet, and checks both
+spot debit and perps equity credit. It records JSON plus Markdown in `docs/evidence/`.
+No contract USDC balance is invented; `spot_balance` remains the NEAR wNEAR ledger.
+
+The request takes micro-USDC (`49000000`), internally selects the nonce, and caps
+amounts at $60. `to_perp:false` is also owner-only and requires zero reserved short
+and expired opening authorizations. An active signing callback or rebalance route/
+withdrawal blocks transfer. Rate/fee/nonce/outstanding rules remain enforced.
+The SDK user-signed action has **no venue `expiresAfter`**. The callback has a local
+60s deadline; the relay refuses signatures older than 57s and never retries an
+uncertain submission. A signature already disclosed can remain usable beyond that
+local deadline; inspect evidence/public balances before any new request.
+
+A single retained full-access key or zero keys is allowed only for this owner
+funding step; this is not a final keyless proof. After verified perps funding,
+review config and evidence, then follow the separate final key-removal step before
+trading. Orders/withdrawals still require zero policy keys.
+
+SDK sources: [exact EIP-712 types and primary type](https://github.com/hyperliquid-dex/hyperliquid-python-sdk/blob/2fdb18f9517675ea03695a0962bd19eece9c83f0/hyperliquid/utils/signing.py),
+[Exchange wire format](https://github.com/hyperliquid-dex/hyperliquid-python-sdk/blob/2fdb18f9517675ea03695a0962bd19eece9c83f0/hyperliquid/exchange.py).
+Domain `HyperliquidSignTransaction`, version `1`, chain ID 421614, zero verifying
+contract; primary type `HyperliquidTransaction:UsdClassTransfer`; ordered fields
+`hyperliquidChain:string, amount:string, toPerp:bool, nonce:uint64`.
+`signatureChainId` is `0x66eee`. Exchange appends ` subaccount:<vault>` to amount
+only when a vault address is supplied. This ABI supports the same derived account
+only: plain amount `"49"`, no vault/subaccount suffix or destination. Six golden
+vectors cover both directions, both networks and the minimum micro-unit through
+the actual pinned SDK Exchange path, with no signing keys.
+
+## Fresh-account command list (historical setup; skip for initialized v2)
 
 1. Supply the owner's own EVM wallet address as `OWNER_EVM` and the already provisioned temporary policy **public** key as `POLICY_PUBLIC_KEY`. The corresponding signing keys remain in macOS keychain. The scripts neither create nor import keys.
 
@@ -27,12 +88,12 @@ Public derivation cross-checked 2026-11-10: **`0x3e72c8963761c3f436710df9b891d8e
    - Run the printed `testnet:verify --before-key-removal=true` against the saved plan.
    - Owner registers v2 and owner on `wrap.testnet`, wraps **5 testnet NEAR** via `near_deposit`, and deposits exactly **5000000000000000000000000** wNEAR units via `ft_transfer_call` with **`msg: ""`** and 1 yoctoNEAR deposit.
    - Run `npm run lifecycle -- --step=status --spot-tx=DEPOSIT_TX_HASH`. This checks both the successful policy deposit receipt and equality of `get_state.spot_balance` with `wrap.testnet.ft_balance_of` at one finalized block. Before spot is deposited, status may legitimately show zero.
-   - At the printed **OWNER UI FUNDING** step, complete the faucet and Send instructions in step 3 below, then run the printed status command to confirm at least $50 venue equity and no positions.
+   - At the printed **OWNER UI FUNDING** step, complete the faucet and Send instructions in step 3 below, then run `to-perp --amount=49` and status to confirm at least $49 venue equity and no positions.
    - Review the saved config, recipient, code, derivation and spot evidence. The printed **separate final deployment step** deletes the sole policy key. This is irreversible: no redeployment, deletion or key restoration path remains. Then run the printed keyless verification command. Stop on any failure or extra key.
 
    The owner needs at least **14 testnet NEAR plus registration/gas**, less any recovered v1 balance. Ensure the existing keeper has gas. Native policy NEAR pays storage/signing; the separate wNEAR deposit backs the short.
 
-3. In the [Hyperliquid testnet faucet UI](https://app.hyperliquid-testnet.xyz/drip), Samet connects his own eligible wallet, unlocks the faucet and claims mock USDC. In the testnet trading UI, use **Send** to send **50 mock USDC** to the derived address above, into its **perpetual USDC** balance. Retain the UI transfer hash for the judge. This is an internal HyperCore transfer, separate from NEAR spot custody. The [official faucet documentation](https://hyperliquid.gitbook.io/hyperliquid-docs/onboarding/testnet-faucet) describes eligibility and a 1,000 mock USDC claim. Do not send to the old owner-derived probe address.
+3. In the [Hyperliquid testnet faucet UI](https://app.hyperliquid-testnet.xyz/drip), Samet connects his own eligible wallet, unlocks the faucet and claims mock USDC. In the testnet trading UI, use **Send** to send **50 mock USDC** to the derived address above, which lands in its **SPOT USDC** balance. Run `npm run lifecycle -- --step=to-perp --amount=49` to fund perps. Retain the UI transfer hash for the judge. This is an internal HyperCore transfer, separate from NEAR spot custody. The [official faucet documentation](https://hyperliquid.gitbook.io/hyperliquid-docs/onboarding/testnet-faucet) describes eligibility and a 1,000 mock USDC claim. Do not send to the old owner-derived probe address.
 
 4. Terminal A:
 

@@ -1,0 +1,13 @@
+Upgrade initialized v2 in place. Retain original plan, account, derivation and state. No init call. Commands only; lead executes.
+
+1. Expect: Existing initialized v2, full-access policy key still present. Check checksum and deploy code only; NEVER call new again.
+test "$(shasum -a 256 contracts/policy/artifacts/counterweight_policy.wasm | cut -d ' ' -f 1)" = '1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a' && near contract deploy policy-v2.counterweight-samet.testnet use-file contracts/policy/artifacts/counterweight_policy.wasm without-init-call network-config testnet sign-with-keychain send
+
+2. Expect: Verify new code and original saved config while the single temporary policy key remains.
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --before-key-removal=true --plan=docs/evidence/policy-v2-plan.json
+
+3. Expect: UI Send credited spot. Start relay, run its printed OWNER signature request in terminal B, paste only tx hash immediately. Verify spot falls 49 and perps rises 49.
+npm run lifecycle -- --step=to-perp --amount=49
+
+4. Expect: Inspect public balances and evidence before the separate final key-removal step in the original deployment plan.
+npm run lifecycle -- --step=status

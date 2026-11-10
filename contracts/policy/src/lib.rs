@@ -158,6 +158,17 @@ pub enum HlAction {
     CancelByCloid { cancels: Vec<CancelCloid> },
     #[serde(rename = "noop")]
     Noop,
+    #[serde(rename = "usdClassTransfer")]
+    UsdClassTransfer {
+        #[serde(rename = "hyperliquidChain")]
+        hyperliquid_chain: String,
+        #[serde(rename = "signatureChainId")]
+        signature_chain_id: String,
+        amount: String,
+        #[serde(rename = "toPerp")]
+        to_perp: bool,
+        nonce: u64,
+    },
     #[serde(rename = "withdraw3")]
     Withdraw {
         #[serde(rename = "hyperliquidChain")]
@@ -187,6 +198,8 @@ pub enum OperationKind {
     SpotWithdrawal,
     Cancel,
     Invalidation,
+    // Append only: existing persisted Borsh enum discriminants remain unchanged.
+    UsdClassTransfer,
 }
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq)]
@@ -792,6 +805,42 @@ impl Policy {
         })
     }
 
+    /// Same derived account only: no destination, vault or caller-provided nonce.
+    /// Amount is USDC micro-units, bounded to $60 per owner request.
+    /// User-signed actions have no venue expiry; callbacks have a local 60s deadline.
+    #[payable]
+    pub fn request_usd_class_transfer(&mut self, amount: U128, to_perp: bool) -> Promise {
+        self.assert_owner();
+        self.expire_pending();
+        self.assert_idle();
+        self.assert_route_idle();
+        require!(amount.0 > 0 && amount.0 <= 60_000_000, "ERR_AMOUNT");
+        if !to_perp {
+            require!(self.signed_short_size == 0, "ERR_OPEN_SHORT");
+            require!(
+                env::block_timestamp_ms() > self.last_open_expiry,
+                "ERR_OPEN_AUTHORIZATION"
+            );
+        }
+        self.assert_signing_resources();
+        self.charge_signing(false, false);
+        let nonce = self.next_nonce();
+        let payload = SigningPayload {
+            action: HlAction::UsdClassTransfer {
+                hyperliquid_chain: self.network.chain().into(),
+                signature_chain_id: "0x66eee".into(),
+                amount: decimal(amount.0, 6),
+                to_perp,
+                nonce,
+            },
+            nonce,
+            expires_after: None,
+        };
+        let digest = hl_digest::digest(&payload, self.network.mainnet())
+            .unwrap_or_else(|e| env::panic_str(e));
+        self.start_signing(payload, digest, OperationKind::UsdClassTransfer, amount.0)
+    }
+
     /// Typed withdraw3, destination checked AND replaced with the immutable value.
     #[payable]
     pub fn request_evm_withdrawal(&mut self, recipient: String, amount: U128) -> Promise {
@@ -1298,6 +1347,10 @@ impl Policy {
             invalidation || self.outstanding.len() < 32,
             "ERR_OUTSTANDING_CAP"
         );
+        let user_signed = matches!(
+            kind,
+            OperationKind::EvmWithdrawal | OperationKind::UsdClassTransfer
+        );
         let withdrawal = matches!(kind, OperationKind::EvmWithdrawal);
         if withdrawal
             && let Some(r) = &mut self.rebalance
@@ -1319,7 +1372,7 @@ impl Policy {
             self.last_nonce = payload.nonce;
             if let Some(expiry) = payload
                 .expires_after
-                .or_else(|| withdrawal.then_some(payload.nonce + 2 * DAY * 1000 + 1))
+                .or_else(|| user_signed.then_some(payload.nonce + 2 * DAY * 1000 + 1))
             {
                 self.outstanding.push(Authorization {
                     nonce: payload.nonce,
