@@ -1,0 +1,58 @@
+├  Unsigned transaction:
+│    signer_id:    counterweight-samet.testnet
+│    receiver_id:  v1.signer-prod.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  sign
+│                       args:         {
+│                                       "request": {
+│                                         "domain_id": 0,
+│                                         "path": "counterweight-1",
+│                                         "payload_v2": {
+│                                           "Ecdsa": "bbdeb75aea7882abe05ff47309f7e08245781e3cc38d1c49e9e342e7dbeb8925"
+│                                         }
+│                                       }
+│                                     }
+│                       gas:          300.0 Tgas
+│                       deposit:      1 yoctoNEAR
+│     [0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:G6Wmxh6djy5Uh5hMAYPAreERcBXgCp73XsruiRoSRNCi
+│    Signature:  ed25519:Q36D7fpf8DXwUphJDYx7G77GgJLYRwxD9gc4VfQHaAr5aCJFPKLAHWbPn4iL7uDHbrocpsDGRa6CXxDdMLfLNpv
+│     [0m
+├  Transaction Execution Info:
+│    Gas used: 8.5 Tgas
+│    Transaction fee: 0.0008036973115899 NEAR
+│    Transaction ID: A2DDgxkY4Ld4SGoRXwiKeduEgALQqGdqvYBBVEFgJZaa
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/A2DDgxkY4Ld4SGoRXwiKeduEgALQqGdqvYBBVEFgJZaa
+│     [0m
+├  Function execution logs:
+│    [36mLogs [v1.signer-prod.testnet]:[39m
+│      sign: predecessor=AccountId("counterweight-samet.testnet"), request=SignRequestArgs { path: "counterweight-1", payload: Ecdsa(BoundedVec { inner: [187, 222, 183, 90, 234, 120, 130, 171, 224, 95, 244, 115, 9, 247, 224, 130, 69, 120, 30, 60, 195, 141, 28, 73, 233, 227, 66, 231, 219, 235, 137, 37], witness: NonEmpty(()) }), domain_id: DomainId(0) }
+│    [36mLogs [v1.signer-prod.testnet]:[39m   [2mNo logs[0m
+│    [36mLogs [counterweight-samet.testnet]:[39m   [2mNo logs[0m
+│    [36mLogs [counterweight-samet.testnet]:[39m   [2mNo logs[0m
+│     [0m
+
+Function execution return value (printed to stdout):
+{
+  "big_r": {
+    "affine_point": "03e1aa93028ad6b59c6c1c838acd29ab26fb4d65c0ef0aa37c0b57b4ad6d69cd2f"
+  },
+  "recovery_id": 0,
+  "s": {
+    "scalar": "1803fe3f07beceb286c81c76c897dd56456a393fc128d6ca13f8923b918c6415"
+  },
+  "scheme": "Secp256k1"
+}
+
+
+The "sign" call to <v1.signer-prod.testnet> on behalf of <counterweight-samet.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33m/opt/homebrew/lib/node_modules/near-cli-rs/node_modules/.bin_real/near contract call-function as-transaction v1.signer-prod.testnet sign json-args '{"request":{"payload_v2":{"Ecdsa":"bbdeb75aea7882abe05ff47309f7e08245781e3cc38d1c49e9e342e7dbeb8925"},"path":"counterweight-1","domain_id":0}}' prepaid-gas '300.0 Tgas' attached-deposit '1 yoctoNEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send[39m
+
