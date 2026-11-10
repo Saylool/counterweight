@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { base58 } from "@scure/base";
 import {
+  lifecycleSchema,
   reportSchema,
   demoSchema,
   policies,
@@ -20,6 +21,7 @@ function publicEvidence(): Plugin {
       source: JSON.stringify(value),
       type: "application/json",
     });
+  add("data/lifecycle.json", lifecycleSchema.parse(JSON.parse(read("docs/evidence/2026-11-10-lifecycle-summary.json"))));
   const report = reportSchema.parse(
     JSON.parse(read("reports/replay-report.json")),
   );

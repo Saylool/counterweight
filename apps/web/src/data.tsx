@@ -8,7 +8,9 @@ import {
 } from "../../../packages/domain/src/index";
 import type { Artifact } from "./model";
 
-export const DEFAULT_ACCOUNT = "policy.counterweight-samet.testnet";
+export const DEFAULT_ACCOUNT = "policy-v2.counterweight-samet.testnet";
+export const REHEARSAL_ACCOUNT = "policy.counterweight-samet.testnet";
+export const HL_TESTNET_API = "https://api.hyperliquid-testnet.xyz/info";
 export const NEAR_RPC =
   import.meta.env.VITE_NEAR_RPC || "https://rpc.testnet.near.org";
 export const HL_API = "https://api.hyperliquid.xyz/info";
@@ -332,4 +334,23 @@ export function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Public data could not be loaded.";
+}
+
+
+/** Live testnet account observations, independent of historical evidence and mainnet risk inputs. */
+export async function readVenue(address: string, startTime: number, fetcher: typeof fetch = fetch) {
+  z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(address);
+  z.number().int().nonnegative().parse(startTime);
+  const [rawAccount, rawLedger] = await Promise.all([
+    post(HL_TESTNET_API, { type: "clearinghouseState", user: address }, fetcher),
+    post(HL_TESTNET_API, { type: "userNonFundingLedgerUpdates", user: address, startTime }, fetcher),
+  ]);
+  const account = z.object({
+    marginSummary: z.object({ accountValue: numeric, totalMarginUsed: numeric }), withdrawable: numeric,
+    assetPositions: z.array(z.object({ position: z.object({ coin: z.string(), szi: numeric }) })),
+  }).parse(rawAccount);
+  const ledger = z.array(z.object({ time: z.number().int().nonnegative(), hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+    delta: z.object({ type: z.string() }).passthrough(),
+  })).parse(rawLedger);
+  return { account, ledger, fetchedAt: Date.now() };
 }

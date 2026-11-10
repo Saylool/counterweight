@@ -85,7 +85,7 @@ async function setup(step: 'open' | 'close' | 'withdraw' | 'to-perp', badKeys = 
       if (body.type === 'clearinghouseState' && step === 'to-perp') return json({ ...account('0'), marginSummary: { accountValue: submitted ? '49' : '0', totalMarginUsed: '0' } });
       if (body.type === 'clearinghouseState') return json(account(submitted ? step === 'open' ? '-3.4' : '0' : beforeSize));
       if (body.type === 'userFills') return json(submitted && order ? [{ coin: 'NEAR', oid: 42, time: nonce, hash: hlHash, side: step === 'close' ? 'B' : 'A', sz: order.size, px: market.mark, fee: '0.01', closedPnl: '0' }] : []);
-      if (body.type === 'userNonFundingLedgerUpdates') return json(submitted && step === 'withdraw' ? [{ hash: hlHash, time: nonce, delta: { type: 'withdraw', usdc: '49' } }] : []);
+      if (body.type === 'userNonFundingLedgerUpdates') return json(submitted && step === 'withdraw' ? [{ hash: hlHash, time: nonce, delta: { type: 'withdraw', usdc: '48', fee: '1.0', nonce: nonce * 1000 } }] : []);
       if (['openOrders', 'userFunding'].includes(body.type)) return json([]);
     }
     const p = body.params;
@@ -177,4 +177,14 @@ describe('funded lifecycle relay (offline public API fixtures)', () => {
     expect(evidence).toContain(step === 'to-perp' ? 'perpsAfter' : hlHash);
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/exchange'))).toHaveLength(1);
   });
+  it('rechecks an older withdrawal from its saved nonce window without resubmitting', async () => {
+    const fetcher = await setup('withdraw');
+    await lifecycle(['--step=withdraw']);
+    vi.setSystemTime(now + 3 * 86400000);
+    await lifecycle(['--step=status', `--relay-tx=${hash}`]);
+    const queries = fetcher.mock.calls.filter(([url]) => String(url).endsWith('/info')).map(([, request]) => JSON.parse(String(request?.body)));
+    expect(queries).toContainEqual({ type: 'userNonFundingLedgerUpdates', user: address, startTime: now, endTime: now + 86400000 });
+    expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/exchange'))).toHaveLength(1);
+  });
+
 });

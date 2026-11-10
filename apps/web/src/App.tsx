@@ -10,6 +10,8 @@ import {
   useResource,
 } from "./components";
 import {
+  lifecycleSchema,
+  type LifecycleSummary,
   artifactSchema,
   comparisonsFor,
   date,
@@ -26,6 +28,8 @@ import {
 import {
   assetUrl,
   DEFAULT_ACCOUNT,
+  REHEARSAL_ACCOUNT,
+  readVenue,
   illustrativeRisk,
   liquidationDistance,
   loadJson,
@@ -71,6 +75,13 @@ function ContractPanel({ artifact }: { artifact: Artifact }) {
           </button>
         </div>
       </form>
+      <div className="segmented" aria-label="Deployment selection">
+        {[{ value: DEFAULT_ACCOUNT, label: "v2 · funded keyless lifecycle" },
+          { value: REHEARSAL_ACCOUNT, label: "v1 · rehearsal with an access key" }].map(({ value, label }) => (
+          <button key={value} aria-pressed={account === value} onClick={() => { setDraft(value); setAccount(value); }}>{label}</button>
+        ))}
+      </div>
+      {account === REHEARSAL_ACCOUNT && <Notice tone="warning">v1 rehearsal deployment with an access key. Use v2 for funded keyless evidence.</Notice>}
       <ResourceState {...result} />
       {data && (
         <>
@@ -208,6 +219,65 @@ function ContractPanel({ artifact }: { artifact: Artifact }) {
       </p>
     </>
   );
+}
+export function LifecycleTable({ summary }: { summary: LifecycleSummary }) {
+  return <>
+    <p><strong>{summary.policy}</strong> · zero access keys verified in dated evidence · {summary.date}.</p>
+    <p><a href={`https://app.hyperliquid-testnet.xyz/explorer/address/${summary.address}`} target="_blank" rel="noreferrer">
+      Derived Hyperliquid testnet address: <code>{summary.address}</code> ↗</a></p>
+    <div className="table-scroll" role="region" aria-label="Funded testnet lifecycle evidence" tabIndex={0}>
+      <table className="lifecycle-table"><caption>Recorded funded lifecycle · supervised owner steps</caption>
+        <thead><tr><th scope="col">Step</th><th scope="col">Result</th><th scope="col">NEAR testnet transaction</th><th scope="col">Evidence</th></tr></thead>
+        <tbody>{summary.steps.map(row => <tr key={row.step}>
+          <th scope="row">{row.step}</th><td>{row.result}</td>
+          <td>{row.tx ? <a href={`https://testnet.nearblocks.io/txns/${row.tx}`} target="_blank" rel="noreferrer"><code>{row.tx}</code> ↗</a> : "—"}</td>
+          <td><a href={assetUrl(`evidence/${row.evidence}`)}>Source record ↗</a></td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <p>Withdrawal ledger: <a href={`https://app.hyperliquid-testnet.xyz/explorer/tx/${summary.withdrawalHash}`}><code>{summary.withdrawalHash}</code> ↗</a>.
+      Fixed recipient: <code>{summary.recipient}</code>. Destination-chain arrival is unverified.</p>
+    <p>Owner funding and the 49 USDC spot→perp transfer preceded key removal. Keeper trading and withdrawal
+      were checked with zero keys at their receipt blocks.</p>
+    <Notice tone="warning">Testnet only; supervised owner funding, observations, settlement and withdrawal approval.
+      UI Send lands in spot. Intents has only dry quotes. No multi-day carry or live rebalancing route is proven.
+      The contract does not verify venue fills on-chain; the 4 wNEAR spot leg remains directional after closing.</Notice>
+    <p><a href={assetUrl("evidence/2026-11-10-lifecycle-summary.md")}>Read the full lifecycle summary ↗</a></p>
+  </>;
+}
+export function VenuePanel({ address, startTime }: { address: string; startTime: number }) {
+  const result = useResource(() => readVenue(address, startTime), [address, startTime]);
+  const data = result.data;
+  return <>
+    <div className="panel-meta"><h3>Live position, margin & ledger</h3><button onClick={result.retry} disabled={result.loading}>Refresh testnet account</button></div>
+    <p className="source-note">Public Hyperliquid testnet reads for <code>{address}</code>. Separate from the dated lifecycle and mainnet risk illustration below.</p>
+    <ResourceState {...result} />
+    {data && <>
+      <div className="stats three">
+        <Stat label="NEAR position" value={`${data.account.assetPositions.filter(p => p.position.coin === "NEAR").reduce((n, p) => n + p.position.szi, 0)} NEAR`} />
+        <Stat label="Account equity" value={usd(data.account.marginSummary.accountValue)} />
+        <Stat label="Margin used" value={usd(data.account.marginSummary.totalMarginUsed)} />
+        <Stat label="Withdrawable" value={usd(data.account.withdrawable)} />
+      </div>
+      <p>Observed {new Date(data.fetchedAt).toLocaleString()}. Ledger since {new Date(startTime).toISOString()}; API history limits may apply.</p>
+      <div className="table-scroll" role="region" aria-label="Live testnet ledger" tabIndex={0}>
+        <table className="ledger-table"><caption>Live non-funding ledger updates</caption><thead><tr><th>Time (UTC)</th><th>Type</th><th>Details (API values)</th><th>Hyperliquid hash</th></tr></thead>
+          <tbody>{data.ledger.map(entry => <tr key={`${entry.hash}-${entry.time}`}>
+            <td>{new Date(entry.time).toISOString()}</td><td>{entry.delta.type}</td><td><code>{JSON.stringify(entry.delta)}</code></td>
+            <td><a href={`https://app.hyperliquid-testnet.xyz/explorer/tx/${entry.hash}`}><code>{entry.hash}</code> ↗</a></td>
+          </tr>)}</tbody></table>
+      </div>
+      {data.ledger.length === 0 && <p>No ledger updates returned for this window.</p>}
+      <details><summary>All current positions</summary><pre>{JSON.stringify(data.account.assetPositions, null, 2)}</pre></details>
+    </>}
+  </>;
+}
+function FundedLifecycle() {
+  const result = useResource(() => loadJson("data/lifecycle.json", lifecycleSchema));
+  return <><ResourceState {...result} />{result.data && <>
+    <LifecycleTable summary={result.data} />
+    <VenuePanel address={result.data.address} startTime={result.data.ledgerStartTime} />
+  </>}</>;
 }
 function RiskView({ market }: { market: Market }) {
   const [short, setShort] = useState(2500),
@@ -355,7 +425,7 @@ function EvidencePanel() {
     <>
       <ResourceState {...result} />
       <div className="evidence-grid">
-        {result.data?.map((item, index) => {
+        {result.data?.filter((item) => /signing-proof|contract-proof|testnet-preflight/.test(item.name)).map((item, index) => {
           const contract = item.name.includes("contract-proof"),
             preflight = item.name.includes("preflight");
           return (
@@ -814,6 +884,7 @@ export default function App() {
           counterweight<span className="brand-period">.</span>
         </a>
         <nav aria-label="Main navigation">
+          <a href="#lifecycle">Funded lifecycle</a>
           <a href="#live">Live state</a>
           <a href="#evidence">Evidence</a>
           <a href="#results">Results</a>
@@ -834,19 +905,19 @@ export default function App() {
             <span className="hero-tag">A hedge with boundaries.</span>
           </div>
           <h1>
-            Reduce-only
+            Funded testnet.
             <br />
-            <em>by construction</em>
+            <em>Keyless policy.</em>
             <span className="accent-dot">.</span>
           </h1>
           <div className="hero-bottom">
             <p className="hero-description">
-              A policy-constrained hedge for NEAR holders: the owner sets
-              signing limits, a keeper monitors risk, and NEAR MPC signs bounded
-              Hyperliquid actions.
+              After owner funding and key removal, a NEAR policy holding 4 wNEAR
+              authorized a keeper short and reduce-only close on Hyperliquid testnet.
+              The fixed-recipient withdrawal appears in the public ledger.
             </p>
-            <a className="primary-link" href="#live">
-              Inspect the boundary <span>↓</span>
+            <a className="primary-link" href="#lifecycle">
+              Inspect the funded lifecycle <span>↓</span>
             </a>
           </div>
           <Architecture />
@@ -858,12 +929,16 @@ export default function App() {
           <p className="boundary-note">
             Emergency closes are reduce-only; ordinary opens remain bounded by
             owner-set caps. Stress H is keeper policy, not a contract price
-            oracle. The rehearsal is not yet a keyless deployment.
+            oracle. This was a supervised testnet run; owner steps remain trusted. No multi-day carry or live Intents settlement is proven.
           </p>
+        </section>
+        <section id="lifecycle" className="section">
+          <SectionHead number="01" label="2026-11-10 · keyless v2" title="Funded testnet lifecycle" />
+          <div className="panel"><FundedLifecycle /></div>
         </section>
         <section id="live" className="section">
           <SectionHead
-            number="01"
+            number="02"
             label="Public contract"
             title="Trust the state. Check the keys."
           >
@@ -876,7 +951,7 @@ export default function App() {
         </section>
         <section id="market" className="section">
           <SectionHead
-            number="02"
+            number="03"
             label="Live market & risk"
             title="Carry is earned. Risk is measured."
           />
@@ -886,7 +961,7 @@ export default function App() {
         </section>
         <section id="evidence" className="section">
           <SectionHead
-            number="03"
+            number="04"
             label="Evidence trail"
             title="Proof, with its limits attached."
           />
@@ -894,7 +969,7 @@ export default function App() {
         </section>
         <section id="results" className="section">
           <SectionHead
-            number="04"
+            number="05"
             label="Honest results"
             title="The hedge is not free upside."
           >
@@ -906,7 +981,7 @@ export default function App() {
         </section>
         <section id="demo" className="section">
           <SectionHead
-            number="05"
+            number="06"
             label="Local demonstration"
             title="A keeper closes. A rogue cannot."
           />

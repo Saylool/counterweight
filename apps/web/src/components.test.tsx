@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import App from "./App";
+import App, { LifecycleTable } from "./App";
+import { readFileSync } from "node:fs";
+import { lifecycleSchema } from "./model";
 import { Architecture, Chart, ContractLimit, Notice, ResourceState, Stat } from "./components";
 
 describe("read-only presentation", () => {
@@ -19,8 +21,9 @@ describe("read-only presentation", () => {
   });
   it("renders the product headline and all navigation sections", () => {
     const html = renderToStaticMarkup(<App />);
-    expect(html).toContain("Reduce-only");
-    for (const id of ["live", "evidence", "market", "results", "demo"])
+    expect(html).toContain("Funded testnet.");
+    expect(html).toContain("Keyless policy.");
+    for (const id of ["lifecycle", "live", "evidence", "market", "results", "demo"])
       expect(html).toContain(`id="${id}"`);
     expect(html).toContain(
       "Testnet prototype. Not a fund, not investment advice.",
@@ -95,4 +98,19 @@ describe("read-only presentation", () => {
       renderToStaticMarkup(<Chart title="Empty" note="" lines={[]} />),
     ).toContain("No comparable observations");
   });
+});
+
+
+it("renders the recorded lifecycle and exact explorer links before simulated results", () => {
+  const summary = lifecycleSchema.parse(JSON.parse(readFileSync(new URL("../../../docs/evidence/2026-11-10-lifecycle-summary.json", import.meta.url), "utf8")));
+  const html = renderToStaticMarkup(<LifecycleTable summary={summary} />);
+  for (const row of summary.steps) {
+    expect(html).toContain(row.step);
+    if (row.tx) expect(html).toContain(`https://testnet.nearblocks.io/txns/${row.tx}`);
+  }
+  expect(html).toContain(`https://app.hyperliquid-testnet.xyz/explorer/address/${summary.address}`);
+  for (const limit of ["46.957074", "47.957074", "Destination-chain arrival is unverified", "dry quotes", "No multi-day carry"])
+    expect(html).toContain(limit);
+  const app = renderToStaticMarkup(<App />);
+  expect(app.indexOf('id="lifecycle"')).toBeLessThan(app.indexOf('id="results"'));
 });

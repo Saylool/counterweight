@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { assembleRequest, deriveTestnetAddress, recoveredSigner, TESTNET_API } from '../packages/hyperliquid/src/index.js';
 import { stressMetrics } from '../packages/domain/src/index.js';
 import { BASE, decimal, info, liveMarket, orderPrice, units, withdrawalConfig } from './lifecycle-config.js';
-import { parseAccount, parseFills, parseLifecycleReceipt, parseWithdrawal, verifyFill, spotUsdc, verifyClassTransfer, type ExpectedCall } from './lifecycle-parsing.js';
+import { parseAccount, parseFills, parseLifecycleReceipt, parseWithdrawal, verifyFill, spotUsdc, verifyClassTransfer, WITHDRAWAL_WINDOW_MS, type ExpectedCall } from './lifecycle-parsing.js';
 import { callCommand, initialization } from './testnet-plan.js';
 import { committedWasm, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, publicCli, V2_BASELINE_SHA256, rpc, stateAt, txHash } from './testnet-common.js';
 import { checkKeys, planConfigMatches, policyStateSchema } from './testnet-verify.js';
@@ -166,10 +166,13 @@ export async function lifecycle(argv: string[]) {
         const nearResponse = await rpc('tx', { tx_hash: hash, sender_account_id: saved.expected.caller, wait_until: 'FINAL' });
         const parsed = parseLifecycleReceipt(nearResponse, hash, saved.expected);
         if ((await recoveredSigner(parsed.digest, parsed.signature)).toLowerCase() !== derived.address) throw new Error('Contract recorded relay signature mismatch');
+        // Rechecks must query the recorded action's window, even days after relay.
+        const withdrawalLedger = saved.step === 'withdraw' ? await info({ type: 'userNonFundingLedgerUpdates',
+          user: derived.address, startTime: parsed.nonce, endTime: Math.min(Date.now(), parsed.nonce + WITHDRAWAL_WINDOW_MS) }) : null;
         const verification = saved.step === 'to-perp'
           ? verifyClassTransfer(saved.hyperliquidResponse, saved.before.spotClearinghouseState, before.spotClearinghouseState, parseAccount(saved.before.clearinghouseState), before.account, saved.expected.amount)
           : saved.step === 'withdraw'
-          ? parseWithdrawal(saved.hyperliquidResponse, before.ledger, saved.expected.amount, parsed.nonce)
+          ? parseWithdrawal(saved.hyperliquidResponse, withdrawalLedger, saved.expected.amount, parsed.nonce)
           : verifyFill(saved.hyperliquidResponse, before.userFills, parseAccount(saved.before.clearinghouseState), before.account,
             saved.expected.size, saved.expected.reduceOnly, parsed.nonce);
         record.relayVerification = { step: saved.step, txHash: hash, nearResponse, verification,

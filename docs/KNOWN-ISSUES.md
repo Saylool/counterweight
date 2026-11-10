@@ -1,63 +1,56 @@
 # Known issues
 
-## UI Send funds spot; owner class-transfer upgrade prepared
+## Funded keyless v2 is complete; v1 remains a rehearsal
 
-The owner reports 50 mock USDC at policy-v2's derived address in
-`spotClearinghouseState`, with perps accountValue 0. UI Send offers no perp
-destination. Use the [in-place upgrade and to-perp instructions](FUNDED-LIFECYCLE.md#upgrade-the-already-initialized-v2-current-run)
-to move 49 USDC within that same account. The old deployed `d85b2f91…` code cannot
-do this. The new artifact is prepared locally and has not been deployed by this
-change. Full-access key retention permits upgrade; do not delete it until the
-lead has deployed and checked the new code. Do not reinitialize v2.
+[Primary lifecycle evidence](evidence/2026-11-10-lifecycle-summary.md) now establishes a supervised funded testnet
+run on `policy-v2.counterweight-samet.testnet`, committed WASM `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`,
+zero access keys verified after [key deletion](https://testnet.nearblocks.io/txns/DGcGa5e5rjma3r7ohmP3Vhoshm9wdHMdU6DdA1ksS8eT).
+Owner funding and the spot→perp transfer occurred while the temporary v2 key was present. Keeper open, close and
+withdrawal records show zero keys at their receipt blocks.
+The original `policy.counterweight-samet.testnet` retains a key and old WASM; it is a rehearsal only.
+The earlier v2 upgrade/key-removal instructions are historical. Do not redeploy, reinitialize or rerun the funded run.
+Deleting all keys freezes this policy's code under the current ABI.
 
-`usdClassTransfer` is user-signed with no venue expiry; the local 60s callback
-and relay freshness checks do not revoke an already disclosed signature. Relay
-claims prevent repeat submission of a NEAR tx hash. Never retry an uncertain
-transfer; inspect both spot and perps balances and the saved evidence.
+## Withdrawal status matching — fixed; destination-chain arrival unverified
 
+The signed `withdraw3` amount was 47.957074 USDC; public ledger `delta.usdc` is 46.957074 **net**,
+with `fee: "1.0"`. The old matcher compared net against gross. The ledger also encodes nonce
+1794331863418000 in microseconds versus action time 1794331863418 in milliseconds.
+The corrected matcher uses exact micro-USDC net + fee = gross and checks the converted nonce when available.
+It requires a unique entry in the action's bounded 24-hour window. Status now queries from that saved nonce,
+so a recheck after a day does not silently omit the event. Minimal rows without fee/nonce use the documented
+1 USDC testnet fee and unique amount/time correlation; they provide weaker identity evidence.
+The Hyperliquid hash is separate from both the NEAR transaction hash and signing digest.
+Regression tests use the exact recorded ledger shape, missing-field variant and wrong/ambiguous cases.
+Original failed captures remain historical evidence. Public-ledger confirmation does **not** prove destination-chain arrival.
+Never resubmit an uncertain signature. API result/history limits and fees may change; unmatched rows fail closed.
 
-## 1. Delegated function-call key MPC fee — fixed in the next artifact
+## UI Send lands in spot; owner-only class transfer was required
 
-Zero-deposit signing now pays the configured MPC fee from the policy's native
-operating balance. The subsidy is capped at **0.01 NEAR per authorized request**;
-caller checks, block/window limits, outstanding limits and cumulative keeper
-address budgets still apply. Storage stake plus **128 KiB** future state growth
-must remain funded after paying the fee. The existing owner sweep retains that
-same storage floor **plus 1 NEAR** for operations. Top up the policy with an
-ordinary native transfer when needed; there is no automatic refill. A partial
-positive deposit below the fee fails; a deposit covering the fee retains the
-existing excess-refund behavior. Failed signer receipts refund the policy via NEAR.
-No policy access key is needed. Keeper function-call keys must target the policy,
-allow only intended keeper methods, and have sufficient gas allowance.
+UI Send of mock USDC offered no perp destination. The owner separately moved 49 USDC from spot to perps
+with a contract-signed `usdClassTransfer` before trading. This is a supervised funding step, not autonomous rebalancing.
+User-signed transfers/withdrawals have no venue `expiresAfter`; local callback freshness does not revoke a disclosed signature.
+Relay claims prevent local repeat submission of the same NEAR transaction. Inspect saved evidence and balances after uncertainty.
 
-The previous deployment `policy.counterweight-samet.testnet` still runs
-`698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289` and still
-requires an attached fee. Its full-access policy key is intentionally retained
-until final code freeze. The reserve-funded fix is deployed on initialized v2 at `d85b2f91…`.
-The new same-account transfer artifact is `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`;
-upgrade existing v2 without init as documented above.
-Deleting all keys freezes that account's code irreversibly under this ABI.
+## Reserve-funded MPC and public RPC limits
 
-The local demo uses library-managed disposable local keeper keys, attaches zero
-for signing, and keeps the policy account keyless. A Rust sandbox regression
-actually signs through a restricted function-call access key. No real wallet
-credentials are used. See [deployment and rehearsal commands](TESTNET-DEPLOYMENT.md).
+v2 pays the configured MPC fee from its operating balance for authorized zero-deposit calls. Subsidy is capped at
+0.01 NEAR per request; caller, signing-rate, outstanding and lifetime budgets remain enforced. Storage plus 128 KiB
+future growth must remain funded; owner sweeping also retains 1 NEAR for operations. Native top-ups are manual.
+Restricted keeper function-call keys are tested locally; a funded keeper lifecycle does not prove every key configuration.
+v1 still requires an attached fee. See [contract checks](../contracts/policy/TEST_RESULTS.md).
 
-## 2. Live proof expires after 60 seconds; rehearsal is not final custody evidence
+Public NEAR RPC can return HTTP 429 during parallel reads. CLI readers share `NEAR_TESTNET_RPC` from
+`packages/hyperliquid/src/chainsig.ts`; use an available public endpoint as described in [README](../README.md).
+The browser uses build-time `VITE_NEAR_RPC` and needs CORS. Unavailable reads fail closed and do not establish custody.
+Order proofs expire after 60 seconds; historical transactions cannot be revived. The read-only status path never relays.
 
-The 60-second window begins in the policy request block and includes MPC signing,
-NEAR finality, receipt verification and HTTP relay time. Start `prove:contract:live`
-before running its printed keeper command in a second terminal, then paste the
-hash immediately. Less than three seconds remaining fails closed. An old tx such
-as `5ThwVx4mRcfAKBWCqWEcF2kUqMuUsqAL887yVtbqzaP9` cannot be revived.
-`--rehearsal` requires a full-access policy key in the current finalized view and
-at both proof receipt blocks. Console and JSON/Markdown evidence explicitly say:
+## Remaining scope limits
 
-> REHEARSAL — policy account still had a full-access key; not the final keyless proof
-
-Final mode requires zero keys at both receipt blocks and the committed WASM hash.
-The historical hash override is restricted to rehearsals on the original account.
-Neither mode proves funding, fills, or every policy invariant.
+Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
+no multi-day carry, Intents dry quotes only, no live rebalancing route, and no destination-chain arrival verification.
+The 4 wNEAR spot leg remains directional after the perp close. Price bands and IOC orders can prevent fills;
+signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
 
 ## 3. Demo attack semantics and owner boundary
 
@@ -104,7 +97,5 @@ Network is now an immutable `Testnet` / `Mainnet` init enum, binding both accoun
 checks and signing domains. Mainnet deployment/operation is untested and not claimed.
 The shared Hyperliquid package now handles noop; the duplicate relay codec is removed.
 That historical network/oracle layout required a fresh controller when moving from v1.
-Initialized v2 already uses it. The current class-transfer upgrade preserves that
-layout and uses the retained full-access key for code deployment without init.
-No deployment, key removal, funded venue lifecycle, or testnet send was performed
-in this revision. Existing dated on-chain evidence still describes the old artifact.
+v2 was upgraded to the state-compatible class-transfer artifact before key removal, and the funded lifecycle
+is recorded above. This release-engineering pass used public reads and local checks only; it performed no testnet sends.

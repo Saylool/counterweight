@@ -155,7 +155,7 @@ describe('public response and MPC receipt parsing (offline)', () => {
   });
   it('requires ledger confirmation for accepted withdraw3; no success from an HTTP 200 alone', () => {
     const response = { status: 'ok', response: { type: 'default' } };
-    const ledger = [{ hash: hlHash, time: nonce, delta: { type: 'withdraw', usdc: '48' } }];
+    const ledger = [{ hash: hlHash, time: nonce, delta: { type: 'withdraw', usdc: '47', fee: '1.0', nonce: nonce * 1000 } }];
     expect(parseWithdrawal(response, ledger, '48', nonce).hash).toBe(hlHash);
     expect(() => parseWithdrawal(response, [], '48', nonce)).toThrow();
     expect(() => parseWithdrawal(response, ledger, '49', nonce)).toThrow();
@@ -165,4 +165,38 @@ describe('public response and MPC receipt parsing (offline)', () => {
     expect(() => parseFills([{ ...fills[0], sz: '-1' }])).toThrow();
     expect(() => parseOrderResponse({ status: 'ok' })).toThrow();
   });
+});
+
+
+describe('recorded v2 withdrawal regression', () => {
+  const response = { status: 'ok', response: { type: 'default' } };
+  const time = 1794331863418;
+  const entry = { time: 1794332099146, hash: '0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0',
+    delta: { type: 'withdraw', usdc: '46.957074', nonce: 1794331863418000, fee: '1.0' } };
+  it('matches the exact public ledger net payout, fee and microsecond nonce to the signed gross amount', () => {
+    expect(parseWithdrawal(response, [entry], '47.957074', time)).toEqual(entry);
+    expect(parseWithdrawal(response, [entry], '47.9570740', time)).toEqual(entry);
+    const minimal = { ...entry, delta: { type: 'withdraw', usdc: '46.957074' } };
+    expect(parseWithdrawal(response, [minimal], '47.957074', time)).toEqual(minimal);
+  });
+  it('rejects a wrong nonce, gross-as-net amount, stale entry, wrong fee or ambiguous ledger', () => {
+    for (const delta of [{ ...entry.delta, nonce: time }, { ...entry.delta, nonce: entry.delta.nonce + 1000 },
+      { ...entry.delta, usdc: '47.957074' }, { ...entry.delta, fee: '0' }])
+      expect(() => parseWithdrawal(response, [{ ...entry, delta }], '47.957074', time)).toThrow();
+    for (const ledger of [[{ ...entry, time: time - 1 }], [{ ...entry, time: time + 86400001 }], [entry, entry]])
+      expect(() => parseWithdrawal(response, ledger, '47.957074', time)).toThrow();
+  });
+});
+
+
+it('keeps the primary summary honest about funding before key removal and keyless trading/withdrawal', () => {
+  const summary = JSON.parse(readFileSync(new URL('../docs/evidence/2026-11-10-lifecycle-summary.json', import.meta.url), 'utf8')) as { steps: { step: string; tx: string | null }[] };
+  const steps = summary.steps.map(s => s.step);
+  expect(steps.indexOf('Owner-only spot → perp')).toBeLessThan(steps.indexOf('Access key removal'));
+  expect(steps.indexOf('Access key removal')).toBeLessThan(steps.indexOf('Keeper IOC short'));
+  for (const step of summary.steps.filter(s => ['Owner-only spot → perp', 'Keeper IOC short', 'Keeper reduce-only close', 'Owner fixed-recipient withdraw3'].includes(s.step))) {
+    const relay = JSON.parse(readFileSync(new URL(`../docs/evidence/lifecycle-relay-${step.tx}.json`, import.meta.url), 'utf8')) as { checks: { keys: { keys: unknown[] } }[] };
+    expect(relay.checks.length).toBeGreaterThan(0);
+    for (const check of relay.checks) expect(check.keys.keys).toHaveLength(step.step === 'Owner-only spot → perp' ? 1 : 0);
+  }
 });

@@ -1593,3 +1593,17 @@ footer > a:last-child,
     font-size: 10px;
   }
 }
+
+/* Evidence tables carry prose and long public hashes, unlike numeric replay rows. */
+.lifecycle-table, .ledger-table {
+  white-space: normal;
+  min-width: 700px;
+  table-layout: fixed;
+}
+.lifecycle-table th, .lifecycle-table td, .ledger-table th, .ledger-table td {
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.lifecycle-table th:nth-child(2), .lifecycle-table td:nth-child(2) { width: 36%; }
+.ledger-table th:nth-child(3), .ledger-table td:nth-child(3) { width: 38%; }

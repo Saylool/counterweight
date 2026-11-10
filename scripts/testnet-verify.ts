@@ -32,10 +32,11 @@ export async function verifyTestnet(argv: string[]) {
   const options = parseOptions(argv, ['owner-evm', 'before-key-removal', 'policy', 'plan']);
   if (options['before-key-removal'] !== undefined && options['before-key-removal'] !== 'true') throw new Error('Expected --before-key-removal=true');
   if (options['owner-evm']) z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(options['owner-evm']);
-  const policy = testnetAccount(options.policy ?? POLICY);
-  if (policy !== POLICY && !options.plan) throw new Error('Policy v2 verification requires --plan=docs/evidence/policy-v2-plan.json');
+  const policy = testnetAccount(options.policy ?? NEXT_POLICY);
+  const planFile = options.plan ?? (policy === NEXT_POLICY ? 'docs/evidence/policy-v2-plan.json' : undefined);
+  if (policy !== POLICY && !planFile) throw new Error('Policy verification requires --plan for a custom account');
   const artifact = await committedWasm();
-  const saved = options.plan ? JSON.parse(await readFile(options.plan, 'utf8')) : undefined;
+  const saved = planFile ? JSON.parse(await readFile(planFile, 'utf8')) : undefined;
   if (saved && saved.policy !== policy) throw new Error('Policy plan account mismatch');
   if (saved && saved.artifact?.sha256 !== artifact.sha256 && !(policy === NEXT_POLICY && saved.artifact?.sha256 === V2_BASELINE_SHA256)) throw new Error('Policy plan artifact mismatch');
   let accountExists = false;

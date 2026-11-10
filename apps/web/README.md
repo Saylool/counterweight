@@ -1,6 +1,6 @@
 # Counterweight web
 
-Read-only React + Vite + TypeScript frontend. No wallet SDK, private keys, signing, exchange actions, or transactions. Public POST requests are limited to NEAR `query` and Hyperliquid `/info` market reads.
+Read-only React + Vite + TypeScript frontend. No wallet SDK, private keys, signing, exchange actions, or transactions. Public POST requests are limited to NEAR `query` and Hyperliquid `/info` market and testnet account reads.
 
 From the repository root:
 
@@ -11,7 +11,7 @@ npm ci
 npm run web
 ```
 
-Open the local URL Vite prints (normally http://localhost:5173). Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
+Open the local URL Vite prints (normally http://localhost:5173). The first section presents the funded keyless lifecycle from the structured evidence summary, exact NEAR/Hyperliquid explorer links, and live testnet position, margin and ledger for the recorded derived address. v1 is selectable as a rehearsal with an access key. Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
 
 ```sh
 # Deploy under a subdirectory (include the trailing slash):
@@ -20,8 +20,8 @@ WEB_BASE_PATH=/counterweight/ npm run web:build
 
 The default base is `./`, suitable for a static directory. Optional build-time environment settings (also supported in `apps/web/.env.local`):
 
-- `VITE_POLICY_ACCOUNT`: defaults to `policy.counterweight-samet.testnet`; the panel can inspect another named testnet account.
-- `VITE_NEAR_RPC`: defaults to `https://rpc.testnet.near.org`; use a public CORS-enabled NEAR testnet RPC.
+- `VITE_POLICY_ACCOUNT`: defaults to `policy-v2.counterweight-samet.testnet`; the panel can inspect another named testnet account.
+- `VITE_NEAR_RPC`: defaults to `https://rpc.testnet.near.org`; use a public CORS-enabled NEAR testnet RPC when the default rate-limits. CLI commands instead use `NEAR_TESTNET_RPC`; never embed credentials in frontend variables.
 - `VITE_REPO_URL`: source repository link; until configured the footer shows a placeholder.
 - `WEB_BASE_PATH`: Vite asset base, defaults to `./`.
 
@@ -29,6 +29,6 @@ The default base is `./`, suitable for a static directory. Optional build-time e
 
 The build validates reports, copies dated evidence and original report downloads, and hashes the committed WASM against its manifest. Smaller presentation JSON is generated from those sources; no performance numbers are hard-coded. The return curve retains extrema per 12-hour bucket. Price and H charts show **recorded strategy events**, because the report does not contain hourly price/H series. Min H in the table is the report's intrabar proxy; chart H is the close-time event value. Periods restart independently and are not additive.
 
-NEAR account, access-key list, state and public MPC derived key are pinned to one finalized block. Access keys and code mismatches are shown independently; an unknown account cannot appear as a zero-key proof. Address derivation comes from the configured signer's public view; it is not a live signature/fill proof. Hyperliquid market data is mainnet and labeled separately from the testnet contract. The isolated short liquidation distance is a maintenance-model proxy, not a venue liquidation quote. Live data refreshes on request; the entry gate checks order-book freshness at render time.
+NEAR account, access-key list, state and public MPC derived key are pinned to one finalized block. Access keys and code mismatches are shown independently; an unknown account cannot appear as a zero-key proof. Address derivation comes from the configured signer's public view; it is not a live signature/fill proof. The funded account panel reads Hyperliquid testnet; the separate market/risk illustration uses mainnet and does not query an account. The isolated short liquidation distance is a maintenance-model proxy, not a venue liquidation quote. Live data refreshes on request; the entry gate checks order-book freshness at render time.
 
 Screenshot candidates: hero/architecture, finalized contract verification, replay period comparison, and local keeper/rogue timeline. CSS follows system dark/light preference and reduced-motion preference. Public API failures preserve the rest of the page and offer a retry. Original JSON downloads are loaded only on demand.

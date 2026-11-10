@@ -1,21 +1,38 @@
 # Counterweight
 
-Counterweight is a testnet prototype that holds wrapped NEAR in a NEAR policy contract and authorizes bounded Hyperliquid perpetual hedge actions through NEAR Chain Signatures. It includes a deterministic keeper, a recorded-market replay, a local sandbox demonstration, and a read-only web interface; live funding, fills and final keyless deployment remain unproved.
+Counterweight completed a **keyless, funded Hyperliquid testnet lifecycle** on 2026-11-10 through `policy-v2.counterweight-samet.testnet`: 4 wNEAR custody, an owner-only 49 USDC spot→perp transfer, a keeper IOC short of 3.5 NEAR @ 3.5121, a reduce-only close @ 3.5212 (flat), owner settlement, and a fixed-recipient withdrawal recorded as **46.957074 USDC net**. NEAR Chain Signatures signed the venue actions; the policy had zero access keys verified after key removal.
+
+Owner funding (deposit, UI Send and spot→perp transfer) occurred **before key removal**. The keeper open, close and withdrawal were verified with **zero keys at their receipt blocks**.
+
+## Funded testnet lifecycle: start here
+
+[Full summary and transaction table](docs/evidence/2026-11-10-lifecycle-summary.md) · [v2 policy on NEAR testnet](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) · [derived Hyperliquid testnet address](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390).
+
+| Evidence | Exact public link / result |
+|---|---|
+| Owner deposits 4 wNEAR | [H4ecuHKF…](https://testnet.nearblocks.io/txns/H4ecuHKFutGfsfRY5S9v2DXfpRPQAibCSH9MiVdQ1vnt) |
+| Owner moves 49 USDC spot→perp before key removal | [FnEqLsBC…](https://testnet.nearblocks.io/txns/FnEqLsBCYzBFx7E9Mn7EXWHQJFyWbncVBNafUNGLDmp3) |
+| Key deletion | [DGcGa5e5…](https://testnet.nearblocks.io/txns/DGcGa5e5rjma3r7ohmP3Vhoshm9wdHMdU6DdA1ksS8eT); zero access keys verified |
+| Keeper opens 3.5 NEAR short @ 3.5121 | [2ZHrq1du…](https://testnet.nearblocks.io/txns/2ZHrq1du5UaAeiQZVBoXCzb6vBFj9eMrQd99NiTDcFNd) |
+| Keeper reduce-only closes @ 3.5212; flat | [65WWr7W1…](https://testnet.nearblocks.io/txns/65WWr7W1DSvDKLGjF8tVZJtzYzwL6NX8DGfh7QZeL8JW) |
+| Owner settles reserved exposure | [FDepMaKN…](https://testnet.nearblocks.io/txns/FDepMaKNUmLZP8g6DzXzVcUsqV91V6Borv9Rh8uKNob8) |
+| Fixed-recipient withdraw3 | [9cWjW9vY…](https://testnet.nearblocks.io/txns/9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25); signed gross 47.957074 USDC |
+| Withdrawal ledger | [0xdf68992e…0501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0); 46.957074 USDC net + 1 USDC fee |
+
+This proves a **supervised testnet lifecycle**, public fills and a withdrawal ledger entry. Owner funding, observations, settlement and withdrawal approval were required; venue state is not verified on-chain. UI Send lands in **spot**, so the owner separately moved margin to perps. Destination-chain arrival is unverified; Intents has **dry quotes only**; there is **no multi-day carry**, mainnet or live rebalancing-route proof. The retained 4 wNEAR remains directional after the perp close. The old `policy.counterweight-samet.testnet` is a **rehearsal with an access key**.
 
 ## Judge quickstart
 
-Requires Node **>=22.19.0**, npm, Git, curl and tar on **macOS arm64 or Linux x64**. Install needs internet for packages and the sandbox binary; tests, replay and the local demo then run offline. The web page makes public market/RPC reads, and the last command needs public testnet services. No wallet credentials are needed. The sandbox library manages disposable localhost accounts; do not supply real keys. Rust 1.95+ is required for the cross-layer regression. The standalone local demo uses the included WASM and does not need Rust.
+Requires Node **>=22.19.0**, npm, curl and tar on **macOS arm64 or Linux x64**. Install needs internet for packages and the sandbox binary; tests, replay and the local demo then run offline. The web page makes public market/RPC reads, and the last command needs public testnet services. No wallet credentials are needed. The sandbox library manages disposable localhost accounts; do not supply real keys. Rust 1.95+ is required for the cross-layer regression. The standalone local demo uses the included WASM and does not need Rust.
 
-For this checkout, clone the local repository into a fresh temporary directory. On another machine, substitute the path of your local checkout as the clone source. Run each block in order from the same shell:
+From the current checkout (on another machine, use its local path):
 
 ```sh
-REPRO_DIR="$(mktemp -d /tmp/counterweight-judge.XXXXXX)"
-git clone /Users/samet/Desktop/counterweight "$REPRO_DIR/counterweight"
-cd "$REPRO_DIR/counterweight"
+cd /Users/samet/Desktop/counterweight
 export npm_config_cache="$PWD/.tmp/npm-cache"
 ```
 
-You should see `Cloning into ...` and `done.`. The cache setting keeps install writes inside the clone. A local clone contains committed files only; the current working-tree verification and historical reproduction limits are recorded in [REPRODUCE](docs/REPRODUCE.md).
+You should be in the repository containing this README. The cache setting keeps install writes inside the checkout. Current working-tree verification and historical reproduction limits are recorded in [REPRODUCE](docs/REPRODUCE.md).
 
 ```sh
 npm ci
@@ -48,13 +65,22 @@ You should see `OFFLINE GUARD active | Node connections restricted to loopback`,
 npm run web
 ```
 
-You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page shows replay results, dated evidence, and public contract/market reads. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
+You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Funded testnet lifecycle**, its transaction table, derived-address explorer link and live testnet position/margin/ledger. The contract panel defaults to v2; v1 is selectable as a rehearsal with a key. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
 
 ```sh
 npm run testnet:verify
 ```
 
-You should see JSON for `policy.counterweight-samet.testnet` with checks named `code hash`, `access keys`, `get_state config and current state`, and `policy-derived Hyperliquid address`. **Expected current result: exit 1**, with `ok: false` for code and keys: the old deployment differs from the committed artifact and retains a full-access key. A public derivation match proves address derivation only. An unavailable RPC can instead fail the command before the JSON is printed. Do not treat a nonzero verifier as proof of successful custody.
+You should see JSON for `policy-v2.counterweight-samet.testnet` with `ok: true` for `code hash`, `access keys` (zero keys), `get_state config and current state`, and `policy-derived Hyperliquid address`; expected exit **0** while public services and the saved baseline remain available. The default plan is `docs/evidence/policy-v2-plan.json`. An RPC outage or changed state fails closed; an unavailable read is not custody proof. To inspect the historical v1 rehearsal explicitly use `--policy=policy.counterweight-samet.testnet` (its code/key checks fail).
+
+Public NEAR RPCs can rate-limit parallel reads (HTTP 429). All CLI NEAR reads, including public derivation in `packages/hyperliquid/src/chainsig.ts`, use `NEAR_TESTNET_RPC`. For example:
+
+```sh
+NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify
+NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run lifecycle -- --step=status --relay-tx=9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25
+```
+
+These commands only read public state. The status recheck should show `public-status-verified`, `relayVerification` and the ledger hash above. It matches 47.957074 gross = 46.957074 net + 1 USDC fee, with the ledger nonce in microseconds and the action time in milliseconds. It queries the saved action's day, rather than a rolling current day. Minimal ledger rows without a nonce use a unique amount/time correlation; this is public-ledger evidence, not a bridge-arrival proof. Never resubmit an uncertain withdrawal. The original failed capture is retained alongside the corrected recheck. In the browser, set build-time `VITE_NEAR_RPC` to a public CORS-enabled endpoint if needed; do not place credentials in frontend variables.
 
 Measured commands, exit codes, startup/HTTP checks and environment: [REPRODUCE](docs/REPRODUCE.md). Additional release checks are `npm run typecheck`, `npm run build`, and `npm run web:build`.
 
@@ -81,20 +107,20 @@ The Rust contract builds typed MessagePack/EIP-712 payloads and reserves signed 
 
 Pause blocks new keeper requests and queues original-nonce invalidations. Existing signatures remain usable until venue consumption or expiry. Keeper/public signing shares a bounded cumulative allowance; owner recovery has separate capacity. Reserve-funded MPC fees in the new artifact address zero-deposit function-call keeper keys. See [known issues and recovery limits](docs/KNOWN-ISSUES.md).
 
-Keeper maximum direct execution debit, for the policy-v2 configuration: let K = floor(5,000 / 5) = 1,000 lifetime keeper/public authorizations, Q = max(reserved short, max_short_size) = 1 NEAR, and L = tick-rounded-up(max_price × (1 + price_band_bps / 10,000)) = $1.0605. Then **D ≤ K × ceil_micro(Q × L × (1 + f)) = $1,060.978**, assuming taker fee f = 0.00045. This deliberately counts the entire buy debit, including principal. It is conservative even if every authorization is a filled close; cancellations consume the same allowance. Test: `configured_keeper_maximum_direct_execution_debit_bound`. Bound assumes fixed limits and no owner budget replenishment. Subsidized MPC fees separately cost at most **10 NEAR** over that allowance (1,000 × 0.01 NEAR); gas paid by callers is separate. There is **no finite total portfolio-loss guarantee**: market moves, funding, liquidation, venue/oracle failure, missed hedges and owner attestations are outside this execution-debit bound. The fee is a model assumption, not enforced venue pricing. An often-quoted daily churn formula based only on the open cap omits uncapped recovery turnover and is not a valid guarantee here.
+Keeper maximum direct execution debit: let K = floor(5,000 / 5) = 1,000 lifetime keeper/public authorizations, Q = max(reserved short, max_short_size), and L = tick-rounded-up(max_price × (1 + price_band_bps / 10,000)). Then **D ≤ K × ceil_micro(Q × L × (1 + f))**, assuming taker fee f = 0.00045. The historical cancellation fixture used Q = 1 NEAR and L = $1.0605, giving $1,060.978 (`configured_keeper_maximum_direct_execution_debit_bound`). The [funded v2 plan](docs/FUNDED-LIFECYCLE.md) uses Q = 5 NEAR and live mark bounds, so that historical dollar ceiling does not apply; for the $3.6348 test mark the funded ceiling is $22,036.913 including tick and per-action micro rounding (`scripts/testnet.test.ts`). This counts the entire buy debit, including principal, even if every authorization is a filled close; cancellations consume the same allowance. Bound assumes fixed limits and no owner budget replenishment. Subsidized MPC fees separately cost at most **10 NEAR** over that allowance (1,000 × 0.01 NEAR); gas paid by callers is separate. There is **no finite total portfolio-loss guarantee**: market moves, funding, liquidation, venue/oracle failure, missed hedges and owner attestations are outside this execution-debit bound. The fee is a model assumption, not enforced venue pricing. A daily churn formula based only on the open cap omits uncapped recovery turnover.
 
 ## Evidence and deployment status
 
 | Scope | Status and evidence |
 |---|---|
-| Owner MPC signing | Recorded testnet server-recovered address matches the owner-derived address. The harmless cancel returned an unfunded-account error; it establishes signing, not execution. [Owner proof](docs/evidence/2026-11-10-signing-proof.md). |
-| Contract MPC signing | **REHEARSAL**: successful receipt/callback checks and matching Hyperliquid server recovery; policy still had a full-access key and ran the old WASM. [Rehearsal proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md). |
-| Preflight | Historical snapshot before account creation; its UNKNOWN_ACCOUNT result is not current deployment evidence. [Preflight](docs/evidence/2026-11-10-testnet-preflight.md). |
-| Intents | Recorded mainnet `dry: true` quote; expired, no route execution or funds moved. [Request/response](docs/evidence/2026-11-10-oneclick-dry-quote.json). |
-| Local enforcement | Committed default policy executes with no policy access keys; mocked external services. [Demo JSON](reports/demo-local.json), [transcript](reports/demo-local.md). |
-| Final keyless proof | **Pending**: owner will freshly deploy the newer artifact to `policy-v2.counterweight-samet.testnet`, remove all account keys before submission, then obtain and relay a fresh contract signature. This release does not perform those actions. [Deployment procedure](docs/TESTNET-DEPLOYMENT.md). |
+| Keyless funded lifecycle | **Completed on testnet**, with supervised owner steps. [Summary](docs/evidence/2026-11-10-lifecycle-summary.md), [open](docs/evidence/2026-11-10-lifecycle-open.md), [close](docs/evidence/2026-11-10-lifecycle-close.md), [withdrawal/status](docs/evidence/2026-11-10-lifecycle-status.md). |
+| v2 code / custody | Committed WASM `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`; zero account access keys verified after deletion. [Manifest](contracts/policy/artifacts/SHA256SUMS). No upgrade export; key deletion freezes the code under this ABI. |
+| v1 contract signing | **REHEARSAL with a key** on `policy.counterweight-samet.testnet`, old WASM `698195e3…2d289`. [Historical proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md). |
+| Owner signing / old preflight | Earlier identity-only [owner proof](docs/evidence/2026-11-10-signing-proof.md) and [pre-account-creation preflight](docs/evidence/2026-11-10-testnet-preflight.md); superseded for deployment status by the funded v2 evidence. |
+| Intents | Expired mainnet `dry: true` quote; no route execution or funds moved. [Request/response](docs/evidence/2026-11-10-oneclick-dry-quote.json). |
+| Local enforcement | Keyless local policy WASM; mocked external services. [Demo JSON](reports/demo-local.json), [transcript](reports/demo-local.md). |
 
-The deployed rehearsal runs SHA-256 `698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289`. The committed newer WASM is `d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1` ([manifest](contracts/policy/artifacts/SHA256SUMS)). Deleting all keys freezes the account's code under this ABI. No funded live trading or live rebalancing is established.
+The [funded runbook](docs/FUNDED-LIFECYCLE.md) and [deployment procedure](docs/TESTNET-DEPLOYMENT.md) describe owner execution. Do not redeploy, reinitialize or retry the completed run. Live rebalancing routes, destination-chain arrival and sustained carry remain unproved.
 
 ## Historical results: simulated execution
 
@@ -119,7 +145,7 @@ The table is rounded from [replay-report.json](reports/replay-report.json); its 
 | holdout | hedged-rebalance | 25000 | 57000 | 785.04 | 367.89 | 418.37 | 0.73 | 2107.79 | 0 |
 <!-- replay-table:end -->
 
-The always-hedged comparator permits unfunded losses and negative venue equity: its carry figure is infeasible as an executable return. Rebalancing sells NEAR during rallies and can buy it back during falls; the starting coin count is not preserved. Small allocations lose money to fixed and variable costs. The holdout is a retrospective chronological split of already-observed data, not an untouched prospective experiment. Periods restart independently and pay fresh costs; they are not additive. The selected training run is slightly negative.
+The always-hedged comparator permits unfunded losses and negative venue equity: its carry figure is infeasible as an executable return. Rebalancing sells NEAR during rallies and can buy it back during falls; the starting coin count is not preserved. Small allocations lose money to fixed and variable costs. The holdout is a retrospective chronological split of already-observed data, not an untouched prospective experiment. Periods restart independently and pay fresh costs; they are not additive.
 
 Fees, slippage, signing overhead and route latency are frozen modeling assumptions, not measured execution quotes. Hourly OHLC and zero proxy breaches do not prove intrabar solvency. See the complete [report](reports/replay-report.md), [protocol and costs](docs/REPLAY-PROTOCOL.md), and [market provenance](fixtures/market/README.md). Historical results are not yield promises.
 
@@ -127,7 +153,7 @@ Fees, slippage, signing overhead and route latency are frozen modeling assumptio
 
 The first commit is **2026-11-09**, per the release brief and the initial local HEAD reflog entry; this release does not independently audit the complete commit history. The repository implements the Rust `near-sdk` policy, NEP-141 wNEAR receiver, Chain Signatures payload construction/relay and public-key derivation, deterministic keeper/replay, owner-approved rebalance accounting, sandbox demonstrations, and read-only web interface. Those are the work presented for the hackathon window. Dependencies and recorded market history are reused inputs, not work claimed as newly invented.
 
-NEAR Chain Signatures is exercised in the dated testnet owner and contract rehearsal proofs. NEAR Intents 1Click is exercised as a mainnet dry quote; external adapter execution remains pending. The current artifact's reserve-funded signing is locally tested and awaits fresh deployment. [Recorded Rust validation](contracts/policy/TEST_RESULTS.md) reports native, export and sandbox checks; the full native/sandbox suites remain separate; `npm test` also invokes the focused cross-layer Cargo regression. Follow [contract reproduction instructions](contracts/policy/README.md) for the separate Rust toolchain.
+NEAR Chain Signatures is exercised in the funded keyless v2 lifecycle; earlier owner and v1 rehearsal proofs remain historical evidence. NEAR Intents 1Click is exercised as a mainnet dry quote; external adapter execution remains pending. The current artifact's reserve-funded signing is deployed on keyless v2 and locally tested. [Recorded Rust validation](contracts/policy/TEST_RESULTS.md) reports native, export and sandbox checks; the full native/sandbox suites remain separate; `npm test` also invokes the focused cross-layer Cargo regression. Follow [contract reproduction instructions](contracts/policy/README.md) for the separate Rust toolchain.
 
 ## Disclosures (Q-005)
 

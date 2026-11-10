@@ -4,6 +4,8 @@ import { base58 } from "@scure/base";
 import { z } from "zod";
 import {
   DEFAULT_ACCOUNT,
+  HL_TESTNET_API,
+  readVenue,
   addressFromPublicKey,
   decodeView,
   illustrativeRisk,
@@ -339,4 +341,28 @@ describe("market and domain risk", () => {
     expect(liquidationDistance(2500, 0)).toBe(0);
     expect(liquidationDistance(0, 3000)).toBeNull();
   });
+});
+
+
+it("reads the derived account position, margin and exact withdrawal ledger on testnet only", async () => {
+  const address = "0x3e72c8963761c3f436710df9b891d8e3a74b5390";
+  const entry = { time: 1794332099146, hash: "0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0",
+    delta: { type: "withdraw", usdc: "46.957074", nonce: 1794331863418000, fee: "1.0" } };
+  const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
+    const body = JSON.parse(String(init?.body));
+    return response(body.type === "clearinghouseState" ? { marginSummary: { accountValue: "1.0", totalMarginUsed: "0.0" },
+      withdrawable: "1.0", assetPositions: [] } : [entry]);
+  });
+  const data = await readVenue(address, 1794330000000, fetcher);
+  expect(DEFAULT_ACCOUNT).toBe("policy-v2.counterweight-samet.testnet");
+  expect(data.account.assetPositions).toEqual([]);
+  expect(data.account.marginSummary.accountValue).toBe(1);
+  expect(data.ledger).toEqual([entry]);
+  expect(fetcher.mock.calls.every(([url]) => url === HL_TESTNET_API)).toBe(true);
+  expect(fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))).toEqual([
+    { type: "clearinghouseState", user: address },
+    { type: "userNonFundingLedgerUpdates", user: address, startTime: 1794330000000 },
+  ]);
+  await expect(readVenue(address, 0, async () => response({}, 429))).rejects.toThrow("HTTP 429");
+  await expect(readVenue(address, 0, async () => response({}))).rejects.toThrow();
 });

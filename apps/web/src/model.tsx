@@ -185,3 +185,12 @@ export function date(value: number | string) {
     timeZone: "UTC",
   });
 }
+
+
+export const lifecycleSchema = z.object({
+  date: z.string(), policy: z.literal("policy-v2.counterweight-samet.testnet"),
+  address: z.string().regex(/^0x[0-9a-f]{40}$/), recipient: z.string().regex(/^0x[0-9a-f]{40}$/),
+  ledgerStartTime: z.number().int().nonnegative(), withdrawalHash: z.string().regex(/^0x[0-9a-f]{64}$/),
+  steps: z.array(z.object({ step: z.string(), tx: z.string().nullable(), result: z.string(), evidence: z.string() })),
+});
+export type LifecycleSummary = z.infer<typeof lifecycleSchema>;

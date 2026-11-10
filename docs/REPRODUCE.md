@@ -1,18 +1,80 @@
-> Current working-tree validation after the blind reviews is recorded in [contract TEST_RESULTS](../contracts/policy/TEST_RESULTS.md). The timings and deployment reads below are historical. The current revision used no git commands, real keys or testnet sends. The release-file overlay warning is obsolete.
+# Release reproduction — funded keyless lifecycle, 2026-11-10
 
-# Release reproduction — 2026-11-10
+Start with the [funded lifecycle summary and exact transaction table](evidence/2026-11-10-lifecycle-summary.md),
+[NEAR v2 policy](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) and
+[derived Hyperliquid testnet address](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390).
+This evidence establishes the supervised testnet custody/transfer/open/close/settlement/withdrawal lifecycle;
+it does not establish mainnet, multi-day carry, a live Intents route or destination-chain arrival.
+The 4 wNEAR remains in spot custody after closing. UI Send lands in spot; the owner separately moves margin to perps.
+Owner funding and the spot→perp transfer preceded key deletion; the keeper open, close and withdrawal records
+show zero keys at their receipt blocks. The original v1 account remains a rehearsal with an access key.
 
-Final measured run: **2026-11-10T11:03:47.967116+00:00** through **2026-11-10T11:06:34.601275+00:00**. OS: **macOS-26.6.2-arm64-arm-64bit-Mach-O**; architecture **arm64**; Node **v26.9.0**; npm **12.1.0**; shell `/bin/zsh`. Clone: `/tmp/counterweight-judge.XzCFO9/counterweight`. This is a fresh local clone and an empty per-clone npm cache on the existing machine, not a second physical machine or a clean OS image. Linux and the minimum supported Node version were not independently tested.
+## Current working-checkout validation
+
+This release pass used the existing checkout and dependencies on macOS arm64; no git commands, real private keys,
+wallet/keychain access or testnet sends were used. No fresh install, clean clone, local demo rerun or full Rust
+native/sandbox rerun is claimed here. `npm test` includes the focused Rust cross-layer regression.
+
+| Command | Result |
+|---|---|
+| `npm test` | PASS: 425 tests / 20 root files, 30 tests / 2 frontend files; **455 total** |
+| `npm run typecheck` | PASS, exit 0 |
+| `npm run build` | PASS, exit 0; includes web build |
+| `npm run web:build` | PASS, exit 0 |
+| `npm run web` | Vite ready; port 5173 occupied, served on 5174; HTTP 200 for page, lifecycle table JSON, artifact JSON, evidence index and app module |
+| Public v2 verifier below | PASS, exit 0; all four named checks true |
+| Public withdrawal status below | PASS, exit 0; `public-status-verified` and exact recorded ledger match |
+
+README replay-number drift tests passed in the root suite. Frontend checks cover the funded table, exact explorer
+links, v2 default, and testnet position/margin/ledger parsing. Interactive visual inspection was unavailable because
+the browser access host was unavailable; the HTTP smoke checks and server rendering tests are not a visual browser test.
+The initial gross/net matcher regression was fixed; the final suite above is green.
+
+## Recheck the real evidence without sending
+
+Public RPCs can rate-limit parallel reads. `NEAR_TESTNET_RPC` is shared by CLI RPC and public Chain Signatures
+derivation (`packages/hyperliquid/src/chainsig.ts`). No credential is required for this public endpoint:
+
+```sh
+NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify
+NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run lifecycle -- --step=status --relay-tx=9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25
+```
+
+The verifier defaults to `policy-v2.counterweight-samet.testnet` and `docs/evidence/policy-v2-plan.json`.
+You should see `ok: true` for code hash, access keys (zero), config/current state, and derived address.
+[Saved successful verifier JSON](evidence/2026-11-10-release-testnet-verify.json).
+
+The status command should show `relayVerification.verification.hash` equal to
+[0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0).
+[Saved successful status JSON](evidence/2026-11-10-release-lifecycle-recheck.json).
+The original failed relay record is retained: it compared signed gross 47.957074 to ledger net 46.957074 USDC.
+The corrected match adds the ledger fee `1.0`, checks the ledger microsecond nonce 1794331863418000 against
+signed millisecond time 1794331863418, queries the saved action's bounded day and rejects ambiguous matches.
+Formatting variants normalize using integer micro-USDC. Minimal rows without nonce use unique amount/time correlation;
+without fee they use the documented 1 USDC testnet fee. No match proves destination-chain arrival.
+
+These commands perform public reads and write local evidence only. They never relay a signature.
+RPC outages or baseline drift fail closed; do not resubmit an uncertain withdrawal.
+The browser uses `VITE_NEAR_RPC` instead, with a public CORS-enabled endpoint.
+
+---
+
+The following is an **archived earlier run**, retained for provenance. Its v1 custody failure, test counts,
+timings and pending deployment language are historical, not the current submission status.
+
+# Archived reproduction — earlier 2026-11-10 run
+
+Historical measured run: **2026-11-10T11:03:47.967116+00:00** through **2026-11-10T11:06:34.601275+00:00**. OS: **macOS-26.6.2-arm64-arm-64bit-Mach-O**; architecture **arm64**; Node **v26.9.0**; npm **12.1.0**; shell `/bin/zsh`. Clone: `/tmp/counterweight-judge.XzCFO9/counterweight`. This is a fresh local clone and an empty per-clone npm cache on the existing machine, not a second physical machine or a clean OS image. Linux and the minimum supported Node version were not independently tested.
 
 ## Source isolation and the commit restriction
 
-The user permits only read-only git status/diff and cloning this local repository. No commit, staging, reset, checkout, fetch, push or remote clone was performed. No real private key, wallet/keychain credential or testnet signing command was used. The demo manages disposable localhost accounts through near-workspaces.
+The earlier run permitted read-only git inspection and a local clone; the current release pass ran no git commands. No commit, staging, reset, checkout, fetch, push or remote clone was performed. No real private key, wallet/keychain credential or testnet signing command was used. The demo manages disposable localhost accounts through near-workspaces.
 
 The release-overlay discussion in the earlier record is obsolete: those release files were subsequently included before the blind reviews. The historical timings below describe that earlier run, not the current working tree. This revision is validated directly in the current directory; no git commands, clone, real keys or testnet sends were used. See the updated contract TEST_RESULTS for current checks. An unmodified fresh-clone pass for this uncommitted revision has not been claimed.
 
 ## Exact quickstart and timings
 
-The clone/setup block was executed exactly as in README:
+The historical clone/setup block used the then-current README (the current quickstart uses the working checkout):
 
 ```sh
 REPRO_DIR="$(mktemp -d /tmp/counterweight-judge.XXXXXX)"
@@ -184,10 +246,10 @@ Runtime sandbox receipts/timestamps change across runs. The public-signature-sha
 }
 ```
 
-This corroborates the old deployed WASM and retained full-access key. The committed newer WASM, fresh `policy-v2.counterweight-samet.testnet` deployment, key removal before submission, and final keyless signing proof remain owner work. No funded venue fill, live rebalancing adapter or unexpired Intents execution was reproduced. Existing owner proof, rehearsal and expired dry-quote evidence were inspected, not newly executed. The Rust native/export/sandbox suites were not rerun in this release pass; README identifies their records as historical and links separate instructions.
+At that historical point, this corroborated the old v1 deployed WASM and retained full-access key. The funded v2 lifecycle and keyless verification in the current record above supersede that pending deployment status. No funded venue fill, live rebalancing adapter or unexpired Intents execution was reproduced. Existing owner proof, rehearsal and expired dry-quote evidence were inspected, not newly executed. The Rust native/export/sandbox suites were not rerun in this release pass; README identifies their records as historical and links separate instructions.
 
 ## Drift regression and retained run details
 
 `scripts/readme-claims.test.ts` checks all numeric replay-table cells, the report-derived facts block and the quickstart replay summary against `reports/replay-report.json`. In a controlled negative check, changing the README small-allocation net from `-6.34` to `-6.33` made the focused Vitest run exit **1** with the cell comparison failing. Restoring the README made the focused run exit **0**, **3 tests passed**. The final full clone suite then passed. Frontend coverage also checks exact NEAR/USDC conversions down to the smallest raw unit.
 
-Raw local logs and the overlay SHA-256 manifest remain in `/private/tmp/counterweight-release-final-logs/` on this machine; these temporary paths are not portable artifacts. The durable commands, durations, selected outputs, hashes and full verifier snapshot are recorded above. No executable source or README change followed the final successful run. This documentation record was then finalized and checked for valid local links and clean whitespace.
+Raw local logs and the overlay SHA-256 manifest remain in `/private/tmp/counterweight-release-final-logs/` on this machine; these temporary paths are not portable artifacts. The durable commands, durations, selected outputs, hashes and full verifier snapshot are recorded above. No executable source or README change followed that historical run before its record was finalized; later revisions are recorded above. This documentation record was then finalized and checked for valid local links and clean whitespace.

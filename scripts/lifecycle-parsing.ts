@@ -38,11 +38,23 @@ export function verifyFill(raw: unknown, fillsRaw: unknown, before: ReturnType<t
   if (reduceOnly && (after.signedSize > 0 || Math.abs(after.signedSize) >= Math.abs(before.signedSize))) throw new Error('Hyperliquid close did not reduce the short');
   return { filled, fills, fullFill: actual === wanted, flat: after.signedSize === 0 };
 }
+// Testnet withdraw3 debits the signed gross amount; ledger usdc is net of the fee.
+// The public ledger nonce is in microseconds; the signed action time is milliseconds.
+export const WITHDRAWAL_WINDOW_MS = 86_400_000;
 export function parseWithdrawal(raw: unknown, ledgerRaw: unknown, amount: string, nonce: number) {
   z.object({ status: z.literal('ok'), response: z.object({ type: z.literal('default') }) }).parse(raw);
-  const ledger = z.array(z.object({ time: uint, hash: hashSchema, delta: z.object({ type: z.string() }).passthrough() })).parse(ledgerRaw);
-  const entries = ledger.filter(l => l.time >= nonce && l.delta.type === 'withdraw' &&
-    typeof l.delta.usdc === 'string' && units(l.delta.usdc, 6) === units(amount, 6));
+  uint.parse(nonce);
+  const ledger = z.array(z.object({ time: uint, hash: hashSchema, delta: z.object({ type: z.string(),
+    usdc: numeric.optional(), fee: numeric.optional(), nonce: uint.optional() }).passthrough() })).parse(ledgerRaw);
+  const gross = units(amount, 6);
+  const entries = ledger.filter(l => {
+    if (l.time < nonce || l.time > nonce + WITHDRAWAL_WINDOW_MS || l.delta.type !== 'withdraw' || l.delta.usdc === undefined) return false;
+    if (l.delta.nonce !== undefined && BigInt(l.delta.nonce) !== BigInt(nonce) * 1000n) return false;
+    // Older minimal ledger shapes omit fee/nonce: use the documented 1 USDC testnet
+    // fee, exact micro-units and a unique bounded-time match. Never guess a hash:
+    // the Hyperliquid ledger hash is not the NEAR tx hash or signing digest.
+    return units(l.delta.usdc, 6) + units(l.delta.fee ?? '1', 6) === gross;
+  });
   if (entries.length !== 1) throw new Error('Hyperliquid withdrawal not yet verified in public ledger; do not resubmit signature');
   return entries[0]!;
 }

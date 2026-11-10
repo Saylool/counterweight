@@ -177,7 +177,7 @@ describe('public receipt parsing and custody', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const savedExitCode = process.exitCode;
     try {
-      await verifyTestnet([]);
+      await verifyTestnet([`--policy=${POLICY}`]);
       expect(process.exitCode).toBe(1);
       const result = JSON.parse(String(log.mock.calls[0]![0]));
       expect(result.checks.map((c: { ok: boolean }) => c.ok)).toEqual([false, false, false, true]);
@@ -201,4 +201,37 @@ it('bounds the funded keeper debit at the immutable maximum mark', () => {
   const notional = (BigInt(init.limits.max_short_size) * upperPrice + 10n ** 24n - 1n) / 10n ** 24n;
   const debit = (notional * 1000450n + 999999n) / 1000000n;
   expect(debit * 1000n).toBe(22036913000n);
+});
+
+
+it('defaults public verification to the funded v2 policy and saved plan', async () => {
+  const plan = JSON.parse(readFileSync(new URL('../docs/evidence/policy-v2-plan.json', import.meta.url), 'utf8'));
+  const root = JSON.parse(readFileSync(new URL('../fixtures/chainsig-public-derivation.json', import.meta.url), 'utf8')).root.value as string;
+  const derived = deriveEvmAddress(root, NEXT_POLICY, PATH);
+  const remoteKey = `secp256k1:${base58.encode(Buffer.from(derived.publicKey.slice(4), 'hex'))}`;
+  const artifact = await committedWasm();
+  const state = { ...plan.init, coin: 'NEAR', near_recipient: OWNER, spot_balance: '4000000000000000000000000',
+    signed_short_size: '0', paused: false, pending: null, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000' };
+  const json = (value: unknown) => new Response(JSON.stringify(value));
+  const fetcher = vi.fn<typeof fetch>(async (url, init) => {
+    const body = JSON.parse(String(init?.body));
+    if (String(url).endsWith('/info')) return json({ universe: Array.from({ length: 55 }, (_, i) => ({ name: i === 54 ? 'NEAR' : `OTHER${i}`, szDecimals: 1 })) });
+    if (body.method === 'block') return json({ result: { header: { hash: 'finalized', height: 42 } } });
+    const p = body.params;
+    if (p.request_type === 'view_account') return json({ result: { block_hash: 'finalized', code_hash: artifact.codeHash } });
+    if (p.request_type === 'view_access_key_list') return json({ result: { block_hash: 'finalized', keys: [] } });
+    const value = p.method_name === 'get_state' ? state : p.method_name === 'public_key' ? root : remoteKey;
+    return json({ result: { block_hash: p.method_name === 'get_state' ? 'finalized' : 'root', block_height: 43,
+      result: [...Buffer.from(JSON.stringify(value))] } });
+  });
+  vi.stubGlobal('fetch', fetcher);
+  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+  await verifyTestnet([]);
+  const result = JSON.parse(String(log.mock.calls[0]![0]));
+  expect(result.account).toBe(NEXT_POLICY);
+  const requests = fetcher.mock.calls.length;
+  await expect(verifyTestnet(['--policy=custom.testnet'])).rejects.toThrow('requires --plan');
+  expect(fetcher.mock.calls).toHaveLength(requests);
+  expect(result.checks.map((c: { ok: boolean }) => c.ok)).toEqual([true, true, true, true]);
+  expect(fetcher.mock.calls.map(([, init]) => JSON.parse(String(init?.body))).some(b => b.params?.account_id === POLICY)).toBe(false);
 });

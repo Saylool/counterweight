@@ -12,3 +12,7 @@ Pure signing codecs and a restricted testnet proof relay; no key handling or sig
 L1 actions are already-serialized wire orders, trigger orders, cancellations cloid cancellations and `noop` nonce invalidations. The codec rebuilds canonical SDK field order recursively and omits undefined optional keys for both hashing and submission. Supply normalized decimal strings with at most eight fractional places and no trailing fractional zeros; sizes and transfer amounts must be positive. Addresses, cloids and signature scalars must be lowercase hex. User actions are `approveAgent`, `withdraw3`, and `usdSend`; network fields and the SDK's signature chain ID are supplied by the codec. This package grants no controller permissions.
 
 See [testnet procedure and evidence](../../docs/TESTNET.md).
+
+Public NEAR testnet reads use `NEAR_TESTNET_RPC` (default `https://rpc.testnet.near.org`).
+Public RPCs can rate-limit; e.g. `NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify`
+from the repository root. This setting is shared by derivation and release CLI RPC checks.
