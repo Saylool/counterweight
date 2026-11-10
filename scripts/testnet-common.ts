@@ -7,6 +7,8 @@ import { TESTNET_RPC } from '../packages/hyperliquid/src/index.js';
 
 export const OWNER = 'counterweight-samet.testnet';
 export const POLICY = `policy.${OWNER}`;
+export const NEXT_POLICY = `policy-v2.${OWNER}`;
+export const DEPLOYED_SHA256 = '698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289';
 export const KEEPER = `keeper.${OWNER}`;
 export const PATH = 'counterweight-1';
 export const PROBE_ADDRESS = '0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a';
@@ -19,12 +21,17 @@ export const SIGNING_LIMITS = { keeper_per_block: 2, keeper_per_window: 8, keepe
 export function parseOptions(argv: string[], allowed: readonly string[]) {
   const result: Record<string, string> = {};
   for (const arg of argv) {
-    const match = /^--([a-z-]+)=(.+)$/.exec(arg);
+    const match = /^--([a-z][a-z0-9-]*)=(.+)$/.exec(arg);
     if (!match || !allowed.includes(match[1]!) || result[match[1]!] !== undefined)
       throw new Error(`Expected unique options: ${allowed.map(a => `--${a}=VALUE`).join(' ')}`);
     result[match[1]!] = match[2]!;
   }
   return result;
+}
+export function testnetAccount(value: string) {
+  if (!/^(?=.{2,64}$)[a-z0-9]+(?:[-_][a-z0-9]+)*(?:\.[a-z0-9]+(?:[-_][a-z0-9]+)*)*\.testnet$/.test(value))
+    throw new Error('Expected a named testnet account');
+  return value;
 }
 export function publicKey(value: string) {
   const match = /^ed25519:([1-9A-HJ-NP-Za-km-z]+)$/.exec(value);
@@ -52,9 +59,9 @@ export async function rpc(method: 'query' | 'tx' | 'block', params: unknown, fet
   if (envelope.result === undefined) throw new Error('NEAR RPC missing result');
   return envelope.result;
 }
-export async function stateAt(blockHash: string) {
+export async function stateAt(blockHash: string, policy = POLICY) {
   const result = z.object({ block_hash: z.literal(blockHash), result: z.array(z.number().int().min(0).max(255)) }).parse(await rpc('query', {
-    request_type: 'call_function', account_id: POLICY, method_name: 'get_state', args_base64: 'e30=', block_id: blockHash,
+    request_type: 'call_function', account_id: policy, method_name: 'get_state', args_base64: 'e30=', block_id: blockHash,
   }));
   return JSON.parse(Buffer.from(result.result).toString('utf8')) as unknown;
 }

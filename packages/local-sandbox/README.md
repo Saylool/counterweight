@@ -21,7 +21,16 @@ Replay hours are historical fixture time; sandbox time is advanced separately
 only to exercise contract freshness and heartbeat checks. Stress H is a keeper
 rule, not an on-chain oracle. A mock close fill updates only the replay ledger;
 the contract conservatively retains signed exposure until owner reconciliation.
-Spot disposal and finalized route reconciliation remain owner-approved.
+Spot disposal and finalized route reconciliation remain owner-approved. After the
+owner-free replay/attacks/recovery assertions, an explicit OWNER RESUMED phase
+settles the mock close, approves the exact spot sale through the mock token/route,
+and reconciles its mock finalized receipt. Only then is margin credited. The final
+timeline entry asserts zero spot and zero reserved short. Fast-forward waits print
+progress, including periodic output while the sandbox call is running.
+
+Signing calls attach zero deposit and spend the bounded policy operating reserve.
+The local keeper key remains disposable and library-managed; the Rust sandbox
+suite separately exercises a restricted function-call access key.
 
 The rogue script uses the configured keeper identity to simulate compromise.
 Bounded non-reduce opens are intentionally allowed by the design; the attack

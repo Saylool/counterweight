@@ -389,9 +389,7 @@ impl Policy {
     /// Fixed owner only; retain storage, 128 KiB bounded state growth, and 1 NEAR operations.
     pub fn sweep_native(&mut self, amount: U128) -> Promise {
         self.assert_owner();
-        let reserve = u128::from(env::storage_usage() + 131_072)
-            * env::storage_byte_cost().as_yoctonear()
-            + BASE;
+        let reserve = Self::storage_reserve() + BASE;
         require!(
             amount.0 > 0
                 && amount.0
@@ -935,15 +933,26 @@ impl Policy {
             near_sdk::serde_json::json!({"paused": true, "reason": "recovery", "complete": self.pause_complete()}),
         );
     }
+    fn storage_reserve() -> u128 {
+        u128::from(env::storage_usage() + 131_072) * env::storage_byte_cost().as_yoctonear()
+    }
+    // Sweep retains 1 NEAR for operations. A zero-deposit caller may spend at most
+    // 0.01 NEAR per authorized signature; storage and bounded growth stay protected.
+    // Existing caller, rate, outstanding and cumulative keeper budgets still apply.
+    fn has_signing_fee(&self) -> bool {
+        let attached = env::attached_deposit().as_yoctonear();
+        attached >= self.mpc_fee
+            || (attached == 0
+                && self.mpc_fee <= BASE / 100
+                && env::account_balance().as_yoctonear()
+                    >= Self::storage_reserve().saturating_add(self.mpc_fee))
+    }
     fn has_signing_resources(&self) -> bool {
-        env::attached_deposit().as_yoctonear() >= self.mpc_fee
+        self.has_signing_fee()
             && env::prepaid_gas().as_tgas() >= self.signer_gas_tgas + self.callback_gas_tgas + 25
     }
     fn assert_signing_resources(&self) {
-        require!(
-            env::attached_deposit().as_yoctonear() >= self.mpc_fee,
-            "ERR_MPC_FEE"
-        );
+        require!(self.has_signing_fee(), "ERR_MPC_FEE");
         require!(
             env::prepaid_gas().as_tgas() >= self.signer_gas_tgas + self.callback_gas_tgas + 25,
             "ERR_GAS"

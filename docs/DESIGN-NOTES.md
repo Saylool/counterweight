@@ -133,8 +133,11 @@ Source: [official address rate limits](https://hyperliquid.gitbook.io/hyperliqui
 
 Owner-configured MPC fee and signer/callback gas replace hardcoded resources.
 Defaults: 1 yoctoNEAR, 230/30 Tgas, plus 25 Tgas execution reserve (285 total).
-Excess attached deposit is returned to the calling account. Zero-deposit/low-gas
-pause commits locally and queues invalidation for a later funded call. A definite
+Zero-deposit signing uses the policy operating balance with a 0.01 NEAR/request
+cap and storage stake + 128 KiB floor. Positive deposits must cover the whole fee;
+excess returns to the caller. Existing caller/rate/outstanding/address budgets
+remain in force. A low-gas or reserve-exhausted pause still commits locally and
+queues invalidation for a later adequately funded/gassed call. A definite
 failed signer receipt releases only its opening exposure; nonce, cooldown, and
 rolling turnover charges remain consumed. Malformed, oversized, missing, and
 late/detached success responses remain uncertain. Open turnover is rolling 24h.

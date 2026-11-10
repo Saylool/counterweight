@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { base58 } from '@scure/base';
 import { getSigningDigest, type L1Input } from '../packages/hyperliquid/src/index.js';
-import { assertFreshContractProof, parseContractProof } from './prove-contract.js';
+import { assertFreshContractProof, parseContractProof, proofKeys, proofOptions, REHEARSAL_NOTICE } from './prove-contract.js';
 import { deploymentSteps, initialization } from './testnet-plan.js';
 import { checkKeys, planConfigMatches, policyStateSchema, verifyTestnet } from './testnet-verify.js';
-import { committedWasm, KEEPER, OWNER, parseOptions, PATH, POLICY, PROBE_ADDRESS, publicKey, rpc, SIGNING_LIMITS, txHash } from './testnet-common.js';
+import { committedWasm, DEPLOYED_SHA256, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, PROBE_ADDRESS, publicKey, rpc, SIGNING_LIMITS, txHash } from './testnet-common.js';
 import { deriveEvmAddress } from '../packages/hyperliquid/src/index.js';
 
 const publicSignature: unknown = JSON.parse(readFileSync(new URL('../fixtures/nearblocks-mpc-response.json', import.meta.url), 'utf8')).signatureResponse;
@@ -36,16 +36,17 @@ describe('auditable deployment command builder', () => {
   it('orders create/deploy/init/preflight/delete/keyless verify/contract cancel with keychain-only signing', () => {
     const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS), 'a'.repeat(64), pk, pk);
     expect(steps).toHaveLength(9);
-    expect(steps[0]!.command).toContain(`fund-myself ${POLICY} '7 NEAR' use-manually-provided-public-key '${pk}'`);
-    expect(steps[1]!.command).toContain(`fund-myself ${KEEPER} '0.2 NEAR'`);
+    expect(steps[0]!.command).toContain(`fund-myself ${NEXT_POLICY} '9 NEAR' use-manually-provided-public-key '${pk}'`);
+    expect(steps[1]!.command).toBe(`near account view-account-summary ${KEEPER} network-config testnet now`);
     expect(steps[2]!.command).toMatch(/^test .*shasum.* && near contract deploy/);
     expect(steps[3]!.command).toContain(`new json-args '${JSON.stringify(initialization(54, 1, PROBE_ADDRESS))}'`);
     expect(steps[3]!.command).toContain(`sign-as ${OWNER}`);
     expect(steps[4]!.command).toContain('--before-key-removal=true');
-    expect(steps[5]!.command).toContain(`delete-keys ${POLICY} public-keys '${pk}'`);
+    expect(steps[5]!.command).toContain(`delete-keys ${NEXT_POLICY} public-keys '${pk}'`);
     expect(steps[5]!.expect).toContain('IRREVERSIBLE');
-    expect(steps[7]!.command).toContain(`${POLICY} request_cancel_signature json-args '{"order_id":"0"}' prepaid-gas '300 Tgas' attached-deposit '1 yoctoNEAR' sign-as ${KEEPER}`);
-    for (const step of steps.filter(s => s.command.includes('near '))) {
+    expect(steps[7]!.command).toContain(`prove:contract:live -- --policy=${NEXT_POLICY} --keeper=${KEEPER}`);
+    expect(steps[8]!.command).toContain(`${NEXT_POLICY} request_cancel_signature json-args '{"order_id":"0"}' prepaid-gas '300 Tgas' attached-deposit '0 NEAR' sign-as ${KEEPER}`);
+    for (const step of steps.filter(s => s.command.includes('near ') && !s.command.includes('view-account-summary'))) {
       expect(step.command).toContain('network-config testnet sign-with-keychain send');
       expect(step.command).not.toMatch(/sign-with-(?:plaintext|access-key|legacy)|autogenerate|v1.signer-prod.testnet sign /);
     }
@@ -53,7 +54,7 @@ describe('auditable deployment command builder', () => {
   it('leaves public key placeholders that fail closed when unset', () => {
     const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS), 'a'.repeat(64));
     expect(steps[0]!.command).toContain('${POLICY_PUBLIC_KEY:?');
-    expect(steps[1]!.command).toContain('${KEEPER_PUBLIC_KEY:?');
+    expect(steps[1]!.command).toContain('view-account-summary');
   });
   it.each(['0x...', `0x${'0'.repeat(40)}`, `${PROBE_ADDRESS}'; echo bad`])('rejects invalid owner recipients %s', evm => {
     expect(() => initialization(54, 1, evm)).toThrow();
@@ -70,7 +71,7 @@ describe('auditable deployment command builder', () => {
   });
   it('verifies artifact bytes against the committed SHA-256 manifest and converts to NEAR base58', async () => {
     const result = await committedWasm();
-    expect(result.sha256).toBe('698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289');
+    expect(result.sha256).toBe('e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a');
     expect(Buffer.from(base58.decode(result.codeHash)).toString('hex')).toBe(result.sha256);
   });
 });
@@ -107,6 +108,27 @@ describe('public receipt parsing and custody', () => {
     expect(() => parseContractProof(fixture(), hash, 74)).toThrow();
     expect(() => assertFreshContractProof(input, nonce + 30000)).not.toThrow();
     for (const now of [nonce - 1001, nonce + 57000, nonce + 60001]) expect(() => assertFreshContractProof(input, now)).toThrow();
+  });
+  it('restricts rehearsals to full-access policies and restricts old WASM overrides to the original deployment', () => {
+    const full = { block_hash: 'b', keys: [{ public_key: pk, access_key: { permission: 'FullAccess' } }] };
+    expect(proofKeys(full, true)).toEqual(full.keys);
+    expect(() => proofKeys(full, false)).toThrow('still has access keys');
+    expect(() => proofKeys({ ...full, keys: [] }, true)).toThrow('requires a full-access key');
+    expect(() => proofKeys({ ...full, keys: [{ public_key: pk, access_key: { permission: { FunctionCall: {} } } }] }, true)).toThrow();
+    expect(proofOptions(['--rehearsal', `--wasm-sha256=${DEPLOYED_SHA256}`]).rehearsal).toBe(true);
+    expect(REHEARSAL_NOTICE).toBe('REHEARSAL — policy account still had a full-access key; not the final keyless proof');
+    for (const args of [[`--wasm-sha256=${DEPLOYED_SHA256}`], ['--rehearsal', `--policy=${NEXT_POLICY}`, `--wasm-sha256=${DEPLOYED_SHA256}`],
+      ['--rehearsal', '--wasm-sha256=' + 'a'.repeat(64)], ['--rehearsal', '--rehearsal'], ['--keeper=attacker.near'], ['--policy=x;bad.testnet']])
+      expect(() => proofOptions(args)).toThrow();
+  });
+  it('binds alternate policy and keeper accounts in transaction and event identities', () => {
+    const tx = fixture(); const keeper = 'alternate.testnet';
+    tx.transaction.receiver_id = NEXT_POLICY; tx.transaction.signer_id = keeper;
+    for (const receipt of tx.receipts_outcome) receipt.outcome.executor_id = NEXT_POLICY;
+    const event = JSON.parse(tx.receipts_outcome[0]!.outcome.logs[0]!.slice(11)); event.data[0].caller = keeper;
+    tx.receipts_outcome[0]!.outcome.logs[0] = `EVENT_JSON:${JSON.stringify(event)}`;
+    expect(parseContractProof(tx, hash, 54, NEXT_POLICY, keeper).input).toEqual(input);
+    expect(() => parseContractProof(tx, hash, 54)).toThrow();
   });
   it('expects zero keys finally and exactly one full-access key only in pre-removal mode', () => {
     const empty = { block_hash: 'block', keys: [] };

@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, nearMarketIndex, testnetMeta, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
-import { committedWasm, KEEPER, LIMITS, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt } from './testnet-common.js';
+import { committedWasm, KEEPER, LIMITS, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
 
 export const policyStateSchema = z.object({ owner: z.literal(OWNER), keeper: z.literal(KEEPER), coin: z.literal('NEAR'),
   signer_account: z.literal(TESTNET_SIGNER), wnear_account: z.literal('wrap.testnet'), near_recipient: z.literal(OWNER),
@@ -27,9 +27,10 @@ export function planConfigMatches(state: z.infer<typeof policyStateSchema>) {
     && state.heartbeat_timeout_seconds === 3600 && state.keeper_weight_limit === '5000';
 }
 export async function verifyTestnet(argv: string[]) {
-  const options = parseOptions(argv, ['owner-evm', 'before-key-removal']);
+  const options = parseOptions(argv, ['owner-evm', 'before-key-removal', 'policy']);
   if (options['before-key-removal'] !== undefined && options['before-key-removal'] !== 'true') throw new Error('Expected --before-key-removal=true');
   if (options['owner-evm']) z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(options['owner-evm']);
+  const policy = testnetAccount(options.policy ?? POLICY);
   const artifact = await committedWasm();
   let accountExists = false;
   const checks: { check: string; ok: boolean; details: unknown }[] = [];
@@ -41,7 +42,7 @@ export async function verifyTestnet(argv: string[]) {
   // All custody/code/state checks use one finalized block, avoiding mixed snapshots.
   await record('code hash', async () => {
     const account = z.object({ block_hash: z.literal(block.hash), code_hash: z.string() }).parse(await rpc('query', {
-      request_type: 'view_account', account_id: POLICY, block_id: block.hash,
+      request_type: 'view_account', account_id: policy, block_id: block.hash,
     }));
     accountExists = true;
     return { ok: account.code_hash === artifact.codeHash, details: { committedSha256: artifact.sha256, expectedBase58: artifact.codeHash, actualBase58: account.code_hash } };
@@ -49,14 +50,14 @@ export async function verifyTestnet(argv: string[]) {
   await record('access keys', async () => {
     // NEAR can return an empty key list for a nonexistent account. That is not custody evidence.
     if (!accountExists) return { ok: false, details: 'Account existence unavailable; an empty key list would not establish keyless custody' };
-    const result = await rpc('query', { request_type: 'view_access_key_list', account_id: POLICY, block_id: block.hash });
+    const result = await rpc('query', { request_type: 'view_access_key_list', account_id: policy, block_id: block.hash });
     const list = keyListSchema.parse(result);
     if (list.block_hash !== block.hash) throw new Error('NEAR RPC returned another block');
     const keys = checkKeys(list, options['before-key-removal'] === 'true');
     return { ok: keys.ok, details: keys };
   });
   await record('get_state config and current state', async () => {
-    const state = policyStateSchema.parse(await stateAt(block.hash));
+    const state = policyStateSchema.parse(await stateAt(block.hash, policy));
     const meta = await testnetMeta();
     const index = nearMarketIndex(meta);
     const recipientMatches = options['owner-evm'] === undefined || state.evm_recipient === options['owner-evm'].toLowerCase();
@@ -65,10 +66,10 @@ export async function verifyTestnet(argv: string[]) {
       details: { recipientMatches, matchesPlan, state, note: 'Identity, current venue metadata and plan baseline limits/resources checked. Mutable config drift fails this baseline check; inspect current state against owner intent. Use --owner-evm=0x... to assert your immutable EVM recipient.' } };
   });
   await record('policy-derived Hyperliquid address', async () => {
-    const derived = await deriveTestnetAddress(POLICY, PATH);
-    return { ok: true, details: { predecessor: POLICY, path: PATH, ...derived, note: 'Local public derivation agrees with signer view at the root block. This is not a signature or fill proof.' } };
+    const derived = await deriveTestnetAddress(policy, PATH);
+    return { ok: true, details: { predecessor: policy, path: PATH, ...derived, note: 'Local public derivation agrees with signer view at the root block. This is not a signature or fill proof.' } };
   });
-  console.log(JSON.stringify({ account: POLICY, network: 'testnet', finalizedBlock: block, checks }, null, 2));
+  console.log(JSON.stringify({ account: policy, network: 'testnet', finalizedBlock: block, checks }, null, 2));
   if (checks.some(c => !c.ok)) process.exitCode = 1;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)

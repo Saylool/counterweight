@@ -17,6 +17,7 @@
     "prove:signing": "tsx scripts/prove-signing.ts",
     "prove:submit": "tsx scripts/prove-submit.ts",
     "testnet:plan": "tsx scripts/testnet-plan.ts",
+    "prove:contract:live": "tsx scripts/prove-contract-live.ts",
     "prove:contract": "tsx scripts/prove-contract.ts",
     "testnet:verify": "tsx scripts/testnet-verify.ts",
     "vectors:generate": ".tmp/sdk-venv/bin/python scripts/generate-signing-vectors.py",

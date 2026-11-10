@@ -1,9 +1,14 @@
 # Counterweight policy contract — testnet only
 
 Implements DESIGN Part B custody tiers and the owner-approved rebalancing revision
-in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). No public-network deployment or
-transaction has been performed. Sandbox signer/token/route behavior is mocked;
+in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). The previous artifact was deployed on testnet by the team lead; this updated
+artifact has not been deployed. Sandbox signer/token/route behavior is mocked;
 there are no real MPC signatures or venue fills. See [TEST_RESULTS](TEST_RESULTS.md).
+
+Owner-run testnet deployment commands and public-RPC verification are in
+[TESTNET-DEPLOYMENT](../../docs/TESTNET-DEPLOYMENT.md). `npm run testnet:plan`
+prints keychain-signing commands only; `npm run prove:contract -- --tx=...` checks
+the actual contract's public events before relaying a harmless testnet cancellation.
 
 ## Reproduce
 
@@ -98,7 +103,10 @@ repeated relaying of public signatures.
 
 Owner `set_signing_resources` configures fee and signer/callback gas. Defaults are
 1 yoctoNEAR, 230/30 Tgas, plus 25 Tgas execution reserve: 285 Tgas total. Signing
-accepts at least the fee and refunds excess to the caller. Spot transfers require
+accepts zero deposit and pays from its own operating balance, capped at 0.01 NEAR
+per authorization while preserving storage stake + 128 KiB growth. A positive
+deposit must cover the whole fee; excess is refunded to the caller. Existing rate,
+caller and cumulative address budgets also bound reserve-funded requests. Spot transfers require
 exactly 1 yoctoNEAR and 80 Tgas. Native sweep retains storage stake + 128 KiB future
 state reserve + 1 NEAR, and sends only to the owner.
 

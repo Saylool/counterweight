@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker, type NearAccount, type TransactionResult } from 'near-workspaces';
 
-export const POLICY_SHA256 = '698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289';
+export const POLICY_SHA256 = 'e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a';
 export const MOCK_SHA256 = '971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886';
 export const BASE = 10n ** 24n;
 export const GAS = 300n * 10n ** 12n;
@@ -18,7 +18,7 @@ export function verifyHash(bytes: Uint8Array, expected: string, label: string) {
   return actual;
 }
 export interface PolicyState {
-  last_nonce: string; operation_id: string; spot_balance: string; signed_short_size: string;
+  last_open_expiry: string; last_nonce: string; operation_id: string; spot_balance: string; signed_short_size: string;
   reference_price_timestamp: string; last_keeper_heartbeat: string; paused: boolean;
 }
 export interface OwnerSnapshot { balanceYocto: string; accessKeys: { publicKey: string; nonce: number }[] }
@@ -96,7 +96,7 @@ export class LocalSandbox {
         heartbeat_timeout_seconds: 600, reference_price: priceMicro, signing_limits: null,
       });
       // Remove policy access keys before mock funding, using only public-key views.
-      // Keeper local keys stay library-managed: signing requires attached MPC fees.
+      // Keeper local keys stay library-managed; zero-deposit signing uses the policy reserve.
       const policyKey = (await policy.viewAccessKeys(policy.accountId)).keys[0]!.public_key;
       assert((await policy.batch(policy).deleteKey(policyKey).transact()).succeeded);
       assert.equal((await policy.viewAccessKeys(policy.accountId)).keys.length, 0, 'Policy must have no access keys before deposit');
@@ -115,10 +115,14 @@ export class LocalSandbox {
   }
   state() { return this.policy.view<PolicyState>('get_state'); }
   async nowMs() { return Number((await (this.worker.provider as unknown as RuntimeProvider).block({ finality: 'final' })).header.timestamp_nanosec) / 1e6; }
-  async advancePast(timestampMs: number) {
+  async advancePast(timestampMs: number, progress: (line: string) => void = console.log) {
     for (let i = 0; i < 20; i++) {
-      if (await this.nowMs() > timestampMs) return;
-      await this.worker.provider.fastForward(1000);
+      const current = await this.nowMs();
+      if (current > timestampMs) { progress('WAIT sandbox deadline reached'); return; }
+      progress(`WAIT sandbox fast-forward ${i + 1}/20 | ${Math.ceil((timestampMs - current) / 1000)}s to deadline`);
+      const waiting = setInterval(() => progress('WAIT sandbox fast-forward still running'), 10_000);
+      try { await this.worker.provider.fastForward(1000); }
+      finally { clearInterval(waiting); }
     }
     throw new Error('Sandbox clock failed to reach deadline');
   }
@@ -131,7 +135,7 @@ export class LocalSandbox {
       succeeded: result.succeeded, logs: result.logs, errors: result.receiptFailureMessages });
   }
   async call(who: NearAccount, method: string, args: Record<string, unknown>) {
-    const attachedDeposit = ['request_order_signature', 'request_evm_withdrawal', 'deleverage'].includes(method) ? 1n : 0n;
+    const attachedDeposit = ['approve_spot_sale', 'withdraw_spot'].includes(method) ? 1n : 0n;
     const result = await who.callRaw(this.policy, method, args, { gas: GAS, attachedDeposit });
     this.record(who, method, args, result);
     return result;

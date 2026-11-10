@@ -33,7 +33,7 @@ export async function runRogueAttempts(local: LocalSandbox, assetIndex: number, 
   await reject('replayed nonce/callback', 'on_signature', { operation_id: completed.id, nonce: completed.nonce },
     'Method on_signature is private', 'Replays an old completed operation/nonce at the private callback; callers cannot select signing nonces.');
   const state = await local.state();
-  await local.advancePast(Number(state.reference_price_timestamp) * 1000 + 121_000);
+  await local.advancePast(Number(state.reference_price_timestamp) * 1000 + 121_000, emit);
   await reject('stale price', 'request_order_signature', order((BASE / 10n).toString(), false, null),
     'ERR_STALE_PRICE', 'Opening with an expired owner reference price fails; reduce-only recovery deliberately remains available.');
   await reject('unrelated rogue account', 'request_order_signature', order((BASE / 10n).toString(), true, priceMicro),

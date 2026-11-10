@@ -9,12 +9,12 @@ COUNTERWEIGHT | LOCAL SANDBOX | MOCK MPC / MOCK FILLS | no wallet or testnet acc
 OFFLINE GUARD active | Node connections restricted to loopback
 FIXTURES SHA-256 verified | worst 24h +32.499065% / 4297 windows
 WINDOW 2026-09-17T05:00:00.000Z -> 2026-09-18T05:00:00.000Z
-POLICY SHA-256 698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289 verified before deploy
+POLICY SHA-256 e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a verified before deploy
 MOCK MPC SHA-256 971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886 verified before deploy
 SETUP local accounts + mock spot 9.3 NEAR | policy access keys: 0
-BOUNDARY keeper local key pays 1 yocto MPC fee; spot disposal awaits owner approval
+BOUNDARY policy operating reserve pays MPC fee; keeper attaches zero; spot disposal awaits owner approval
 SETUP keeper bounded short SIGNED (mock); pre-existing hedge / simulated margin $30.00
-OWNER FROZEN nonce=7000002 balance=99999363944072069900000000 yocto
+OWNER FROZEN nonce=7000002 balance=99999363864553534900000000 yocto
 HOUR (UTC)        NEAR       H USD     KEEPER ACTION          CONTRACT RESULT
 09-17 06:00 UTC  $2.6597    10.878   monitor                no transaction
 09-17 07:00 UTC  $2.6987    10.307   monitor                no transaction
@@ -46,12 +46,22 @@ ROGUE non-reduce close        REJECT ERR_OPEN_PRICE_OVERRIDE
 ROGUE withdraw to rogue       REJECT ERR_CALLER_NOT_OWNER
 ROGUE approveAgent            REJECT MethodNotFound
 ROGUE replayed nonce/callback REJECT Method on_signature is private
+WAIT sandbox fast-forward 1/20 | 101s to deadline
+WAIT sandbox deadline reached
 ROGUE stale price             REJECT ERR_STALE_PRICE
 ROGUE unrelated rogue account REJECT ERR_CALLER_NOT_KEEPER
 DEAD-MAN before timeout REJECT ERR_HEARTBEAT_ACTIVE
+WAIT sandbox fast-forward 1/20 | 600s to deadline
+WAIT sandbox deadline reached
 DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused
-OWNER AFTER nonce=7000002 balance=99999363944072069900000000 yocto (unchanged)
+OWNER AFTER nonce=7000002 balance=99999363864553534900000000 yocto (unchanged)
 PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed
+OWNER RESUMED | autonomous owner-free phase ended; mock rebalance completion begins
+WAIT sandbox fast-forward 1/20 | 60s to deadline
+WAIT sandbox deadline reached
+REBALANCE owner settle_position | mock close fill attested; reserved short released
+REBALANCE owner approve_spot_sale | mock route dispatched; awaiting finalized receipt; no margin credit yet
+REBALANCE rebalance complete | owner reconciled mock receipt; sold 9.3 NEAR; margin credited 32558432 micro-USDC
 SANDBOX stopped; disposable local accounts removed
 REPORTS reports/demo-local.md + reports/demo-local.json (timeline, logs, receipts, assertions)
 ```
@@ -62,21 +72,21 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
 {
   "schemaVersion": 1,
   "status": "passed",
-  "startedAt": "2026-11-10T10:01:35.007Z",
+  "startedAt": "2026-11-10T10:25:39.456Z",
   "offlineGuardActive": true,
-  "policySha256": "698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289",
+  "policySha256": "e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a",
   "mockSha256": "971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886",
   "transcript": [
     "COUNTERWEIGHT | LOCAL SANDBOX | MOCK MPC / MOCK FILLS | no wallet or testnet account",
     "OFFLINE GUARD active | Node connections restricted to loopback",
     "FIXTURES SHA-256 verified | worst 24h +32.499065% / 4297 windows",
     "WINDOW 2026-09-17T05:00:00.000Z -> 2026-09-18T05:00:00.000Z",
-    "POLICY SHA-256 698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289 verified before deploy",
+    "POLICY SHA-256 e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a verified before deploy",
     "MOCK MPC SHA-256 971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886 verified before deploy",
     "SETUP local accounts + mock spot 9.3 NEAR | policy access keys: 0",
-    "BOUNDARY keeper local key pays 1 yocto MPC fee; spot disposal awaits owner approval",
+    "BOUNDARY policy operating reserve pays MPC fee; keeper attaches zero; spot disposal awaits owner approval",
     "SETUP keeper bounded short SIGNED (mock); pre-existing hedge / simulated margin $30.00",
-    "OWNER FROZEN nonce=7000002 balance=99999363944072069900000000 yocto",
+    "OWNER FROZEN nonce=7000002 balance=99999363864553534900000000 yocto",
     "HOUR (UTC)        NEAR       H USD     KEEPER ACTION          CONTRACT RESULT",
     "09-17 06:00 UTC  $2.6597    10.878   monitor                no transaction",
     "09-17 07:00 UTC  $2.6987    10.307   monitor                no transaction",
@@ -108,57 +118,85 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "ROGUE withdraw to rogue       REJECT ERR_CALLER_NOT_OWNER",
     "ROGUE approveAgent            REJECT MethodNotFound",
     "ROGUE replayed nonce/callback REJECT Method on_signature is private",
+    "WAIT sandbox fast-forward 1/20 | 101s to deadline",
+    "WAIT sandbox deadline reached",
     "ROGUE stale price             REJECT ERR_STALE_PRICE",
     "ROGUE unrelated rogue account REJECT ERR_CALLER_NOT_KEEPER",
     "DEAD-MAN before timeout REJECT ERR_HEARTBEAT_ACTIVE",
+    "WAIT sandbox fast-forward 1/20 | 600s to deadline",
+    "WAIT sandbox deadline reached",
     "DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused",
-    "OWNER AFTER nonce=7000002 balance=99999363944072069900000000 yocto (unchanged)",
+    "OWNER AFTER nonce=7000002 balance=99999363864553534900000000 yocto (unchanged)",
     "PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed",
+    "OWNER RESUMED | autonomous owner-free phase ended; mock rebalance completion begins",
+    "WAIT sandbox fast-forward 1/20 | 60s to deadline",
+    "WAIT sandbox deadline reached",
+    "REBALANCE owner settle_position | mock close fill attested; reserved short released",
+    "REBALANCE owner approve_spot_sale | mock route dispatched; awaiting finalized receipt; no margin credit yet",
+    "REBALANCE rebalance complete | owner reconciled mock receipt; sold 9.3 NEAR; margin credited 32558432 micro-USDC",
     "SANDBOX stopped; disposable local accounts removed",
     "REPORTS reports/demo-local.md + reports/demo-local.json (timeline, logs, receipts, assertions)"
   ],
   "diagnostics": [
-    "Receipt: 7YjMCdjDDeG3hMpYQnqixEVbogLKff7rtaKVg24TxJs8",
+    "Receipt: 7U1DjRjpYeU9QWp67GanZvpxzyuceB21wZz97DvmedM3",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}",
-    "Receipt: 5Ma9pH4vTPdK7M4jjFv1poK2oqAyWdruFsyFyRnhYjrc",
+    "Receipt: 5e9cgZ8TEiFvPPLgSs1tYrh6yjyexsCJPYL23oQBBcmo",
     "\tLog [mock-mpc.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}",
-    "Receipts: 7UX7x6sxytp5JnGmXmnhvz5uvcGbZszXeMWsAz9J4yCB, 2mt6puAKffXDB3GZsUTsrmavr4eP7N8ujaMkaV3D6Qy9, 3Y8eGJdbCYh8GZBDcfAPPuvB9dYmes6qgeHwYwGR6PzE",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794304918671,\"expiresAfter\":1794304978671},\"digest\":\"77da3531218fee42d5ab259a5b86704295408c56e7fada8e3cfcea3081d112ce\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: Bm6Ki1mTcnZyNNXi6joFZVPnrVCnJnqrzQmVM8nXko6Y",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794304918671\",\"expiresAfter\":\"1794304978671\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: 6W6ZqBpteJPhpbLY5Ru9RZNhSv2EqPxHu1vZgkRp6yr4",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794304921\"}]}",
-    "Receipts: 86GDpDYbgfoP1nRbLk9PQFqUnYC5hcDpzi95Ufdx6oxq, 6YbkaFTbQoKiiPLYP8ign4C2Q88DxVdfQ5QXAxTtbEgV, GrSxa1JMU7GqembdFLwr58pPPETmpWW4yN6ZSn47sU3s",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"4.8449\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794304923501,\"expiresAfter\":1794304983501},\"digest\":\"119fad77f6cbe4251abdcd08f5ffcba2073f147ffbb78e9f0a3bc76c515fcd9a\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: BRrUo6qY8gJtrCMoanyXBbjYy2JKS9S7QXXiLiQHQrdo",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794304923501\",\"expiresAfter\":\"1794304983501\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipts: 7vM14HtV79hLKNNCE4od3ktiX9FyySzntLHEXxzGNxFR, AcWc6c7EF5kip4WHaDQmhiiNjno2FNGaNKCNB8P4aGSt",
+    "Receipts: 88sdgfTgriTuSeNZPRW3mDiuhAMyFXBaabPdFh8ZgWUV, 6zX5fyavMHSBMuNHTjmeDgxz8Ny3WPdrNFyKu49nsfaf, 3S6HmSWFKbiWbbhJWFEXxHDDFaodqXSpvxyyiryTA8vs",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306363340,\"expiresAfter\":1794306423340},\"digest\":\"9e5d5d415f2572559711e7844fd8a0a39dc89027a8dbe50ce49e88dde44b1f8f\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: Huc8kNRGRbU8E3fyN8Yf2XnKtkJKMBeBVtVmvr8aQQnB",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794306363340\",\"expiresAfter\":\"1794306423340\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: E4HZRWotVrtANHMKbAX6FB2BLXevPa4z7dBPJ7aTcuTZ",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794306366\"}]}",
+    "Receipts: CidLNNaeSBqsvHciVYuACShAdsw7znczLUSDSuvHEUi9, 5tZbtRmnjAWPaTYxeMgNMKGvwtCypDGdNdnrs3p2fBu, 44SSA83nBpcx7yqPKxQrHuU353wVhHdFJo6WAiyJo684",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"4.8449\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306368178,\"expiresAfter\":1794306428178},\"digest\":\"6105eac667a051ec3d0c180598bb25e80f4bac4087700973f3104520d3c7c748\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: DaaLQknt3Yr61G1VXCKXrKBccZ9uejT8nZW1K7tZMNCn",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794306368178\",\"expiresAfter\":\"1794306428178\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: GeD4LTucwTcCXwtSEcKFuoVREyn73AZPZBGW2UmiXeJC",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_EXCEEDS_SPOT_HEDGE\"}}}}",
-    "Receipts: 8WfHB9hN2jcDDJLLxJ1yvBPqGeQLj1TnTGnLNDdMkPdW, 24rQxFEZdUMC8Ko4pnBp9Bj9TVZ81k4ZjcUjKiKsFnoZ",
+    "Receipt: 5txUStBvFmcGB29rsTZQdWaUjrFg7bTsHP5DVcA6ub2Y",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_OPEN_PRICE_OVERRIDE\"}}}}",
-    "Receipts: GvhLk4Z5HBCREbmnSrEN2eC1aRMkwWAz1R7BG4VJBnzo, 8W3WgsxDYXag74WPRpGwWKwJCb24at5yfP78QBGwqFqc",
+    "Receipt: HJqQ9sa5mGyP6H6CKMMxLL1fDyKSpN24ZX2WrixSuTqJ",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_OWNER\"}}}}",
-    "Receipt: FVHjPBgpfkNC85KudZnz7Zj1gn5PMCGeFA1SsJUiBcJR",
+    "Receipt: DGuf1XHviMeKQEPJn12TdsizC7kPkDfrtJ79FsLDAwrU",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"MethodResolveError\":\"MethodNotFound\"}}}}",
-    "Receipt: 2NsAc2kHmKWUrQK4fXsrZPt7xb5sYqvNEPokHMDBxfXq",
+    "Receipt: ZTSRBByQYpXb2RHPxqGoxNZXch2gJk1ycDVSbXZZ2TZ",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Method on_signature is private\"}}}}",
-    "Receipts: D6PwDXgHT1pzHxCdGVFdCquMwvgFcTPAv6aqNq9wjHgH, BgURS8hfRHoJvyJhucb8KDAbKVepoB3Wv3w6q7Cf2RKQ",
+    "Receipt: GuyndoEwqJqkn8c66PGUq9DUL3bLpastC28zKGAD5aDH",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_STALE_PRICE\"}}}}",
-    "Receipts: 7yncyunjsTaLGD2qQwxhdsCXkh7spoHHaA8rJXBseHGu, 8wm7TBdevZJDb1uKzR7d8UFyTYtRF3LcnZa5MTyBv5nK",
+    "Receipt: 3aUFjPEvJ5HDdG5ZqPPQSUTWJXSuUN1cV84jrry4kxDT",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_KEEPER\"}}}}",
-    "Receipt: 45bm5dnqwTdNfpRpoBvHFUijr66Tvgk2GYQHgdZdm3kp",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794306237\"}]}",
-    "Receipts: FHfdEPUzCeW7mtQkMueF8gp1jrh9BWDK23vuczbQEeAW, GgzecgHRtmqkddgF2sNbPTgciR7sk9CPRuotPfdj49dK",
+    "Receipt: 8nE39HcW2pFkR1Dn1sbA1TycAqPN8op8iMYQyfrokyHo",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794307679\"}]}",
+    "Receipt: DaLYZCXvT4DNnro67Ly8UMehB1NWvaGrhPg7PWWswc3o",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_HEARTBEAT_ACTIVE\"}}}}",
-    "Receipts: 2AvyfPf9dbsKfm76DqPULzWMohHyUAS7SVMhJEiUeS1s, 5rRLZRuoMiEqCbMmL65AKe87Xz8VwhFP4eSRFg9guoeN, 5Nxa8gGBxLawzaQC9P7hF7sQqkP6SRWaEQAR2AFepVoZ",
+    "Receipts: 3JMJ6Ku924dJJh7kqqCz87k3XUUb59RQrTz947dtBsgk, Hc845cHHSLo2Pvghc5jvDQKgFK3jNqYXBxJ7KRBPyxCG, HzPTH9vqA9JfdvmshWgkVBiKTZYiZF3zifJ5r37qApzd",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"5.3126\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794307537792,\"expiresAfter\":1794307597792},\"digest\":\"fe3c7130c1e3c27af3fb3c483519bff2e19a10d7b502aec16d3423cd8830ed81\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: 3YHRxp7yWfo6h7NzQhHQ7sLsd28BBves6NEkmCAMcyWF",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794307537792\",\"expiresAfter\":\"1794307597792\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"5.3126\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794308978860,\"expiresAfter\":1794309038860},\"digest\":\"091f3dd1f4b7670074a589483e2760accc7e0aa6db3076b90366760e6dc5855a\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 8257EZzTQQhq7yP4yE9NoxrN26ri69FVYouuuGVg5JPR",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794308978860\",\"expiresAfter\":\"1794309038860\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: gxi18ekJzFGGGpBhTyMNJv1gWbhxJnowSPN2DTq25Bf",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}",
+    "Receipt: 517HtrJFcXPgECpcuEnpC5gtSvzzhMrgWumUYv59xk9B",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
+    "Receipt: AiyRUXqs3DqAZ2RELaHigiJTc1B7rf7abfoRB3KgjEce",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}",
+    "Receipt: 4inntQVT8qJc8hrjstUVUsXqFjh4pTP7DNrEQtrUnvdd",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"24778410\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794310279937\",\"source\":\"owner_finality_attestation\"}]}",
+    "Receipt: AsKPfCpQqmuEKguTpFEng4ZEcXgpSEv2GeQBu27sn4o6",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794310281761\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
+    "Receipt: Fz37foYqZJ1ucup4KRLAECKuPQGj1ebwBSmude9pTc6W",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
+    "Receipts: 2r1vMLC66fSo6k9guSnGrrpis9rSJN3MhfiWoUtihK2F, BXLEqwe5BrmAFbYvdjwnDHMSo4HxXMnEtU2kFUXpRgSx, 3PKtWeHt9i6F5Wzatp5EXaBsfJae2ZYBcmQSWj8treeX",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794310285401\",\"deadline_ms\":\"1794310315401\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794313888441\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+    "Receipt: 4gDHLaaA4g9zoq9E7PzGcdbjRhsAggU8joaZJaaqkecx",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}",
+    "Receipt: 5qmPBnjFV1jgnKxaQY3Ri41fmameZT4FkeMyveDu926P",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794310288441\",\"source\":\"owner_finality_attestation\"}]}"
   ],
   "mocked": [
     "MPC signature-shaped response (not cryptographic)",
-    "wNEAR token receipt",
+    "wNEAR token + sale route receipt",
     "venue margin, funding settlement and fills",
     "historical executable depth at 5 bps"
   ],
@@ -167,7 +205,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "Spot sale requires owner approval; spot remains directional after close",
     "Replay time differs from sandbox block time",
     "Contract signing reservations do not prove fills",
-    "Keeper uses disposable local full-access key for the attached MPC fee; policy has zero access keys",
+    "Keeper uses a disposable local key with zero attached deposit; policy operating reserve pays MPC; policy has zero access keys",
     "Callback replay is rejected; no Hyperliquid nonce replay/fill claim"
   ],
   "selection": {
@@ -220,7 +258,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
         "reference_price": "2673000",
         "signing_limits": null
       },
-      "transactionHash": "9LR8hutqPhpE969zaQBTDuEC7XZVXFj7yYBFULgmgk1A",
+      "transactionHash": "BXsnsNoYaqgLtXG2LJa6mjS9J7nCbCuWYUEgm7UnsdtK",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}"
@@ -233,7 +271,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "amount": "9300000000000000000000000"
       },
-      "transactionHash": "1DvffUVdmDRxhkpuMNRmy8dbF6KDPesSzB8pc2dY4Kr",
+      "transactionHash": "ExeaZRAVY7w5j4pCvzX8p4meWCbWgftuUGM7jGv88Zjo",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}"
@@ -251,11 +289,11 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": null
         }
       },
-      "transactionHash": "F7iXjx25AJfV5iRJr7DzCAY4wiXoATeNHD3y7FbsQSW3",
+      "transactionHash": "5dH9gCBiAB9mFY3jDUr4PJhSqhMpHEmrkKKvpXvDBb1x",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794304918671,\"expiresAfter\":1794304978671},\"digest\":\"77da3531218fee42d5ab259a5b86704295408c56e7fada8e3cfcea3081d112ce\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794304918671\",\"expiresAfter\":\"1794304978671\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306363340,\"expiresAfter\":1794306423340},\"digest\":\"9e5d5d415f2572559711e7844fd8a0a39dc89027a8dbe50ce49e88dde44b1f8f\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794306363340\",\"expiresAfter\":\"1794306423340\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -263,10 +301,10 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "2dyAta8wxSmMoSKyhsRte7wrPT9c1fwavZae1QGDHYaE",
+      "transactionHash": "DNCqKqq4pQKaYuesnezr8UNfUHup4nViD4cUk3ktVM7A",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794304921\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794306366\"}]}"
       ],
       "errors": []
     },
@@ -281,11 +319,11 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": "3229900"
         }
       },
-      "transactionHash": "Cg1uhqmBtgXTrcj9eCSTqBaAnnVsVrfL3aSb2JNpgr8G",
+      "transactionHash": "5xmXzr4mE2brCQLJbKgTgFPtTkGXAUhhB2vAudvrxVyC",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"4.8449\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794304923501,\"expiresAfter\":1794304983501},\"digest\":\"119fad77f6cbe4251abdcd08f5ffcba2073f147ffbb78e9f0a3bc76c515fcd9a\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794304923501\",\"expiresAfter\":\"1794304983501\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"4.8449\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306368178,\"expiresAfter\":1794306428178},\"digest\":\"6105eac667a051ec3d0c180598bb25e80f4bac4087700973f3104520d3c7c748\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794306368178\",\"expiresAfter\":\"1794306428178\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -300,7 +338,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": null
         }
       },
-      "transactionHash": "CyGc2BEq6hiFzqSXGqZSo5TgtdJtgG68wzkSmFXiWEfx",
+      "transactionHash": "2RJ2qoJB1HXCHhL3jaauikod5SwjBuhD3LjyFFoinb8C",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -318,7 +356,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "DhQXPYDDbYUf2QmUxAesYS3HTENpGkq9xxiZy5NizJm8",
+      "transactionHash": "5Awm5TH4P7MFiFkMNZfhrpcSD9nSaJEqHu6kL6jUN6mV",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -332,7 +370,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
         "recipient": "0x2222222222222222222222222222222222222222",
         "amount": "1000000"
       },
-      "transactionHash": "Cr9NoKbkioCktLSibKmzGE8arCKWXH9aKik6r2vnRdaP",
+      "transactionHash": "92aMcQbYDMegUJmUT4BBnhPdNWM5APsmiPm41DHHXYR3",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -345,7 +383,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "agentAddress": "0x2222222222222222222222222222222222222222"
       },
-      "transactionHash": "H8JNKyq4yB28iMwvgXvgNGuKKJyyJa3124df8BytyLmd",
+      "transactionHash": "BhMco5RwUDTL28RmY9R3uLhB49K8e6Ucv52oAKX3cVuj",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -357,9 +395,9 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "method": "on_signature",
       "args": {
         "operation_id": "2",
-        "nonce": 1794304923501
+        "nonce": 1794306368178
       },
-      "transactionHash": "DiFg3WeJ1tmjBVsDGEgHtCpqSNwzyKoVhMhG7xBwraGt",
+      "transactionHash": "Cxwvv6oxRQm8zxgrmfh9D6NTaTHuhHS5TKoVjYRpfQrt",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -377,7 +415,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": null
         }
       },
-      "transactionHash": "CyVxz8c9HQExm9MuhNB5shphUcsDKiHr53rM1KYYDka5",
+      "transactionHash": "EvwPVJ8fbD1yHAMAfKJ9o9QsCD6QumynrFt6WxZyNLHk",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -395,7 +433,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "68PsYeoRd4Xw9S3bfkqHK8wESVwR9GQEEMbcptJiziZ4",
+      "transactionHash": "2jsfCqeZyzZFmVayLD8aaJc6SMoS277W3m6o7tUGLu6k",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -406,10 +444,10 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "HimaBXHdMqXwAGX3orft3SCZSFGfdiXFFHjWa8gsZudc",
+      "transactionHash": "FrWXmnFvFJDsVxN8k5Avaf4ctsKViDDM4SeVtDhbPTSX",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794306237\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794307679\"}]}"
       ],
       "errors": []
     },
@@ -419,7 +457,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "Hu9wowH4itgcWqwkC4YDpPH5SuPQm5uMBv4pn3xnNEas",
+      "transactionHash": "4J4TjzukiZbrzwAddUjdxVs6DMyAG9Qnw3CuPaQVLUZ1",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -432,21 +470,161 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "77HFjVJPHkCg8MYpGXqAS6uzzHzJ8XRV6zMcR9uQ2Fkp",
+      "transactionHash": "6sBx5uG86LDKeK1cUyW45h2bkUAyHEmiS9eiBzdoAM9b",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"5.3126\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794307537792,\"expiresAfter\":1794307597792},\"digest\":\"fe3c7130c1e3c27af3fb3c483519bff2e19a10d7b502aec16d3423cd8830ed81\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794307537792\",\"expiresAfter\":\"1794307597792\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"5.3126\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794308978860,\"expiresAfter\":1794309038860},\"digest\":\"091f3dd1f4b7670074a589483e2760accc7e0aa6db3076b90366760e6dc5855a\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794308978860\",\"expiresAfter\":\"1794309038860\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "set_paused",
+      "args": {
+        "paused": false
+      },
+      "transactionHash": "Ha9KTN4hCy4FUtX1ZRpdXBWyE2dy5HvQhDwDreAyd9hr",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "set_reference_price",
+      "args": {
+        "price": "3541700"
+      },
+      "transactionHash": "Dq8oronAZHVC2TLpDs42CKpbYeRFe2jChN5FKng7Zbgj",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "configure_rebalancing",
+      "args": {
+        "limits": {
+          "adapter": "mock-mpc.testnet",
+          "strategy_margin_address": "0x1111111111111111111111111111111111111111",
+          "destination_token": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+          "per_sale_near": "9300000000000000000000000",
+          "daily_sale_near": "9300000000000000000000000",
+          "max_fee_usdc": "50000",
+          "max_impact_bps": 100,
+          "quote_age_ms": 30000,
+          "completion_ms": 3600000,
+          "max_mismatch_near": "9300000000000000000000000",
+          "per_withdrawal_usdc": "10000000",
+          "daily_withdrawal_usdc": "20000000",
+          "min_residual_equity_usdc": "1000000",
+          "min_headroom_bps": 1000,
+          "lower_headroom_bps": 3000,
+          "target_headroom_bps": 6000,
+          "upper_headroom_bps": 9000,
+          "fee_reserve_usdc": "100000",
+          "original_target_usdc": "32937810"
+        }
+      },
+      "transactionHash": "6N1a9LCpwdpUjytpzaQ8qs57TKmVzg9PvttxvGjdUCiC",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "observe_margin",
+      "args": {
+        "equity_usdc": "24778410",
+        "withdrawable_usdc": "0",
+        "observed_at_ms": "1794310279937"
+      },
+      "transactionHash": "HSMMD3x5szQWZfzF4J688xhswyCYpVDynGMRZa1wXonx",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"24778410\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794310279937\",\"source\":\"owner_finality_attestation\"}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "settle_position",
+      "args": {
+        "short_size": "0",
+        "observed_at_ms": "1794310281761"
+      },
+      "transactionHash": "4tGyyMNTYYLKqzxaL7kTWpbLoDRYyaxpXQsDLApTxNpj",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794310281761\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "set_reference_price",
+      "args": {
+        "price": "3541700"
+      },
+      "transactionHash": "HXpRSQ3BYCSHQx8hRwTqJ8aGg6PW1yvuKqy6oZFft8ji",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "approve_spot_sale",
+      "args": {
+        "quote": {
+          "near_amount": "9300000000000000000000000",
+          "paired_closed_near": "9300000000000000000000000",
+          "min_usdc": "32558432",
+          "fee_usdc": "50000",
+          "impact_bps": 100,
+          "quoted_at_ms": "1794310285401",
+          "deadline_ms": "1794310315401"
+        }
+      },
+      "transactionHash": "3evWRpQTkfDgsGnAgETqZfa2ABQhSFcZorJoPieyaX3w",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794310285401\",\"deadline_ms\":\"1794310315401\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794313888441\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "reconcile_sale_receipt",
+      "args": {
+        "route_id": "1",
+        "refunded_near": "0",
+        "credited_usdc": "32558432",
+        "receipt_id": "demo-local-mock-finalized-sale-1",
+        "finalized_at_ms": "1794310288441"
+      },
+      "transactionHash": "BNycP3XzN4G6dnpELZQCh1zTZmAvPBgSFMBZDpDjutjX",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794310288441\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     }
   ],
   "ownerBefore": {
-    "balanceYocto": "99999363944072069900000000",
+    "balanceYocto": "99999363864553534900000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:6cUexr4LnLQibHnxxUWfgertMZ5J9fkppdqPVWo1Tm78",
+        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
         "nonce": 7000002
       }
     ]
@@ -723,13 +901,31 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "action": "spot approval pending",
       "result": "no transaction",
       "simulatedShortQuantityAfter": 0
+    },
+    {
+      "phase": "owner-rebalance",
+      "action": "owner settle_position",
+      "result": "mock close fill attested; reserved short released",
+      "historicalTime": 1789707600000
+    },
+    {
+      "phase": "owner-rebalance",
+      "action": "owner approve_spot_sale",
+      "result": "mock route dispatched; awaiting finalized receipt; no margin credit yet",
+      "historicalTime": 1789707600000
+    },
+    {
+      "phase": "owner-rebalance",
+      "action": "rebalance complete",
+      "result": "owner reconciled mock receipt; sold 9.3 NEAR; margin credited 32558432 micro-USDC",
+      "historicalTime": 1789707600000
     }
   ],
   "ownerAfterReplay": {
-    "balanceYocto": "99999363944072069900000000",
+    "balanceYocto": "99999363864553534900000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:6cUexr4LnLQibHnxxUWfgertMZ5J9fkppdqPVWo1Tm78",
+        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
         "nonce": 7000002
       }
     ]
@@ -779,15 +975,15 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     }
   ],
   "ownerAfter": {
-    "balanceYocto": "99999363944072069900000000",
+    "balanceYocto": "99999363864553534900000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:6cUexr4LnLQibHnxxUWfgertMZ5J9fkppdqPVWo1Tm78",
+        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
         "nonce": 7000002
       }
     ]
   },
-  "finalState": {
+  "autonomousFinalState": {
     "owner": "owner.testnet",
     "keeper": "keeper.testnet",
     "coin": "NEAR",
@@ -813,11 +1009,11 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "operation_id": "3",
     "pending": null,
     "paused": true,
-    "last_keeper_heartbeat": "1794306237",
+    "last_keeper_heartbeat": "1794307679",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "2673000",
-    "reference_price_timestamp": "1794304913",
-    "last_nonce": "1794307537792",
+    "reference_price_timestamp": "1794306357",
+    "last_nonce": "1794308978860",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -828,8 +1024,8 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     },
     "outstanding": [
       {
-        "nonce": 1794307537792,
-        "expires_after": 1794307597792,
+        "nonce": 1794308978860,
+        "expires_after": 1794309038860,
         "keeper": false,
         "discarded": false,
         "invalidation_requested": false,
@@ -840,7 +1036,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     ],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794304978671",
+    "last_open_expiry": "1794306423340",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -850,14 +1046,214 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
   "assertions": {
     "keeperCloseSigned": true,
     "rogueRejected": 7,
-    "ownerUntouched": true,
-    "ownerTransactionsAfterFreeze": 0,
+    "ownerUntouchedDuringAutonomousPhase": true,
+    "ownerTransactionsDuringAutonomousPhase": 0,
     "freshContractNonces": true,
     "earlyDeadmanRejected": true,
     "unrelatedDeadmanSigned": true,
     "policyHasNoKeys": true,
-    "conservativeExposureRetained": true
+    "conservativeExposureRetained": true,
+    "ownerRebalanceCompleted": true,
+    "marginCreditedOnlyAfterReceipt": true,
+    "finalSpotAndShortZero": true
   },
-  "finishedAt": "2026-11-10T10:02:40.448Z"
+  "finalState": {
+    "owner": "owner.testnet",
+    "keeper": "keeper.testnet",
+    "coin": "NEAR",
+    "asset_index": 74,
+    "size_decimals": 1,
+    "derivation_path": "counterweight-local-mock-only",
+    "near_recipient": "owner.testnet",
+    "evm_recipient": "0x1111111111111111111111111111111111111111",
+    "signer_account": "mock-mpc.testnet",
+    "wnear_account": "mock-mpc.testnet",
+    "limits": {
+      "max_short_size": "9300000000000000000000000",
+      "per_order_notional_cap": "30000000",
+      "per_day_notional_cap": "30000000",
+      "cooldown_seconds": 60,
+      "price_band_bps": 100,
+      "price_max_age_seconds": 120
+    },
+    "spot_balance": "0",
+    "signed_short_size": "0",
+    "daily_usage": "25107489",
+    "usage_day": 20767,
+    "operation_id": "3",
+    "pending": null,
+    "paused": false,
+    "last_keeper_heartbeat": "1794307679",
+    "heartbeat_timeout_seconds": 600,
+    "reference_price": "3541700",
+    "reference_price_timestamp": "1794310286",
+    "last_nonce": "1794308978860",
+    "signing_limits": {
+      "keeper_per_block": 2,
+      "keeper_per_window": 8,
+      "keeper_outstanding": 8,
+      "owner_per_window": 16,
+      "window_ms": 60000,
+      "max_nonce_ahead_ms": 1000
+    },
+    "outstanding": [],
+    "pause_complete": true,
+    "lifetime_opened": "9300000000000000000000000",
+    "last_open_expiry": "1794306423340",
+    "keeper_weight_used": "15",
+    "keeper_weight_limit": "5000",
+    "mpc_fee": "1",
+    "signer_gas_tgas": 230,
+    "callback_gas_tgas": 30
+  },
+  "rebalance": {
+    "mocked": true,
+    "dispatched": {
+      "processed_receipts": [],
+      "withdrawal": null,
+      "acquisition_budget_usdc": "0",
+      "acquired_near": "0",
+      "reentry_required": false,
+      "limits": {
+        "adapter": "mock-mpc.testnet",
+        "strategy_margin_address": "0x1111111111111111111111111111111111111111",
+        "destination_token": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+        "per_sale_near": "9300000000000000000000000",
+        "daily_sale_near": "9300000000000000000000000",
+        "max_fee_usdc": "50000",
+        "max_impact_bps": 100,
+        "quote_age_ms": 30000,
+        "completion_ms": 3600000,
+        "max_mismatch_near": "9300000000000000000000000",
+        "per_withdrawal_usdc": "10000000",
+        "daily_withdrawal_usdc": "20000000",
+        "min_residual_equity_usdc": "1000000",
+        "min_headroom_bps": 1000,
+        "lower_headroom_bps": 3000,
+        "target_headroom_bps": 6000,
+        "upper_headroom_bps": 9000,
+        "fee_reserve_usdc": "100000",
+        "original_target_usdc": "32937810"
+      },
+      "initial_inventory": "9300000000000000000000000",
+      "sold_inventory": "0",
+      "reduced_inventory": "0",
+      "usable_margin": "24778410",
+      "withdrawable": "0",
+      "observed_at_ms": "1794310279937",
+      "next_route_id": "1",
+      "route": {
+        "id": "1",
+        "quote": {
+          "near_amount": "9300000000000000000000000",
+          "paired_closed_near": "9300000000000000000000000",
+          "min_usdc": "32558432",
+          "fee_usdc": "50000",
+          "impact_bps": 100,
+          "quoted_at_ms": "1794310285401",
+          "deadline_ms": "1794310315401"
+        },
+        "dispatched_near": "9300000000000000000000000",
+        "phase": "AwaitingReceipt",
+        "completion_deadline_ms": "1794313888441"
+      },
+      "sales": [
+        [
+          1794310288441,
+          9.3e+24
+        ]
+      ],
+      "withdrawals": []
+    },
+    "completed": {
+      "processed_receipts": [
+        [
+          181,
+          136,
+          90,
+          141,
+          17,
+          101,
+          226,
+          88,
+          149,
+          50,
+          114,
+          216,
+          166,
+          114,
+          96,
+          233,
+          21,
+          79,
+          118,
+          37,
+          65,
+          242,
+          225,
+          76,
+          217,
+          82,
+          225,
+          159,
+          243,
+          59,
+          117,
+          86
+        ]
+      ],
+      "withdrawal": null,
+      "acquisition_budget_usdc": "0",
+      "acquired_near": "0",
+      "reentry_required": false,
+      "limits": {
+        "adapter": "mock-mpc.testnet",
+        "strategy_margin_address": "0x1111111111111111111111111111111111111111",
+        "destination_token": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+        "per_sale_near": "9300000000000000000000000",
+        "daily_sale_near": "9300000000000000000000000",
+        "max_fee_usdc": "50000",
+        "max_impact_bps": 100,
+        "quote_age_ms": 30000,
+        "completion_ms": 3600000,
+        "max_mismatch_near": "9300000000000000000000000",
+        "per_withdrawal_usdc": "10000000",
+        "daily_withdrawal_usdc": "20000000",
+        "min_residual_equity_usdc": "1000000",
+        "min_headroom_bps": 1000,
+        "lower_headroom_bps": 3000,
+        "target_headroom_bps": 6000,
+        "upper_headroom_bps": 9000,
+        "fee_reserve_usdc": "100000",
+        "original_target_usdc": "32937810"
+      },
+      "initial_inventory": "9300000000000000000000000",
+      "sold_inventory": "9300000000000000000000000",
+      "reduced_inventory": "0",
+      "usable_margin": "57336842",
+      "withdrawable": "0",
+      "observed_at_ms": "1794310279937",
+      "next_route_id": "1",
+      "route": null,
+      "sales": [
+        [
+          1794310288441,
+          9.3e+24
+        ]
+      ],
+      "withdrawals": []
+    },
+    "creditedUsdc": "32558432"
+  },
+  "ownerAfterRebalance": {
+    "balanceYocto": "99696340952312476299999999",
+    "accessKeys": [
+      {
+        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
+        "nonce": 7000010
+      }
+    ]
+  },
+  "finishedAt": "2026-11-10T10:27:03.291Z"
 }
 ```

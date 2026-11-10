@@ -1,3 +1,34 @@
+# Judge-facing validation update — 2026-11-10
+
+The reserve-funded MPC change adds two native regressions and one sandbox
+regression. Native suites: **109/109** with default features and **109/109** with
+`test-utils` (109 distinct tests, run in two configurations). The new sandbox
+case uses an actual restricted function-call keeper key, zero attached deposit,
+and verifies the per-call fee cap and storage/growth floor reject without changing
+policy state. The final full sandbox suite passes **20/20**. `cargo fmt --check`
+and Clippy across workspace/all targets/all features pass with warnings denied.
+The default artifact rebuild matches byte-for-byte; SHA256SUMS verifies.
+Scoped relay checks pass 4 SDK vectors + 1 event/assembly case; the Python custody
+key gate passes 1 test. The harness uses only disposable localhost keys. No testnet transaction was
+sent and no real private key was read or printed.
+
+Updated default WASM: **588,218 bytes**, SHA-256
+`e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a`.
+The export checker accepts 31 required methods and rejects test-only/raw signing
+exports. The artifact, SHA256SUMS, local-demo pin and TypeScript provenance test
+are synchronized. The new artifact is not deployed; the fresh-account plan targets
+`policy-v2.counterweight-samet.testnet`.
+
+`npm test`: **332/332** in 15 files. `npm run typecheck` and `npm run build`: pass.
+`npm run test:demo`: pass; seven attacks rejected, owner unchanged during the
+autonomous phase, then owner settlement + exact mock sale + finalized mock receipt
+complete the rebalance. Final spot and reserved short are zero; pending route
+proceeds are credited only on reconciliation. Reports: `reports/demo-local.*`.
+
+The earlier validation record below is historical and describes the old artifact.
+
+---
+
 # Validation — 2026-11-10
 
 Changes are confined to `contracts/` and `docs/DESIGN-NOTES.md`. No git command

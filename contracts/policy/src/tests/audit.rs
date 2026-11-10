@@ -307,7 +307,8 @@ fn audit_initializer_and_resource_guards() {
     }
     let mut p = policy();
     let mut ctx = context(KEEPER, 1000);
-    ctx.attached_deposit(NearToken::from_yoctonear(0));
+    ctx.attached_deposit(NearToken::from_yoctonear(0))
+        .account_balance(NearToken::from_yoctonear(Policy::storage_reserve()));
     testing_env!(ctx.build());
     rejected(|| {
         p.request_cancel_signature(U64(1));
@@ -477,5 +478,41 @@ fn audit_open_price_rounding_nonround_bands_matrix() {
             let lower = price as f64 / 1e6 * (1.0 - f64::from(band) / 10_000.0);
             assert!(px.parse::<f64>().unwrap() <= lower + 1e-12);
         }
+    }
+}
+
+#[test]
+fn audit_zero_deposit_signing_uses_bounded_operating_reserve() {
+    let mut p = policy();
+    p.mpc_fee = BASE / 100;
+    let mut ctx = context(KEEPER, 1001);
+    ctx.attached_deposit(NearToken::from_yoctonear(0))
+        .account_balance(NearToken::from_yoctonear(
+            Policy::storage_reserve() + p.mpc_fee,
+        ));
+    testing_env!(ctx.build());
+    p.request_cancel_signature(U64(0));
+    let receipts = get_created_receipts();
+    assert_eq!(receipts.len(), 2); // signer + callback; no refund of contract funds
+    assert!(format!("{:?}", receipts[0]).contains(&p.mpc_fee.to_string()));
+}
+#[test]
+fn audit_reserve_fee_rejects_storage_drain_large_fee_and_partial_deposit() {
+    for (fee, attached, available) in [(123, 0, 122), (BASE / 100 + 1, 0, BASE), (123, 122, BASE)] {
+        let mut p = policy();
+        p.mpc_fee = fee;
+        let mut ctx = context(KEEPER, 1001);
+        ctx.attached_deposit(NearToken::from_yoctonear(attached))
+            .account_balance(NearToken::from_yoctonear(
+                Policy::storage_reserve() + available,
+            ));
+        testing_env!(ctx.build());
+        assert!(!p.has_signing_resources());
+        rejected(|| {
+            p.request_cancel_signature(U64(0));
+        });
+        assert!(p.pending.is_none());
+        assert_eq!(p.last_nonce, 0);
+        assert!(get_created_receipts().is_empty());
     }
 }

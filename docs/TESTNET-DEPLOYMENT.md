@@ -1,112 +1,142 @@
 # Reproducible policy testnet deployment
 
-Run from the repository root. The TypeScript tools never invoke `near`, read wallets,
-access the keychain, generate key material, sign, or submit NEAR transactions.
-Only the owner runs the printed near-cli-rs commands. Syntax was checked against
-installed near-cli-rs **0.31.1** help; calls use the successful
-[owner proof](evidence/2026-11-10-signing-proof.md) `sign-with-keychain send` suffix.
+Run from the repository root. TypeScript tools never invoke `near`, read wallets,
+access the keychain, generate keys, sign, or submit NEAR transactions. The team
+lead runs the printed near-cli-rs commands. The relay sends only the validated
+public order-zero cancellation to Hyperliquid **testnet**.
 
-## Prepare and review the commands
+## Current deployment and next artifact
+
+`policy.counterweight-samet.testnet` is initialized with the original WASM
+`698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289`.
+Its full-access policy key is intentionally present until final code freeze;
+there is no final keyless proof yet. Keeper signature request
+`5ThwVx4mRcfAKBWCqWEcF2kUqMuUsqAL887yVtbqzaP9` emitted a signature but is now
+expired. A fresh keeper request is required; no script can extend its expiry.
+
+The rebuilt default artifact is **588,218 bytes**, SHA-256:
+
+```text
+e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a
+```
+
+It adds bounded reserve-funded MPC signing. It has **not** been deployed. The next
+plan defaults to a fresh `policy-v2.counterweight-samet.testnet`, reusing
+`keeper.counterweight-samet.testnet`. The old account will be frozen by key
+deletion; do not plan to upgrade it afterward. A new predecessor derives a new
+strategy EVM address even with the same `counterweight-1` path.
+
+## Rehearse on the existing policy
+
+Start this first; it warms public metadata and derivation before waiting:
+
+```sh
+npm run prove:contract:live -- --keeper=keeper.counterweight-samet.testnet --policy=policy.counterweight-samet.testnet --rehearsal --wasm-sha256=698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289
+```
+
+In a second terminal, run the exact command it prints (the original WASM still
+needs the attached 1 yoctoNEAR):
+
+```sh
+near contract call-function as-transaction policy.counterweight-samet.testnet request_cancel_signature json-args '{"order_id":"0"}' prepaid-gas '300 Tgas' attached-deposit '1 yoctoNEAR' sign-as keeper.counterweight-samet.testnet network-config testnet sign-with-keychain send
+```
+
+Paste its transaction hash immediately into the waiting relay. Alternatively,
+pass an already fresh hash with `--tx=HASH` to the live command, or directly:
+
+```sh
+npm run prove:contract -- --rehearsal --wasm-sha256=698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289 --tx=FRESH_KEEPER_TX_HASH
+```
+
+**60-second window:** `expiresAfter` starts in the policy request block. MPC
+signing, NEAR finality, receipt reads and HTTP submission all consume this window;
+it does not start when the hash is pasted. Less than three seconds remaining
+fails closed. If expired or transport outcome is unknown, request a fresh cancel;
+never retry the same signature. Live mode accepts a newline-delimited hash from
+stdin as well as `--tx=HASH`. It prints commands and waits; it never executes them.
+
+Rehearsal requires a full-access key in the current finalized view and at both
+request/signature receipt blocks. Console and both evidence formats must say:
+
+> REHEARSAL — policy account still had a full-access key; not the final keyless proof
+
+The historical hash override is allowed **only** with `--rehearsal` on the original
+policy and only for the pinned original hash. It does not bypass identity, market,
+receipt, expiry, digest or recovery checks. Rehearsal is not final custody evidence.
+
+## Prepare and review the fresh-account plan
 
 ```sh
 npm run testnet:plan
-# Explicitly choose the immutable owner withdrawal recipient:
-npm run testnet:plan -- --owner-evm=0x...
+# Choose another fresh policy and the actual fixed owner withdrawal recipient:
+npm run testnet:plan -- --policy=policy-v2.counterweight-samet.testnet --owner-evm=0x...
 ```
 
-Replace `0x...` with a complete, nonzero owner address. The **testnet-only** default
-is the proven owner-predecessor address `0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a`.
-It gives this no-funds proof a recognizable fixed recipient without inventing an
-owner wallet. It is a placeholder for withdrawal configuration, **not** the strategy
-signer. Never fund the owner probe address. The policy predecessor/path independently
-derive the strategy address. Mainnet deployment is unsupported.
+Replace `0x...` with a complete nonzero owner address. The testnet-only default
+`0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a` is the proven owner-predecessor
+probe address, a recognizable **no-funds withdrawal placeholder**. Never fund it.
+The strategy signer derives independently from the policy predecessor/path.
+Mainnet is unsupported.
 
-The owner must provision their own keychain entries under **each subaccount's**
-near-cli-rs account identity before executing the plan. Set `POLICY_PUBLIC_KEY` and
-`KEEPER_PUBLIC_KEY` to those entries' **public** `ed25519:` keys. No key generation,
-import, export, private-key argument or credential-file operation is supplied here.
-An owner account keychain entry alone is not a policy/keeper account entry, even
-if the same public key were reused. Optional `--policy-public-key=ed25519:...` and
-`--keeper-public-key=ed25519:...` arguments render literal public keys in the plan;
-unset shell placeholders fail closed.
+The lead provisions a fresh policy keychain entry and sets `POLICY_PUBLIC_KEY` to
+its **public** `ed25519:` key, or passes `--policy-public-key=ed25519:...`. No private
+key operation is supplied. Reuse the existing keeper; do not recreate its account.
+The new contract supports a keeper function-call key restricted to that policy's
+intended keeper methods, with a sufficient gas allowance and **zero deposit**.
+Provisioning/removing keeper keys is a separate lead-managed operation; the plan
+does not rotate existing keys.
 
-The plan creates policy with **7 NEAR** and keeper with **0.2 NEAR**, leaving 2.8
-of the stated owner's 10 NEAR for fees/other use. This is testnet operating/storage
-funding, not strategy funding. The 587,853-byte WASM alone stakes approximately
-5.88 NEAR for storage, so a sub-NEAR deployment balance would fail. The plan checks
-the local SHA-256 manifest before printing anything and prints a second hash guard
-immediately before deployment. NEAR's code hash is the same SHA-256 bytes encoded
-as base58, not the hexadecimal digest string.
+Policy creation funds **9 NEAR**, covering roughly 5.88 NEAR WASM storage,
+1.31 NEAR bounded state-growth headroom and 1 NEAR operating reserve, plus initial
+state. Ensure the owner has 9 NEAR plus gas **available now**; the original account's
+funding is already spent. Keeper gas uses its existing funding. Signing subsidy
+is capped at 0.01 NEAR/request and cannot spend storage/growth funds. The owner
+sweep retains that floor plus 1 NEAR. Refill with a normal native transfer when
+necessary. This is storage/operating funding, not strategy funding.
 
-Creation → guarded deployment → owner initialization → preflight → key deletion
-are separate owner steps. **Initialize immediately after deploying.** The generic
-initializer accepts the owner supplied by its caller; an uninitialized deployment
-can be raced. Keep the temporary policy key if any config check fails and stop.
-Do not delete it or fund the strategy until the exact owner, keeper, market, path,
-signer and recipients are verified. No contract code is changed by these scripts.
+Creation → guarded deploy → initialization → preflight → key deletion are separate
+lead-run steps. **Initialize immediately after deployment**: the public initializer
+can be raced. Keep the temporary key if any check fails and stop. Review owner,
+keeper, market, path, signer and recipients before deleting keys or funding a
+strategy. The code hash must match committed SHA-256 bytes encoded as base58.
 
-The plan reads live Hyperliquid **testnet** metadata, requiring a unique active
-NEAR market with precision 0–6. Current metadata is index 54 / precision 1. It
-initializes `wrap.testnet`, owner NEAR recipient, selected owner EVM recipient,
-`v1.signer-prod.testnet`, path `counterweight-1`, maximum short 1 NEAR, $10 per
-order, $20 per rolling day, 60s cooldown, 1% opening price band and 60s price age.
-Default signing resources/budgets are explicit. The initial $1 reference price is
-a dummy for a cancellation-only proof; no spot is deposited, so no opening order
-is possible. Refresh a real price and review budgets before any later funded use.
+The plan reads live testnet metadata and requires a unique active NEAR market
+with precision 0–6. Baseline limits: 1 NEAR maximum short, $10/order, $20/rolling
+day, 60s cooldown, 1% open band, 60s price age, default signing budgets. The dummy
+$1 initial reference price is suitable only for this cancellation proof. No spot
+is deposited, so opens are impossible. Review prices/budgets before funded use.
 
-Key deletion is the **separate final deployment step**, after initialization and
-preflight. It is irreversible under this contract: no key restoration, upgrade,
-or account deletion entry point exists. The owner and keeper continue calling
-contract methods from their own accounts. All policy access keys must be gone,
-including function-call keys. The keeper retains a full-access key on **its own**
-account because the MPC deposit cannot be paid with a function-call key; see
-[KNOWN-ISSUES](KNOWN-ISSUES.md). This does not give it a policy-account access key.
-
-## Public verification and contract proof
+## Final keyless verification and proof
 
 ```sh
-npm run testnet:verify -- --before-key-removal=true --owner-evm=0x...
-# After the separately run irreversible removal command:
-npm run testnet:verify -- --owner-evm=0x...
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --before-key-removal=true --owner-evm=0x...
+# Lead separately runs the plan's irreversible key-deletion command after code freeze.
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --owner-evm=0x...
+npm run prove:contract:live -- --policy=policy-v2.counterweight-samet.testnet --keeper=keeper.counterweight-samet.testnet
 ```
 
-The verifier exits nonzero on any failed check. Code hash, keys and `get_state`
-share one finalized block. It validates fixed account identities and live testnet
-market metadata, prints all returned state, and checks limits/resources against
-the plan baseline. An owner-approved later config change is reported as baseline
-drift and must be reviewed. Pass the chosen `--owner-evm` to assert the exact
-immutable recipient; without that argument it is displayed and syntax checked.
-Pre-removal mode requires exactly one full-access policy key; normal mode requires
-zero keys. An absent account is a failure even if RPC returns an empty key list.
-Public derivation independently checks local curve arithmetic against the MPC view
-at the same root-key block. It is not evidence of an actual signature or fill.
+Run the relay's printed zero-deposit keeper command in a second terminal and paste
+the fresh hash. Final mode requires **zero policy access keys** at both receipt
+blocks and the committed artifact hash; there is no final-mode hash override.
+Deleting all policy keys freezes code under this ABI: there is no upgrade, account
+deletion or key-restoration method. Owner/keeper methods remain callable.
 
-After keyless verification, the owner's printed keeper command calls
-`request_cancel_signature({"order_id":"0"})` **through policy** with 300 Tgas
-and 1 yoctoNEAR. The policy constructs the action/digest/nonce/60-second expiry.
-No balance or order exists for this proof, and no funds are required on Hyperliquid.
-Run immediately after receiving the NEAR transaction hash:
+The verifier uses one finalized snapshot for code, keys and configuration. Missing
+accounts fail even when a key-list RPC returns empty. Pre-removal requires exactly
+one full-access key. It checks immutable identities, metadata and baseline resources;
+owner-approved mutable drift is reported for review. `--owner-evm` asserts the exact
+immutable recipient. Public derivation agrees with the MPC view at its root-key
+block; derivation alone proves no signature.
 
-```sh
-npm run prove:contract -- --tx=TX_HASH_FROM_KEEPER_CALL
-```
-
-The proof reads finalized public RPC receipts, accepts only policy-executor
-Counterweight request/signature events and successful callback `true`, binds
-operation/nonce/market/expiry/digest, and checks committed code, config identity
-and zero keys at both receipt blocks. It derives the EVM address using predecessor
-**policy**, recovers `{r,s,v}` locally, and refuses a mismatch or expiry with less
-than three seconds remaining. It relays only that exact testnet order-zero cancel
-to Hyperliquid; no arbitrary actions, vaults, transfers or signatures are accepted.
-This is separate from the owner-probe relay, which still rejects `expiresAfter`.
-
-An exclusive evidence-file claim prevents duplicate relay attempts for the same
-transaction. Ambiguous HTTP results must not be retried; request a fresh cancel.
-JSON and Markdown under `docs/evidence/DATE-contract-proof-TX.*` contain only public
-events, checks, keys/addresses, request/signature and server response. A named
-server-recovered address match or authenticated nonexistent-order cancellation
-counts as signing-boundary evidence. No funding, fill or full policy-correctness
-claim follows. No contract proof exists until the owner actually runs these steps.
+The proof accepts only successful policy-executor Counterweight request/signature
+events and callback `true`. It binds keeper, policy, order zero, market, operation,
+nonce, expiry and digest, checks code/config/key state at both receipt blocks,
+and recovers the policy-derived EVM address before relaying that exact cancel.
+An exclusive evidence-file claim prevents a duplicate attempt for that tx.
+Public JSON/Markdown under `docs/evidence/DATE-contract-proof-TX.*` retain checks,
+actual key lists, request/signature, response and mode notice. Only a named
+server-recovered address match or authenticated cancel response proves the signing
+boundary. Neither mode proves funding, fills, or every policy invariant.
 
 ## 1Click dry quote
 

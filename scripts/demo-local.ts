@@ -26,11 +26,11 @@ const report: Record<string, unknown> = {
   schemaVersion: 1, status: 'running', startedAt: new Date().toISOString(),
   offlineGuardActive: process.env.COUNTERWEIGHT_OFFLINE_GUARD === '1',
   policySha256: POLICY_SHA256, mockSha256: MOCK_SHA256, transcript, diagnostics,
-  mocked: ['MPC signature-shaped response (not cryptographic)', 'wNEAR token receipt',
+  mocked: ['MPC signature-shaped response (not cryptographic)', 'wNEAR token + sale route receipt',
     'venue margin, funding settlement and fills', 'historical executable depth at 5 bps'],
   boundaries: ['H is keeper policy, not a contract oracle', 'Spot sale requires owner approval; spot remains directional after close',
     'Replay time differs from sandbox block time', 'Contract signing reservations do not prove fills',
-    'Keeper uses disposable local full-access key for the attached MPC fee; policy has zero access keys',
+    'Keeper uses a disposable local key with zero attached deposit; policy operating reserve pays MPC; policy has zero access keys',
     'Callback replay is rejected; no Hyperliquid nonce replay/fill claim'],
 };
 let local: LocalSandbox | undefined;
@@ -52,7 +52,7 @@ try {
     bystander: local.stranger.accountId, policy: local.policy.accountId, mockMpc: local.mock.accountId };
   report.chain = local.evidence;
   emit(`SETUP local accounts + mock spot ${plan.quantity.toFixed(data.szDecimals)} NEAR | policy access keys: 0`);
-  emit('BOUNDARY keeper local key pays 1 yocto MPC fee; spot disposal awaits owner approval');
+  emit('BOUNDARY policy operating reserve pays MPC fee; keeper attaches zero; spot disposal awaits owner approval');
   const order = (reduceOnly: boolean, price: number | null) => ({ order: { asset_index: data.assetIndex,
     size: plan.quantityBase, reduce_only: reduceOnly, reference_price: price === null ? null : String(Math.round(price * 1e6)) } });
   const opened = await local.mustCall(local.keeper, 'request_order_signature', order(false, null));
@@ -105,7 +105,7 @@ try {
   assert(beforeTimeout.failed && beforeTimeout.receiptFailureMessages.join(' ').includes('ERR_HEARTBEAT_ACTIVE'));
   emit('DEAD-MAN before timeout REJECT ERR_HEARTBEAT_ACTIVE');
   const state = await local.state();
-  await local.advancePast(Number(state.last_keeper_heartbeat) * 1000 + 601_000);
+  await local.advancePast(Number(state.last_keeper_heartbeat) * 1000 + 601_000, emit);
   const recovery = await local.mustCall(local.stranger, 'deleverage', { price: String(Math.round(plan.bars.at(-1)!.perp.close * 1e6)) });
   const recoveryRequest = assertSigned(recovery, true);
   assert(recoveryRequest.payload.nonce > closeRequest.nonce, 'Dead-man must use a new contract-allocated nonce');
@@ -117,13 +117,67 @@ try {
   const ownerAfter = await local.ownerSnapshot();
   assert.deepEqual(ownerAfter, ownerBefore, 'Owner changed during attacks or recovery');
   report.ownerAfter = ownerAfter;
-  report.finalState = finalState;
-  report.assertions = { keeperCloseSigned: true, rogueRejected: rogueAttempts.length, ownerUntouched: true,
-    ownerTransactionsAfterFreeze: 0, freshContractNonces: true,
+  report.autonomousFinalState = finalState;
+  report.assertions = { keeperCloseSigned: true, rogueRejected: rogueAttempts.length, ownerUntouchedDuringAutonomousPhase: true,
+    ownerTransactionsDuringAutonomousPhase: 0, freshContractNonces: true,
     earlyDeadmanRejected: true, unrelatedDeadmanSigned: true, policyHasNoKeys: true, conservativeExposureRetained: true };
   emit('DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused');
   emit(`OWNER AFTER nonce=${ownerAfter.accessKeys.map(k => k.nonce).join(',')} balance=${ownerAfter.balanceYocto} yocto (unchanged)`);
   emit(`PASS ${rogueAttempts.length}/7 rogue attempts rejected | owner untouched | close + dead-man signed`);
+  // Owner resumes only AFTER the autonomous replay/attack/dead-man proof above.
+  emit('OWNER RESUMED | autonomous owner-free phase ended; mock rebalance completion begins');
+  const progress = (action: string, result: string) => {
+    timeline.push({ phase: 'owner-rebalance', action, result, historicalTime: plan.bars.at(-1)!.end });
+    emit(`REBALANCE ${action} | ${result}`);
+  };
+  await local.advancePast(Number(recoveryRequest.payload.expiresAfter), emit);
+  await local.mustCall(local.owner, 'set_paused', { paused: false });
+  const finalPrice = String(Math.round(plan.bars.at(-1)!.perp.close * 1e6));
+  await local.mustCall(local.owner, 'set_reference_price', { price: finalPrice });
+  const limits = { adapter: local.mock.accountId,
+    strategy_margin_address: '0x1111111111111111111111111111111111111111',
+    destination_token: '1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054',
+    per_sale_near: plan.quantityBase, daily_sale_near: plan.quantityBase, max_fee_usdc: '50000', max_impact_bps: 100,
+    quote_age_ms: 30000, completion_ms: 3600000, max_mismatch_near: plan.quantityBase,
+    per_withdrawal_usdc: '10000000', daily_withdrawal_usdc: '20000000', min_residual_equity_usdc: '1000000',
+    min_headroom_bps: 1000, lower_headroom_bps: 3000, target_headroom_bps: 6000, upper_headroom_bps: 9000,
+    fee_reserve_usdc: '100000', original_target_usdc: String(BigInt(plan.quantityBase) * BigInt(finalPrice) / 10n ** 24n) };
+  await local.mustCall(local.owner, 'configure_rebalancing', { limits });
+  await local.mustCall(local.owner, 'observe_margin', { equity_usdc: String(Math.round(cash * 1e6)),
+    withdrawable_usdc: '0', observed_at_ms: String(Math.floor(await local.nowMs())) });
+  await local.mustCall(local.owner, 'settle_position', { short_size: '0', observed_at_ms: String(Math.floor(await local.nowMs())) });
+  assert.equal((await local.state()).signed_short_size, '0');
+  progress('owner settle_position', 'mock close fill attested; reserved short released');
+  // Refresh immediately before the age-bounded quote and dispatch.
+  await local.mustCall(local.owner, 'set_reference_price', { price: finalPrice });
+  const quotedAt = Math.floor(await local.nowMs());
+  const gross = (BigInt(plan.quantityBase) * BigInt(finalPrice) + 10n ** 24n - 1n) / 10n ** 24n;
+  const minUsdc = (gross * 9900n + 9999n) / 10000n - 50000n;
+  const sale = await local.mustCall(local.owner, 'approve_spot_sale', { quote: { near_amount: plan.quantityBase,
+    paired_closed_near: plan.quantityBase, min_usdc: String(minUsdc), fee_usdc: '50000', impact_bps: 100,
+    quoted_at_ms: String(quotedAt), deadline_ms: String(quotedAt + 30000) } });
+  assert.equal(sale.parseResult(), true);
+  const dispatched = await local.policy.view<any>('get_rebalance');
+  assert.equal(dispatched.route.phase, 'AwaitingReceipt');
+  assert.equal(dispatched.usable_margin, String(Math.round(cash * 1e6)), 'Dispatch must not credit pending proceeds');
+  progress('owner approve_spot_sale', 'mock route dispatched; awaiting finalized receipt; no margin credit yet');
+  await local.mustCall(local.owner, 'reconcile_sale_receipt', { route_id: dispatched.route.id, refunded_near: '0',
+    credited_usdc: String(minUsdc), receipt_id: 'demo-local-mock-finalized-sale-1',
+    finalized_at_ms: String(Math.floor(await local.nowMs())) });
+  const completed = await local.policy.view<any>('get_rebalance');
+  assert.equal(completed.route, null);
+  assert.equal(completed.sold_inventory, plan.quantityBase);
+  assert.equal(completed.usable_margin, String(BigInt(dispatched.usable_margin) + minUsdc));
+  const completedState = await local.state();
+  assert.equal(completedState.spot_balance, '0');
+  assert.equal(completedState.signed_short_size, '0');
+  assert.equal((await local.policy.viewAccessKeys(local.policy.accountId)).keys.length, 0);
+  report.finalState = completedState;
+  report.rebalance = { mocked: true, dispatched, completed, creditedUsdc: String(minUsdc) };
+  report.ownerAfterRebalance = await local.ownerSnapshot();
+  report.assertions = { ...(report.assertions as object), ownerUntouchedDuringAutonomousPhase: true,
+    ownerRebalanceCompleted: true, marginCreditedOnlyAfterReceipt: true, finalSpotAndShortZero: true };
+  progress('rebalance complete', `owner reconciled mock receipt; sold ${plan.quantity} NEAR; margin credited ${minUsdc} micro-USDC`);
   report.status = 'passed';
 } catch (error) {
   report.status = 'failed';

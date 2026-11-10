@@ -922,3 +922,86 @@ async fn sandbox_withdrawal_nonce_requires_confirmed_invalidation() -> Result<()
     .into_result()?;
     Ok(())
 }
+
+#[tokio::test]
+async fn sandbox_function_call_keeper_uses_contract_fee_reserve() -> Result<()> {
+    use near_workspaces::types::{AccessKey, KeyType, SecretKey};
+    let mut f = Fixture::new(0).await?;
+    // Disposable sandbox key only. Never serialize or print it.
+    let delegated = SecretKey::from_random(KeyType::ED25519);
+    f.keeper
+        .batch(f.keeper.id())
+        .add_key(
+            delegated.public_key(),
+            AccessKey::function_call_access(
+                f.contract.id(),
+                &["request_cancel_signature"],
+                Some(NearToken::from_near(10)),
+            ),
+        )
+        .transact()
+        .await?
+        .into_result()?;
+    f.keeper.set_secret_key(delegated);
+    let before = f.contract.view_account().await?.balance.as_yoctonear();
+    let signed = f
+        .keeper
+        .call(f.contract.id(), "request_cancel_signature")
+        .args_json(json!({"order_id":"0"}))
+        .max_gas()
+        .transact()
+        .await?;
+    verify_request_digest(&request(&signed));
+    assert!(signed.json::<bool>()?);
+    let after = f.contract.view_account().await?.balance.as_yoctonear();
+    assert!(after < before, "contract pays the fee from its balance");
+    // Owner can configure higher fees, but reserve subsidy is capped at 0.01 NEAR.
+    f.call(
+        &f.owner,
+        "set_signing_resources",
+        json!({"fee":(BASE/100+1).to_string(), "signer_gas_tgas":230, "callback_gas_tgas":30}),
+    )
+    .await?
+    .into_result()?;
+    let before_state = f.state().await?;
+    rejects(
+        f.keeper
+            .call(f.contract.id(), "request_cancel_signature")
+            .args_json(json!({"order_id":"0"}))
+            .max_gas()
+            .transact()
+            .await?,
+        "ERR_MPC_FEE",
+    );
+    assert_eq!(f.state().await?, before_state);
+    f.call(
+        &f.owner,
+        "set_signing_resources",
+        json!({"fee":"1", "signer_gas_tgas":230, "callback_gas_tgas":30}),
+    )
+    .await?
+    .into_result()?;
+    // Local sandbox patch only: leave storage+growth floor but no operating fee.
+    let usage = f.contract.view_account().await?.storage_usage;
+    let floor = u128::from(usage + 131_072) * 10u128.pow(19);
+    f.worker
+        .patch(f.contract.id())
+        .account_from_current(move |account| {
+            near_workspaces::types::AccountDetailsPatch::from(account)
+                .balance(NearToken::from_yoctonear(floor))
+        })
+        .transact()
+        .await?;
+    let before_state = f.state().await?;
+    rejects(
+        f.keeper
+            .call(f.contract.id(), "request_cancel_signature")
+            .args_json(json!({"order_id":"0"}))
+            .max_gas()
+            .transact()
+            .await?,
+        "ERR_MPC_FEE",
+    );
+    assert_eq!(f.state().await?, before_state);
+    Ok(())
+}
