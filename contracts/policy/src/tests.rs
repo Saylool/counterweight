@@ -279,6 +279,31 @@ fn callbacks_are_private() {
 fn decimal_encoding_is_exact() {
     assert_eq!(decimal(123400, 6), "0.1234");
     assert_eq!(decimal(BASE, 24), "1");
+    for decimals in 0..=24 {
+        for value in [0, 1, 10, 100_001, BASE - 1, BASE, u128::MAX] {
+            let factor = 10u128.pow(decimals);
+            let old = if value % factor == 0 {
+                (value / factor).to_string()
+            } else {
+                format!(
+                    "{}.{:0width$}",
+                    value / factor,
+                    value % factor,
+                    width = decimals as usize
+                )
+                .trim_end_matches('0')
+                .to_owned()
+            };
+            assert_eq!(decimal(value, decimals), old);
+        }
+    }
+}
+#[test]
+fn hex_encoding_preserves_all_bytes_and_leading_zeroes() {
+    let bytes: Vec<u8> = (0..=255).collect();
+    let old: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(hex(&bytes), old);
+    assert_eq!(hex(&[]), "");
 }
 #[test]
 fn pause_emits_nep297() {

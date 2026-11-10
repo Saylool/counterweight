@@ -1625,16 +1625,21 @@ fn add(a: u128, b: u128) -> u128 {
     a.checked_add(b).expect("ERR_OVERFLOW")
 }
 fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
+    const DIGITS: &[u8; 16] = b"0123456789abcdef";
+    let mut result = String::with_capacity(bytes.len() * 2);
+    for &byte in bytes {
+        result.push(DIGITS[usize::from(byte >> 4)] as char);
+        result.push(DIGITS[usize::from(byte & 15)] as char);
+    }
+    result
 }
 fn json_bytes(value: near_sdk::serde_json::Value) -> Vec<u8> {
     near_sdk::serde_json::to_vec(&value).expect("typed JSON")
 }
 fn event(name: &str, data: near_sdk::serde_json::Value) {
-    env::log_str(&format!(
-        "EVENT_JSON:{}",
-        near_sdk::serde_json::json!({"standard": "counterweight", "version": "1.0.0", "event": name, "data": [data]})
-    ));
+    let mut log = String::from("EVENT_JSON:");
+    log.push_str(&near_sdk::serde_json::json!({"standard": "counterweight", "version": "1.0.0", "event": name, "data": [data]}).to_string());
+    env::log_str(&log);
 }
 // USD micro-units: maximum 5 significant digits AND 6-szDecimals decimals.
 fn quantize_price(price: u128, sz_decimals: u8, ceil: bool) -> u128 {
@@ -1652,9 +1657,14 @@ fn decimal(value: u128, decimals: u32) -> String {
     if fraction == 0 {
         whole.to_string()
     } else {
-        format!("{whole}.{fraction:0width$}", width = decimals as usize)
-            .trim_end_matches('0')
-            .to_owned()
+        let fractional = fraction.to_string();
+        let mut result = whole.to_string();
+        result.push('.');
+        for _ in fractional.len()..decimals as usize {
+            result.push('0');
+        }
+        result.push_str(fractional.trim_end_matches('0'));
+        result
     }
 }
 

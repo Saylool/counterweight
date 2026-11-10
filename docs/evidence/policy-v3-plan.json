@@ -20,9 +20,9 @@
     "derivedBlockHeight": 277102080
   },
   "artifact": {
-    "sha256": "8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3",
-    "codeHash": "AWkAtDEi2xstvjjpvwHA2t2nMR48mSbBBTZKkmLTPkLi",
-    "bytes": 672309
+    "sha256": "052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c",
+    "codeHash": "MD74j7DDmMa2zMHNiCZBbhe1AdQuDZGGxP3d5HfzzKm",
+    "bytes": 343212
   },
   "init": {
     "owner": "counterweight-samet.testnet",
@@ -74,5 +74,25 @@
   "exitSanityMicroUsd": [
     "10",
     "1000000000000"
-  ]
+  ],
+  "creation": {
+    "wasmBytes": 343212,
+    "initializedStorageBytes": 344059,
+    "initialStorageOverheadBytes": 847,
+    "growthBytes": 131072,
+    "storageByteCostYoctoNear": "10000000000000000000",
+    "operatingYoctoNear": "1000000000000000000000000",
+    "marginYoctoNear": "500000000000000000000000",
+    "reserveYoctoNear": "5751310000000000000000000",
+    "reserveNear": "5.75131",
+    "createYoctoNear": "6251310000000000000000000",
+    "createNear": "6.25131",
+    "formula": "(343212 + 847 + 131072) × 10^19 / 10^24 + 1 + 0.5 = 6.25131 NEAR"
+  },
+  "spot": {
+    "stage": "deferred; independent of deployment and venue funding",
+    "amountNear": null,
+    "wrap": false
+  },
+  "artifactUpdatedAt": "2026-11-10T18:45:33.474Z"
 }

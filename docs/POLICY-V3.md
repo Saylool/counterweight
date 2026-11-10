@@ -11,14 +11,51 @@ Read-only capture and exact printed commands:
 No keys were read and no testnet transactions were sent.
 
 The new production artifact is `contracts/policy/artifacts/counterweight_policy_v3.wasm`:
-SHA-256 `8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3`.
+**343,212 bytes** (48.95% smaller than 672,309 bytes),
+SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
 The separate `counterweight_policy.wasm` remains the exact historical keyless v2
 binary so existing replay/demo evidence and v2 code verification remain reproducible.
-Both hashes are in `SHA256SUMS`. Sandbox uses the newly compiled test-utils v3
-binary; the old-layout compatibility test deploys the distinct default v3 artifact.
+Both hashes are in `SHA256SUMS`. Every sandbox test now uses the exact optimized
+production v3 artifact, including the old-layout compatibility test. Local `.testnet`
+account aliases exercise production network guards; mock-token receipts replace
+test-only balance setters. A regression compares deployed RPC code byte-for-byte
+with the artifact and rejects test-only entry points.
 The main Borsh state layout is preserved by versioned storage extensions for
 margin-only policy, exit rate counters, and the bounds proposal. **No upgrade of
 keyless v2 is possible or proposed.**
+
+## Optimized build and native reserve
+
+Run `bash tools/build-v3.sh` from `contracts/policy/`. It uses release `opt-level="z"`,
+LTO, one codegen unit, aborting panics, stripped symbols, no debug info, and
+**overflow checks ON**. [Binaryen](https://github.com/WebAssembly/binaryen) **123.0.0** is installed into a local npm prefix/cache
+without sudo. The script runs `wasm-opt -Oz`, sign-extension lowering, control-flow
+restructuring, function merging and GUFA, then checks production exports and the
+350,000-byte ceiling. Rust **1.98.1**, target `wasm32-unknown-unknown`, with `cfg(near)`
+produces the pinned artifact. See [reproduction commands](../contracts/policy/README.md#reproduce).
+The SDK explicitly enables only its required `wee_alloc` feature; sandbox dependencies
+stay optional and outside the production build. SDK-required serde features are
+retained to preserve JSON behavior. Hex/decimal formatting avoids general formatting
+machinery while retaining exact encoded bytes and golden signing digests.
+
+The sandbox measures **847 bytes** of account, one ed25519 access key and initial
+state beyond the WASM for this fixed initializer. Creation budget:
+
+```text
+storage = 343212 + 847 = 344059 bytes
+reserve = (344059 + 131072) × 10^19 yoctoNEAR + 10^24 yoctoNEAR
+        = 5.75131 NEAR
+create  = reserve + 0.5 NEAR = 6.25131 NEAR
+```
+
+This uses [NEAR's storage rate](https://docs.near.org/protocol/storage/storage-staking)
+of 10^19 yoctoNEAR/byte (100,000 bytes/NEAR),
+the contract's 128 KiB growth allowance and 1 NEAR operating reserve. The plan
+prints both the formula and **6.25131 NEAR**; this leaves **1.10869 NEAR** from the
+stated 7.36 NEAR for owner gas/registration and other costs. Initialized storage and
+the exact margin are regression checked in sandbox. Configuration/extensions consume
+part of the margin; replenish operations as needed. No storage, signing, price,
+margin or overflow protection was weakened. V2's artifact is unchanged.
 
 ## Protective exits
 
@@ -136,8 +173,10 @@ The printed flow creates a fresh account, verifies the v3 hash, and atomically
 deploys+initializes via its temporary account key. `new` permits the owner or the
 policy account itself during initialization, allowing that atomic action; owner
 and keeper still cannot be the policy account. Configure adapter-free margin,
-verify identities/one temporary key, register/deposit spot, and manually fund the
-**new derived address**. Before deleting its sole key, explicitly request owner
+verify identities/one temporary key, and manually fund the
+**new derived address**. Deployment and venue funding can complete with zero spot.
+Spot registration/deposit is an independent later stage; no new short can open
+until actual spot custody backs it. Before deleting its sole key, explicitly request owner
 `request_usd_class_transfer({amount:"49000000",to_perp:true})` on **v3**, verify the
 public request digest/signature and venue result, then owner-attest actual equity
 with fresh `observe_margin`. Use the v3 plan's 50 USDC per-request/100 USDC per-day
@@ -146,7 +185,23 @@ caps, $1 residual, $0.10 fee reserve, 10% H floor, and **$1 max fee**.
 The existing `lifecycle` CLI targets historical v2; do not use it for v3 signatures.
 All v3 calls/relays must specify v3, its new derived address, fresh observations,
 and canonical public request digest checks. Delete the temporary key only after
-funding/config validation; final verification uses `--policy=policy-v3.counterweight-samet.testnet
+venue funding/config validation. Owner spot deposits can follow key deletion.
+Final verification uses `--policy=policy-v3.counterweight-samet.testnet
 --plan=docs/evidence/policy-v3-plan.json`. The CLI rejects `--upgrade-v2`; the
 historical exported upgrade builder remains only for existing rehearsal tests.
 See [V2-CLEANUP](V2-CLEANUP.md) for the separate unsent legacy cleanup procedure.
+
+For the later spot stage, print commands without RPC, deployment or saved-plan
+changes:
+
+```sh
+npm run testnet:plan -- --spot-only=true --spot-near=4
+```
+
+The expected **4 wNEAR** comes from v2 cleanup **after 2026-11-12 17:31:03.419 UTC**;
+cleanup is still unsent. It is already wrapped. `--spot-near` accepts any positive
+amount with up to 24 decimals, independently of the 5-NEAR signed-short ceiling.
+Use `--wrap-spot=true` only when intentionally wrapping additional native NEAR.
+A fresh full plan can also select `--spot-near=AMOUNT`; by default it prints an
+explicit amount placeholder and no wrapping command. Match contract `spot_balance`
+to token custody before trading. Fresh price/equity observations remain required.

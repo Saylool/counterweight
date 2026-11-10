@@ -6,6 +6,11 @@ use near_sdk::serde_json::{Value, json};
 use near_workspaces::{Account, Contract, Worker, network::Sandbox, types::NearToken};
 
 const BASE: u128 = 10u128.pow(24);
+const PRODUCTION_WASM: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/artifacts/counterweight_policy_v3.wasm"
+);
+
 const EVM: &str = "0x1111111111111111111111111111111111111111";
 
 struct Fixture {
@@ -47,16 +52,15 @@ impl Fixture {
         let owner = worker.dev_create_account().await?;
         let keeper = worker.dev_create_account().await?;
         let stranger = worker.dev_create_account().await?;
-        let contract = worker
-            .dev_deploy(&std::fs::read(
-                "target/wasm32-unknown-unknown/release/counterweight_policy.wasm",
-            )?)
-            .await?;
-        let signer = worker
-            .dev_deploy(&std::fs::read(
-                "target/wasm32-unknown-unknown/release/counterweight_mock_signer.wasm",
-            )?)
-            .await?;
+        // Localhost-only aliases exercise production network guards unchanged.
+        let contract =
+            named_contract(&worker, "policy.testnet", &std::fs::read(PRODUCTION_WASM)?).await?;
+        let signer = named_contract(
+            &worker,
+            "signer.testnet",
+            &std::fs::read("target/wasm32-unknown-unknown/release/counterweight_mock_signer.wasm")?,
+        )
+        .await?;
         owner.call(contract.id(), "new").args_json(json!({
             "owner": owner.id(), "keeper": keeper.id(), "asset_index": 4, "size_decimals": 2,
             "derivation_path": "counterweight-1", "evm_recipient": EVM, "signer_account": signer.id(),
@@ -179,6 +183,97 @@ impl Fixture {
         anyhow::bail!("sandbox clock did not reach requested timestamp")
     }
 }
+async fn named_contract(worker: &Worker<Sandbox>, name: &str, wasm: &[u8]) -> Result<Contract> {
+    let donor = worker.dev_create_account().await?;
+    let id = name.parse()?;
+    worker
+        .patch(&id)
+        .account(near_workspaces::types::AccountDetailsPatch::from(
+            donor.view_account().await?,
+        ))
+        .access_key(
+            donor.secret_key().public_key(),
+            near_workspaces::AccessKey::full_access(),
+        )
+        .transact()
+        .await?;
+    Ok(
+        Account::from_secret_key(id, donor.secret_key().clone(), worker)
+            .deploy(wasm)
+            .await?
+            .into_result()?,
+    )
+}
+
+#[tokio::test]
+async fn sandbox_runs_exact_optimized_production_artifact() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    let wasm = std::fs::read(PRODUCTION_WASM)?;
+    assert!(wasm.len() < 350_000, "production size regression");
+    near_sdk::testing_env!(near_sdk::test_utils::VMContextBuilder::new().build());
+    let digest: String = near_sdk::env::sha256_array(&wasm)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let manifest = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("artifacts/SHA256SUMS"),
+    )?;
+    assert!(
+        manifest
+            .lines()
+            .any(|line| line == format!("{digest}  artifacts/counterweight_policy_v3.wasm")),
+        "sandbox artifact must match the production manifest"
+    );
+    assert_eq!(
+        f.contract.view_code().await?,
+        wasm,
+        "sandbox must execute shipped optimized bytes"
+    );
+    let rejected = f
+        .owner
+        .call(f.contract.id(), "test_only_set_spot_balance")
+        .args_json(json!({"amount":"1"}))
+        .transact()
+        .await?;
+    assert!(rejected.is_failure(), "test-utils build must never be used");
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_v3_creation_reserve_matches_initialized_storage() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    let plan: Value = near_sdk::serde_json::from_slice(&std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../docs/evidence/policy-v3-plan.json"),
+    )?)?;
+    let wasm = std::fs::read(PRODUCTION_WASM)?;
+    let policy = named_contract(&f.worker, plan["policy"].as_str().unwrap(), &wasm).await?;
+    policy
+        .call("new")
+        .args_json(plan["init"].clone())
+        .transact()
+        .await?
+        .into_result()?;
+    let storage = policy.view_account().await?.storage_usage;
+    let overhead = storage - wasm.len() as u64;
+    println!("V3_STORAGE_BYTES={storage}; V3_INITIAL_STORAGE_OVERHEAD={overhead}");
+    let expected = plan["creation"]["initializedStorageBytes"]
+        .as_u64()
+        .unwrap();
+    assert_eq!(
+        storage, expected,
+        "refresh the plan when production layout changes"
+    );
+    let cost = 10u128.pow(19);
+    let required = u128::from(storage + 131_072) * cost + BASE;
+    let budget: u128 = plan["creation"]["createYoctoNear"]
+        .as_str()
+        .unwrap()
+        .parse()?;
+    assert_eq!(budget, required + BASE / 2);
+    Ok(())
+}
+
 fn rejects(result: near_workspaces::result::ExecutionFinalResult, message: &str) {
     assert!(result.is_failure(), "expected {message}");
     let error = format!("{:?}", result.into_result().unwrap_err());
@@ -285,8 +380,10 @@ async fn sandbox_reduce_signatures_do_not_prove_fills() -> Result<()> {
 async fn sandbox_short_spot_invariant() -> Result<()> {
     let f = Fixture::new(0).await?;
     f.owner
-        .call(f.contract.id(), "test_only_set_spot_balance")
-        .args_json(json!({"amount": BASE.to_string()}))
+        .call(f.contract.id(), "withdraw_spot")
+        .args_json(json!({"recipient": f.owner.id(), "amount": (99 * BASE).to_string()}))
+        .deposit(NearToken::from_yoctonear(1))
+        .max_gas()
         .transact()
         .await?
         .into_result()?;
@@ -580,8 +677,10 @@ async fn sandbox_failed_signing_budget_exhaustion_preserves_owner_emergency() ->
 async fn sandbox_settlement_releases_backing_and_opening_capacity_after_expiry() -> Result<()> {
     let f = Fixture::new(0).await?;
     f.owner
-        .call(f.contract.id(), "test_only_set_spot_balance")
-        .args_json(json!({"amount": BASE.to_string()}))
+        .call(f.contract.id(), "withdraw_spot")
+        .args_json(json!({"recipient": f.owner.id(), "amount": (99 * BASE).to_string()}))
+        .deposit(NearToken::from_yoctonear(1))
+        .max_gas()
         .transact()
         .await?
         .into_result()?;
@@ -640,8 +739,10 @@ async fn sandbox_settlement_releases_backing_and_opening_capacity_after_expiry()
 async fn sandbox_partial_settlement_releases_only_matching_spot() -> Result<()> {
     let f = Fixture::new(0).await?;
     f.owner
-        .call(f.contract.id(), "test_only_set_spot_balance")
-        .args_json(json!({"amount": (2 * BASE).to_string()}))
+        .call(f.contract.id(), "withdraw_spot")
+        .args_json(json!({"recipient": f.owner.id(), "amount": (98 * BASE).to_string()}))
+        .deposit(NearToken::from_yoctonear(1))
+        .max_gas()
         .transact()
         .await?
         .into_result()?;
@@ -1147,7 +1248,7 @@ async fn sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer() -
     let before: Value = contract.view("get_state").await?.json()?;
     assert_eq!(before["spot_balance"], (5 * BASE).to_string());
     named[0]
-        .deploy(&std::fs::read("artifacts/counterweight_policy_v3.wasm")?)
+        .deploy(&std::fs::read(PRODUCTION_WASM)?)
         .await?
         .into_result()?;
     let after: Value = contract.view("get_state").await?.json()?;

@@ -47,15 +47,25 @@ cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 cargo test --locked
 cargo test --locked --features test-utils
-cargo build --locked --release --target wasm32-unknown-unknown -p counterweight-policy
-python3 tests/check_default_exports.py target/wasm32-unknown-unknown/release/counterweight_policy.wasm
-cp target/wasm32-unknown-unknown/release/counterweight_policy.wasm artifacts/counterweight_policy_v3.wasm
+bash tools/build-v3.sh
+python3 tests/check_default_exports.py artifacts/counterweight_policy_v3.wasm
 shasum -a 256 -c artifacts/SHA256SUMS
-cargo build --locked --release --target wasm32-unknown-unknown --features test-utils --workspace
+cargo build --locked --release --target wasm32-unknown-unknown -p counterweight-mock-signer
 TMPDIR=/private/tmp COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS=1 \
   cargo test --locked --features sandbox-tests --test sandbox -- --test-threads=1
 ```
 
+The production build script installs pinned Binaryen 123.0.0 through a local npm
+prefix/cache without sudo. It strips symbols, optimizes with `wasm-opt -Oz`,
+lowers sign-extension instructions and performs control-flow/function merging.
+Overflow checks remain enabled. near-sdk uses only its required `wee_alloc`
+feature; near-workspaces/Tokio/anyhow remain optional test dependencies.
+
+Every sandbox fixture deploys the exact optimized v3 artifact above, with local
+`.testnet` aliases to exercise production network guards. Tests use real mock-token
+callbacks instead of test-only setters. A regression compares RPC code bytes with
+the artifact and rejects test-only entry points; another measures initialization
+storage and verifies the saved creation budget.
 The harness checks that TMPDIR is outside the repository and RPC is loopback.
 near-workspaces alone manages disposable local sandbox keys. Never print keys.
 The v3 default-feature artifact is `artifacts/counterweight_policy_v3.wasm`; test-utils setters

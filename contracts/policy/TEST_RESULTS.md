@@ -8,14 +8,32 @@ v2 upgrade possible. Historical binary/demo pins remain unchanged.
 
 | Check | V3 result |
 |---|---|
-| Native unit tests | 134 passed |
-| Native `test-utils` tests | 134 passed (same distinct tests) |
-| Root TS tests | 464 passed, 22 files |
-| Frontend tests | 30 passed, 2 files |
-| Typecheck (root and web) | passed |
+| Native unit tests | 135 passed |
+| Native `test-utils` tests | 135 passed (same distinct tests) |
+| Root TS tests | 467 passed, 22 files |
+| Frontend tests (previous v3 validation; unchanged this build pass) | 30 passed, 2 files |
+| Typecheck | root passed; previous web result unchanged |
 | Clippy workspace/all targets/all features, warnings denied | passed |
 | Default exports | 42 required; no raw signing, upgrade or test-only methods |
-| Full Rust sandbox suite | 24 passed, 2 threads |
+| Full Rust sandbox suite | 26 passed against optimized production bytes, 2 threads |
+
+The production build is **343,212 bytes**, SHA-256
+`052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
+Release overflow checks remain enabled. The pinned Binaryen build repeats byte-for-byte;
+both v2 and v3 SHA256SUMS entries pass. All sandbox fixtures deploy this exact optimized
+production binary, using localhost `.testnet` aliases and real mock token callbacks.
+New regressions verify deployed code equals the manifest-pinned artifact (and rejects
+test-only methods), and measure the saved initializer's **344,059-byte** storage usage.
+The creation formula is `(343212 + 847 + 131072) / 100000 + 1 + 0.5 = 6.25131 NEAR`.
+Golden signing vectors pass in both native feature configurations; sandbox compares
+actual WASM-generated signing events to the native codec. Hex encoding exhausts all
+256 byte values; decimal formatting compares old/new output over 0–24 decimal places,
+leading zeroes, trailing zeroes and full u128 boundaries.
+
+Current scoped build/test evidence:
+[summary and commands](../../docs/evidence/policy-v3-tests.txt),
+[machine-readable validation](../../docs/evidence/policy-v3-validation.json).
+Earlier unrelated frontend results above are retained historical checks.
 
 New coverage exercises all three exit authorities at prices from $0.00001 to
 $1,000,000 with an unchanged initial opening band; exact 1% IOC caps despite a

@@ -1,34 +1,43 @@
 {
-  "capturedAt": "2026-11-10T18:29:27.201590+00:00",
+  "capturedAt": "2026-11-10T18:50:51.206654+00:00",
   "artifact": {
     "path": "contracts/policy/artifacts/counterweight_policy_v3.wasm",
-    "sha256": "8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3",
-    "codeHash": "AWkAtDEi2xstvjjpvwHA2t2nMR48mSbBBTZKkmLTPkLi",
-    "bytes": 672309
+    "sha256": "052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c",
+    "codeHash": "MD74j7DDmMa2zMHNiCZBbhe1AdQuDZGGxP3d5HfzzKm",
+    "bytes": 343212
   },
   "policy": "policy-v3.counterweight-samet.testnet",
   "derivedAddress": "0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5",
   "deploymentStatus": "undeployed; printed plan only",
   "unit": {
-    "defaultPassed": 134,
-    "testUtilsPassed": 134,
-    "distinctTests": 134
+    "defaultPassed": 135,
+    "testUtilsPassed": 135,
+    "distinctTests": 135,
+    "workspace": true,
+    "goldenVectors": 34
   },
   "sandbox": {
-    "passed": 24,
+    "passed": 26,
     "threads": 2,
     "network": "disposable localhost mocks only",
-    "timelockMaturity": "native tests use exact clock boundaries; sandbox models maturity with local state patch after testing early execution rejection"
+    "timelockMaturity": "native tests use exact clock boundaries; sandbox models maturity with local state patch after testing early execution rejection",
+    "durationSeconds": 254.04,
+    "artifact": "exact optimized production bytes; RPC code equality and SHA256SUMS regression",
+    "testUtilsBuildUsed": false,
+    "initializedStorageBytes": 344059,
+    "initialStorageOverheadBytes": 847,
+    "focusedRegressionRerunsPassed": 2
   },
   "typescript": {
-    "rootPassed": 464,
+    "rootPassed": 467,
     "rootFiles": 22,
     "webPassed": 30,
     "webFiles": 2,
-    "total": 494
+    "webLastValidatedAt": "2026-11-10T18:29:27.201590+00:00",
+    "webRerunThisPass": false
   },
   "checks": {
-    "typecheck": "passed",
+    "typecheck": "root passed; prior web result retained, not rerun",
     "clippyWarningsDenied": "passed",
     "format": "passed",
     "requiredProductionExports": 42,
@@ -52,5 +61,52 @@
     ],
     "safePruneAfterMs": "1794504663419",
     "procedure": "docs/V2-CLEANUP.md"
-  }
+  },
+  "build": {
+    "rustc": "1.98.1 (48a229cea 2026-09-01)",
+    "target": "wasm32-unknown-unknown",
+    "cfg": "near",
+    "profile": {
+      "optLevel": "z",
+      "lto": true,
+      "codegenUnits": 1,
+      "panic": "abort",
+      "strip": true,
+      "debug": false,
+      "overflowChecks": true
+    },
+    "binaryen": "123.0.0 via local npm prefix/cache; no sudo",
+    "optimizerPasses": [
+      "--enable-bulk-memory --enable-sign-ext -Oz --signext-lowering --strip-debug --strip-producers",
+      "--enable-bulk-memory --flatten --rereloop -Oz --converge --merge-similar-functions -Oz --converge",
+      "--enable-bulk-memory --gufa -Oz --converge --merge-similar-functions -Oz --converge"
+    ],
+    "oldV3Bytes": 672309,
+    "strippedRustBytes": 433804,
+    "optimizedBytes": 343212,
+    "bytesSaved": 329097,
+    "reproduction": "cd contracts/policy && bash tools/build-v3.sh",
+    "dependencies": "near-sdk default features disabled, explicit wee_alloc; required SDK serde features retained; test dependencies optional"
+  },
+  "creation": {
+    "wasmBytes": 343212,
+    "initializedStorageBytes": 344059,
+    "initialStorageOverheadBytes": 847,
+    "growthBytes": 131072,
+    "storageByteCostYoctoNear": "10000000000000000000",
+    "operatingYoctoNear": "1000000000000000000000000",
+    "marginYoctoNear": "500000000000000000000000",
+    "reserveYoctoNear": "5751310000000000000000000",
+    "reserveNear": "5.75131",
+    "createYoctoNear": "6251310000000000000000000",
+    "createNear": "6.25131",
+    "formula": "(343212 + 847 + 131072) \u00d7 10^19 / 10^24 + 1 + 0.5 = 6.25131 NEAR"
+  },
+  "spot": {
+    "stage": "deferred; independent of deployment and venue funding",
+    "amountNear": null,
+    "wrap": false
+  },
+  "gitCommandsExecuted": 0,
+  "v2ArtifactUntouched": true
 }

@@ -14,6 +14,16 @@ with post-withdrawal H checks, and cancellable 24h owner opening-bound updates.
 V3 is **not deployed**; these changes do not repair the live v2 account. The v2
 artifact remains pinned for historical demo/code verification; v3 has its own WASM.
 
+V3 build size is **343,212 bytes** after release stripping and Binaryen optimization
+(previously 672,309). Its measured creation budget is **6.25131 NEAR**:
+`(343212 + 847 + 131072) / 100000 + 1 + 0.5`. This fits the stated 7.36 NEAR
+owner balance before owner gas/registration. Production overflow checks remain on.
+The plan separates deployment/venue funding from later owner-selected spot deposits;
+`--spot-only=true --spot-near=AMOUNT` prints that stage without changing the saved
+plan. Recovered wNEAR needs no new wrap. There is no fixed 5-NEAR spot requirement.
+All sandbox fixtures execute the shipped optimized production artifact. See
+[build, reserve and staged funding details](POLICY-V3.md).
+
 V2 cleanup is **pending**, not complete. Its retained nonces are
 `1794331472735` and `1794331863418`; the review's first nonce was incorrect.
 The configured fee cap is 1 micro-USDC versus the actual 1 USDC withdrawal fee,
