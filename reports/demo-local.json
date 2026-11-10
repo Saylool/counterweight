@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
   "status": "passed",
-  "startedAt": "2026-11-10T12:09:58.500Z",
+  "startedAt": "2026-11-10T17:19:39.497Z",
   "offlineGuardActive": true,
-  "policySha256": "d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1",
+  "policySha256": "1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a",
   "mockSha256": "69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f",
   "transcript": [
     "COUNTERWEIGHT | LOCAL SANDBOX | MOCK MPC / MOCK FILLS | no wallet or testnet account",
     "OFFLINE GUARD active | Node connections restricted to loopback",
     "FIXTURES SHA-256 verified | worst 24h +32.499065% / 4297 windows",
     "WINDOW 2026-09-17T05:00:00.000Z -> 2026-09-18T05:00:00.000Z",
-    "POLICY SHA-256 d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1 verified before deploy",
+    "POLICY SHA-256 1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a verified before deploy",
     "MOCK MPC SHA-256 69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f verified before deploy",
     "SETUP local accounts + mock spot 9.3 NEAR | policy access keys: 0",
     "BOUNDARY policy operating reserve pays MPC fee; keeper attaches zero; spot disposal awaits owner approval",
     "SETUP keeper bounded short SIGNED (mock); pre-existing hedge / simulated margin $30.00",
-    "OWNER FROZEN nonce=7000002 balance=99999348632746344600000000 yocto",
+    "OWNER FROZEN nonce=7000002 balance=99999347412735944600000000 yocto",
     "HOUR (UTC)        NEAR       H USD     KEEPER ACTION          CONTRACT RESULT",
     "09-17 06:00 UTC  $2.6597     5.018   monitor                no transaction",
     "09-17 07:00 UTC  $2.6987     4.289   monitor                no transaction",
@@ -55,7 +55,7 @@
     "WAIT sandbox fast-forward 1/20 | 600s to deadline",
     "WAIT sandbox deadline reached",
     "DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused",
-    "OWNER AFTER nonce=7000002 balance=99999348632746344600000000 yocto (unchanged)",
+    "OWNER AFTER nonce=7000002 balance=99999347412735944600000000 yocto (unchanged)",
     "PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed",
     "OWNER RESUMED | autonomous owner-free phase ended; mock rebalance completion begins",
     "WAIT sandbox fast-forward 1/20 | 60s to deadline",
@@ -67,61 +67,61 @@
     "REPORTS reports/demo-local.md + reports/demo-local.json (timeline, logs, receipts, assertions)"
   ],
   "diagnostics": [
-    "Receipt: 9FEifvU4PCxnT6PhY83n3WN29EzUSh1a352XAm264CFE",
+    "Receipt: FfYVtcvUL8XiJbH2ZSkL2YgETm96TUXrF6MmjQZ9tEn2",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}",
-    "Receipt: yGmibqfE1evs5TgJZUnsPeYXA3cX4BrS36tBiywDujS",
+    "Receipt: 5fhMwqkLGjgfHZzzy8caTkituizzCwwyrTtVXdLPYuuf",
     "\tLog [mock-mpc.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}",
-    "Receipts: ECD4UqmdvB1PAGmH4Dd2vHWZTMfYExFcDFi3R7hNkduS, BGGDYVr9MNVTzZMwNPji79X3ypURPJGC2UBn5RFXXwhu, Hhn1b4XuFTAPqBvGkNaNwQx9R8uZx4ipUcukrk2kR7w5",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312622367,\"expiresAfter\":1794312682367},\"digest\":\"322a0f63c469772fee77f180a9a28f785ffbcf0b006a5711292d83d11cde352c\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: BKmGhLVfFEHdVWFv9ahHaiFAcFXdhkiyX21ymZGCXtsP",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794312622367\",\"expiresAfter\":\"1794312682367\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: DH2iYdeE55PtGgpBiQUvW8gcFuNnDumredephWNreNA6",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794312625\"}]}",
-    "Receipts: HyuHrbz9bCdFtxifdtBKHmEYuJycS5ayvpACSpMzXK56, FvwrvWsiD8gR7vh9XEsmvoV3z1YG6MdKV2J7rjV9g8Ks, 2VPsjzM9qeobmj7FJnwW9Yf6XRK1kbaDJyPgs5uHHpw6",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312627215,\"expiresAfter\":1794312687215},\"digest\":\"43b5a81b00c67bc5f270a8b2a5b40a34831bb443192b386792b5ed14c0cbfbfc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: n1tS2EYQ28oXivxkHcJcLYgi93JKKhzGRZQGCkfk86a",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794312627215\",\"expiresAfter\":\"1794312687215\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: Awv8vcV26kNhGUrhudQBJ43pG9ZRhvEwggEk6wqSg6k1",
+    "Receipts: 4okFdHP4RZ1Aib92LqJqJ9ypsaXjHs5mCqkoZbHyvYN1, 68Vk2LXaAVzWUYwF9LbC7CQ6eUoxgwjptdjVp5pf7ZdG, 96ENKr5Y2Mz4MgaiSXvKF6k8bVsCDvsG7pwbK8WCWGJU",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331203305,\"expiresAfter\":1794331263305},\"digest\":\"aca197707eaf41c945aaf989004d4966a8c3c0e8d2504858359b39e12891deb9\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 3v2zEZdgKM9mcmqJdAXdKdb992bpWEPdDqCjvRXm63Np",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794331203305\",\"expiresAfter\":\"1794331263305\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: HxjYRb8ZQXhuSJhf9MoZDLDerY6gvWDZSiEcGztuRcYH",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794331206\"}]}",
+    "Receipts: 2evXPHzVyU5Le7gecFUEZzEttFJM3RfsnHx9TtY6qMk7, 6hvDdeANomv8yCth7TLEZqmWRDAZ272zj2afLQP8eacp, CYJEZVMguhJVQ6EPDZvUNcDYu7aX7oJsBdPha5t4BTaH",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331208147,\"expiresAfter\":1794331268147},\"digest\":\"774889d5c5e0c932783ddc587b19a26126288f0fb1515bfbc33224bd0b65df00\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 5m8f8EzLZ5GJMfmXH1S36UWwNpdqS7hP694bUuXKmomx",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794331208147\",\"expiresAfter\":\"1794331268147\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: DY2SXcRKa1fQPR3DCqXAW8qbow4ippBUSxnSXyJPFhs9",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_EXCEEDS_SPOT_HEDGE\"}}}}",
-    "Receipt: 87eRv57y2R8vdoM5WKwwgsqB8MZjTx3XXBGpoVKFqxfx",
+    "Receipt: 2KpnoAoYFXUtQytm6dEdnL9fbZ3iKcsMYjHYLwc4Lx3M",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_OPEN_PRICE_OVERRIDE\"}}}}",
-    "Receipt: GNMoMMrDYrawzPCpBXB66KzQ2PaDWkUbQQ9is1SGZ4zE",
+    "Receipt: UywwZ856nTEJizgJ2ocTR4L1SNfGRjyTikiAm4q5knd",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_OWNER\"}}}}",
-    "Receipt: CFJDzAvCQrZz6keUzmZsKsmSbtTxJE3G3GxgeEoBqSyw",
+    "Receipt: 2GgPuXBZ3sh4MvmDNdYE3r6MzN1Cnm94UKBw25wW2Vec",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"MethodResolveError\":\"MethodNotFound\"}}}}",
-    "Receipt: CbX2adKaQFBDdXqByQ55L3YLQCzTYer46Su5w4qAjjMh",
+    "Receipt: BSJ1JZg1GUHXwb8GFGrCkT78oDgdLz8KBbzAwCixV5Gx",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Method on_signature is private\"}}}}",
-    "Receipt: ABVRQUJuJXd5kAVncF9npeLMtoyWaRLaMji127r81nK1",
+    "Receipt: FkZuJGbquNCw2fJVEb49dCzvsdFB6giYsBzKDjPDubjA",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_STALE_PRICE\"}}}}",
-    "Receipt: 6HybSX8Ykjho3cD9n8cX3mN19EJnoELwcwByugaR5Fxp",
+    "Receipt: BWqrSgkruqZwBSdeqjEitqdjX2Dq9u7F4PJWBT1qvwnw",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_KEEPER\"}}}}",
-    "Receipt: F57yq9vGSiZLru3YeQ6Yvk7cxbJWtNKZ5CJcWgX1K8jn",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794313938\"}]}",
-    "Receipt: DY3gpFvpigA1B28kB1RUXW9Q3XxdkVNXvWfjgaTT93er",
+    "Receipt: 7Yj47xjEYHUCqhGUSj2TJvBUme49Xi3YguxQveDwv5SX",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794332519\"}]}",
+    "Receipt: A8834bhjbgQo4ANkdxbZ1fKPZK2142S1EFRxihNa7SS6",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_HEARTBEAT_ACTIVE\"}}}}",
-    "Receipts: Ab6X7EzzP2QfMEir6eyrcS33UqJfazo57Yake97g8HJL, 9VCSxyyHiBX1P6ERqmTyZYibMm1h87X7x4kiDmwqYAUE, HBsjFGQZD4Mf6rwzU2iPJWo2wxDmWW8gxn7k9KyyfQ2d",
+    "Receipts: 2ozkoN7t5BdDE9G7m7S7nXfkzfsETisK4ggn3TNZBJ9K, 4u7V4x4UfmsanstD8UHGzNpb8aANRb5pAh5FjUuwaoBz, 77e72svmtoRWyM5wkEXmhC9uHBVvyiDthSSfM4JLQxp3",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794315237923,\"expiresAfter\":1794315297923},\"digest\":\"bf17849b50ac0074f2ede84f96e1b4d6073535ed0fc4fb6ace3ce250e9ef2cce\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: Fh6wytZp368Q6w946JGfc56TKoEsT9U9iXmZpxWQ79KX",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794315237923\",\"expiresAfter\":\"1794315297923\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: EMLZ9XcAvCergMPZg5PVtmcDgt9Cpceg959AbDRcsZqD",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794333818858,\"expiresAfter\":1794333878858},\"digest\":\"fc48ceb426986e1f62c7afb46e1e6bc81e3fee1537ec818a7817c0978faee4cc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 4aBfKxqGMBCGc4GVzKJHEShPDb5867Ew6KzWnjs1nZpX",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794333818858\",\"expiresAfter\":\"1794333878858\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: 5CH88JU7bT2RTxgNsfcpp8Hiv2b3WzjsQrW4izHKoiH8",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}",
-    "Receipt: HErGdP4PHTdSfT1wQEFCCcvBRhC8VAdUtkbzNBtWnQz1",
+    "Receipt: sGTJGAr6JvTm9uLnh3KKc7tdc5JEX5vRH4J7GhJuZYa",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
-    "Receipt: AyPpBq61ud9RyBKdTtUBua3XBRo2H4pBGdTM1R2xzTFN",
+    "Receipt: 86iqtLAB8nTgmLdpwkK7pLgir7srEiYZhuX1pk7x9rhh",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}",
-    "Receipt: HDtWuBC5zsPETR3HjCTthQfmCTX61DZCjHjXNuMEwobA",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794316539052\",\"source\":\"owner_finality_attestation\"}]}",
-    "Receipt: Fn2g8mx2UgiqBp6KCitoaaCpbyHSrsZssMFrvDfa26hN",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794316540870\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
-    "Receipt: EpQPRhjkiUrP9ES7baV6EbDT3gU5zesz6uHaQXUJLjqU",
+    "Receipt: 9heyqMaiQaGjq1YtW3YgHexWrNYR1Xmz7S6t2KngGzsF",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794335119973\",\"source\":\"owner_finality_attestation\"}]}",
+    "Receipt: 8zapYHhHNe6zivVRnjiYAwnHtQFGzc9vyq8vK5uUh2CT",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794335121788\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
+    "Receipt: Aaoeki8yWJxJvNGv1dDk45QFiR5sFavGpzV8NpZgLzsD",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
-    "Receipts: 7DbmsvLmFo3dWd3yuE1ZxwdjA7LhDjtUpQN8ZqUBvZSC, 3PMUBvwMYaVhGJZhT9QqbonzxjuVmFeWtVdK7iKtDZxc, 39jrBBH6oLrs74kgN7sHWpCX66u47DAwcP1in4pJNY6x",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794316544520\",\"deadline_ms\":\"1794316574520\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794320147559\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
-    "Receipt: ELaCo6zkf6QuPDUbjd8dTk57ebuBN8DWUgtkewQWqBG1",
+    "Receipts: DuaqhWshKAfDtYJx5XPecnJZgSthzNyChTYXe4mC87NM, mQe84y9nixeEbk1nrf1nvZH7rjgemmJuc5cMmYWjb1F, 4yyEUdzsso2qmVYs8tCZf84DB3L62GLN5Zgi1NtHWPpz",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794335125425\",\"deadline_ms\":\"1794335155425\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794338728439\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+    "Receipt: EAtnrtrR1MuYbKoWr3BbrJ1mfqj1pcxZzLWTb9BtkXBS",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}",
-    "Receipt: DQm93r2NrA79JiAAvuoJMC4KdmKZz8Va1JQrnJS8KqKp",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794316547559\",\"source\":\"owner_finality_attestation\"}]}"
+    "Receipt: GFtbNNCmqFTWEhyn8wsobyaYnrF5VGnsTWfFBPMHxqLB",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794335128439\",\"source\":\"owner_finality_attestation\"}]}"
   ],
   "mocked": [
     "MPC signature-shaped response (not cryptographic)",
@@ -196,7 +196,7 @@
           "max_price": "5346000"
         }
       },
-      "transactionHash": "51rFrREkyJzNJuiJcq1GXQwZ1rfhZpK1AEAT8q8bwqMT",
+      "transactionHash": "EsgSVHYbzw5W3MtzqdaLYS2X49aDDtG53SnYqjWDYVmr",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}"
@@ -209,7 +209,7 @@
       "args": {
         "amount": "9300000000000000000000000"
       },
-      "transactionHash": "6pfUWSckQmCU1CjaiLXy8qACD6dHskMR1vGuCYcTVCkL",
+      "transactionHash": "FZTJJimR4Y7sCXDe1si57S5PBWXsk947NjfM8VS6Dww4",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}"
@@ -227,11 +227,11 @@
           "reference_price": null
         }
       },
-      "transactionHash": "3givysvvJCAsBY9neaJKCXERsRUUULAMY36iA45Cp87K",
+      "transactionHash": "9oiCeKvmx8wHrrHQVVTfinqgY1EFwc9cLC1RGVfbkLzy",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312622367,\"expiresAfter\":1794312682367},\"digest\":\"322a0f63c469772fee77f180a9a28f785ffbcf0b006a5711292d83d11cde352c\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794312622367\",\"expiresAfter\":\"1794312682367\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331203305,\"expiresAfter\":1794331263305},\"digest\":\"aca197707eaf41c945aaf989004d4966a8c3c0e8d2504858359b39e12891deb9\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794331203305\",\"expiresAfter\":\"1794331263305\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -239,10 +239,10 @@
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "D1kqCizPfBGy9k5EQZyBp2czMmnr4ziav64AnB3v36m3",
+      "transactionHash": "7HVcY6gCz3aZs9K9Mz6oTnQhpb7ao1BJ1gWhZCLiuJSR",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794312625\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794331206\"}]}"
       ],
       "errors": []
     },
@@ -257,11 +257,11 @@
           "reference_price": "2806200"
         }
       },
-      "transactionHash": "CNAjwc4fjGa1HQNbbdNQp2Vya2dG4FrEaH81GUkB28cc",
+      "transactionHash": "Hf9SUSyJ27AQAstYdgWfPU7fkxwyQA9eFfSw8jJdyxku",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312627215,\"expiresAfter\":1794312687215},\"digest\":\"43b5a81b00c67bc5f270a8b2a5b40a34831bb443192b386792b5ed14c0cbfbfc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794312627215\",\"expiresAfter\":\"1794312687215\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331208147,\"expiresAfter\":1794331268147},\"digest\":\"774889d5c5e0c932783ddc587b19a26126288f0fb1515bfbc33224bd0b65df00\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794331208147\",\"expiresAfter\":\"1794331268147\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -276,7 +276,7 @@
           "reference_price": null
         }
       },
-      "transactionHash": "HYSXHYFBWBMJpuDh8YvmTPtVXfbHZxxaAGekJjgTZL8a",
+      "transactionHash": "HxMsfVYmVFfXUVBk26CiNmbCXKQbF99Utz7smEffRSZS",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -294,7 +294,7 @@
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "DxQvQM9d6F7LfRcBAknNgHVqo8UaQysx3nzxUAiEYg4u",
+      "transactionHash": "Cvk9idFFpquaGZVCQXnLcZR6ovqMrRU9pFJwu9RRzy2M",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -308,7 +308,7 @@
         "recipient": "0x2222222222222222222222222222222222222222",
         "amount": "1000000"
       },
-      "transactionHash": "Ex9cwx2j1PPZ1B7MKhfibm5two9ZwCGvbPMksDeP17t5",
+      "transactionHash": "5mdDa9ni1ZXXH42ud5a15pZmocq68aXEj7gbir4bPbK1",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -321,7 +321,7 @@
       "args": {
         "agentAddress": "0x2222222222222222222222222222222222222222"
       },
-      "transactionHash": "CDqagJu6EMGZYrcS1M6cNFeUd5ZsLwbBgfguj5ypBTeN",
+      "transactionHash": "7NbgGqnThwXeAqozKrMJjPR2d6NPisUkv68aX4W5UjTH",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -333,9 +333,9 @@
       "method": "on_signature",
       "args": {
         "operation_id": "2",
-        "nonce": 1794312627215
+        "nonce": 1794331208147
       },
-      "transactionHash": "Be48jFVC4fJRHQQeoHHJWmHKGZuZWpHCRAoc34eCjfVf",
+      "transactionHash": "7Smf2MjnN8QbW6Nsm6TJsJp3FL6qZiRTJHeu76APz9qq",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -353,7 +353,7 @@
           "reference_price": null
         }
       },
-      "transactionHash": "6pWmF27umwWpEypkisMzwL3Rg83Ln18iSJrx19raaBqW",
+      "transactionHash": "Rg5zVxXj4bEMfegin7RK1iztrqVAu2LF7qHQ2HovuB7",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -371,7 +371,7 @@
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "Gc9rqgWeKyMTLEtDeothmzTV7qZcaAt6izpQETBKcjkb",
+      "transactionHash": "4kpETXnuW4KMrj7PiZC1T2kesDGAcbGhVzo9ioSmx58h",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -382,10 +382,10 @@
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "9Kos7Hy5TAM4bvPDEYaKskHmFcL2NF62rL9HQgLDXk48",
+      "transactionHash": "7qEQid24CTUGwyPHb9r6TZ6pCqD5NhYCSYNLzu19m7qu",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794313938\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794332519\"}]}"
       ],
       "errors": []
     },
@@ -395,7 +395,7 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "CgkDX5VK3ZYGZo8YHAPEsW6aJmpQVSxveWLSyyZ1Pg32",
+      "transactionHash": "5x1buWQLu7kFzPeA6uHbF599nSS2dEaWtWif6K4HSQeV",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -408,12 +408,12 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "CcYzfxMfpVkDjSg4RcR15AmgPYFDkaKLmtTGcdva4nDs",
+      "transactionHash": "FKzr73DTmt1f4jTfnvKifKPqaWTzvmEDXARMhVpYuVsi",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794315237923,\"expiresAfter\":1794315297923},\"digest\":\"bf17849b50ac0074f2ede84f96e1b4d6073535ed0fc4fb6ace3ce250e9ef2cce\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794315237923\",\"expiresAfter\":\"1794315297923\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794333818858,\"expiresAfter\":1794333878858},\"digest\":\"fc48ceb426986e1f62c7afb46e1e6bc81e3fee1537ec818a7817c0978faee4cc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794333818858\",\"expiresAfter\":\"1794333878858\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -423,7 +423,7 @@
       "args": {
         "paused": false
       },
-      "transactionHash": "8Z8hgMHPqk1K7iNtQ41JiM4HCuSAt94iKJC2gWyNa6rE",
+      "transactionHash": "J1yA1uqgpeFXy5FgiGJ1UbMiyR3S5vrjhSDdNrFU1WmS",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}"
@@ -436,7 +436,7 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "5iPUEokKrpNNFkNdWDoCdQ4jpnQk8nh3Aceyb8oQCHPj",
+      "transactionHash": "6eXN9PbNX5EV2gaFxWFuZSZYCPJhfCvMs6L48RxBfgi3",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
@@ -469,7 +469,7 @@
           "original_target_usdc": "32937810"
         }
       },
-      "transactionHash": "D9WwXnwN9LzPcTRFMWdwHNXyJvSiHYmgqQVpQ1QBGczv",
+      "transactionHash": "GHqws33zjKAZXdcd8AwHJXEtfVjWXXQ5QPwasvGTWwT4",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}"
@@ -482,12 +482,12 @@
       "args": {
         "equity_usdc": "28714402",
         "withdrawable_usdc": "0",
-        "observed_at_ms": "1794316539052"
+        "observed_at_ms": "1794335119973"
       },
-      "transactionHash": "8NVkxN2D6qnPKBo1Xw9jVBB5qz52mtdqdHYsLCXycm6y",
+      "transactionHash": "Cb8jU2wSDGrFs3tJGcTtvojbZT37FKCxc9zW3RQfFstw",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794316539052\",\"source\":\"owner_finality_attestation\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794335119973\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     },
@@ -496,12 +496,12 @@
       "method": "settle_position",
       "args": {
         "short_size": "0",
-        "observed_at_ms": "1794316540870"
+        "observed_at_ms": "1794335121788"
       },
-      "transactionHash": "7Cs7kvofZhBtrTYqqdhWYx8gMJhNe1N5xacEpG63h5Dc",
+      "transactionHash": "Ghr676He2qdfpUTCQkCtyT16LRfnWqrNGZa455xMC28X",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794316540870\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794335121788\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
       ],
       "errors": []
     },
@@ -511,7 +511,7 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "65kyx8v1R6Nxj22c6VgxLVxZvnXWj2Gd7vZGndNt4wVe",
+      "transactionHash": "4qJgTXQmrR4EbZa2wn6qkb66miN7qvcBMXvWzsKFe6VJ",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
@@ -528,14 +528,14 @@
           "min_usdc": "32558432",
           "fee_usdc": "50000",
           "impact_bps": 100,
-          "quoted_at_ms": "1794316544520",
-          "deadline_ms": "1794316574520"
+          "quoted_at_ms": "1794335125425",
+          "deadline_ms": "1794335155425"
         }
       },
-      "transactionHash": "EbNmTDqRCUE85vmP4CjHMB9fNAEEwq8BEJTB3pRA98bZ",
+      "transactionHash": "9S2GXcDzWa8FYi7uwp9FLsC3dEaKZWQc9o4jFN1VKks1",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794316544520\",\"deadline_ms\":\"1794316574520\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794320147559\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794335125425\",\"deadline_ms\":\"1794335155425\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794338728439\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}"
       ],
       "errors": []
@@ -548,21 +548,21 @@
         "refunded_near": "0",
         "credited_usdc": "32558432",
         "receipt_id": "demo-local-mock-finalized-sale-1",
-        "finalized_at_ms": "1794316547559"
+        "finalized_at_ms": "1794335128439"
       },
-      "transactionHash": "CwWLkKbWhiXCz8SEDeq4gRYntTLwp9JxCui3DgrdTbe3",
+      "transactionHash": "48QTAdZpuZVn5tS8RtPYQ2DQs6YRoZt3c9biHxPDzsWU",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794316547559\",\"source\":\"owner_finality_attestation\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794335128439\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     }
   ],
   "ownerBefore": {
-    "balanceYocto": "99999348632746344600000000",
+    "balanceYocto": "99999347412735944600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
+        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
         "nonce": 7000002
       }
     ]
@@ -860,10 +860,10 @@
     }
   ],
   "ownerAfterReplay": {
-    "balanceYocto": "99999348632746344600000000",
+    "balanceYocto": "99999347412735944600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
+        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
         "nonce": 7000002
       }
     ]
@@ -913,10 +913,10 @@
     }
   ],
   "ownerAfter": {
-    "balanceYocto": "99999348632746344600000000",
+    "balanceYocto": "99999347412735944600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
+        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
         "nonce": 7000002
       }
     ]
@@ -958,11 +958,11 @@
     "operation_id": "3",
     "pending": null,
     "paused": true,
-    "last_keeper_heartbeat": "1794313938",
+    "last_keeper_heartbeat": "1794332519",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "2673000",
-    "reference_price_timestamp": "1794312616",
-    "last_nonce": "1794315237923",
+    "reference_price_timestamp": "1794331197",
+    "last_nonce": "1794333818858",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -973,8 +973,8 @@
     },
     "outstanding": [
       {
-        "nonce": 1794315237923,
-        "expires_after": 1794315297923,
+        "nonce": 1794333818858,
+        "expires_after": 1794333878858,
         "keeper": false,
         "discarded": false,
         "invalidation_requested": false,
@@ -985,7 +985,7 @@
     ],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794312682367",
+    "last_open_expiry": "1794331263305",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -1043,11 +1043,11 @@
     "operation_id": "3",
     "pending": null,
     "paused": false,
-    "last_keeper_heartbeat": "1794313938",
+    "last_keeper_heartbeat": "1794332519",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "3541700",
-    "reference_price_timestamp": "1794316545",
-    "last_nonce": "1794315237923",
+    "reference_price_timestamp": "1794335126",
+    "last_nonce": "1794333818858",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -1059,7 +1059,7 @@
     "outstanding": [],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794312682367",
+    "last_open_expiry": "1794331263305",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -1100,7 +1100,7 @@
       "reduced_inventory": "0",
       "usable_margin": "28714402",
       "withdrawable": "0",
-      "observed_at_ms": "1794316539052",
+      "observed_at_ms": "1794335119973",
       "next_route_id": "1",
       "route": {
         "id": "1",
@@ -1110,16 +1110,16 @@
           "min_usdc": "32558432",
           "fee_usdc": "50000",
           "impact_bps": 100,
-          "quoted_at_ms": "1794316544520",
-          "deadline_ms": "1794316574520"
+          "quoted_at_ms": "1794335125425",
+          "deadline_ms": "1794335155425"
         },
         "dispatched_near": "9300000000000000000000000",
         "phase": "AwaitingReceipt",
-        "completion_deadline_ms": "1794320147559"
+        "completion_deadline_ms": "1794338728439"
       },
       "sales": [
         [
-          1794316547559,
+          1794335128439,
           9.3e+24
         ]
       ],
@@ -1192,12 +1192,12 @@
       "reduced_inventory": "0",
       "usable_margin": "61272834",
       "withdrawable": "0",
-      "observed_at_ms": "1794316539052",
+      "observed_at_ms": "1794335119973",
       "next_route_id": "1",
       "route": null,
       "sales": [
         [
-          1794316547559,
+          1794335128439,
           9.3e+24
         ]
       ],
@@ -1206,13 +1206,13 @@
     "creditedUsdc": "32558432"
   },
   "ownerAfterRebalance": {
-    "balanceYocto": "99696275665960328999999999",
+    "balanceYocto": "99696269565908328999999999",
     "accessKeys": [
       {
-        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
+        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
         "nonce": 7000010
       }
     ]
   },
-  "finishedAt": "2026-11-10T12:11:22.417Z"
+  "finishedAt": "2026-11-10T17:21:03.322Z"
 }

@@ -7,6 +7,7 @@ import { TESTNET_RPC } from '../packages/hyperliquid/src/index.js';
 
 export const OWNER = 'counterweight-samet.testnet';
 export const POLICY = `policy.${OWNER}`;
+export const V3_POLICY = `policy-v3.${OWNER}`;
 export const NEXT_POLICY = `policy-v2.${OWNER}`;
 // Deployed, initialized v2 baseline; the saved initializer plan remains authoritative after upgrade.
 export const V2_BASELINE_SHA256 = 'd85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1';
@@ -14,7 +15,8 @@ export const DEPLOYED_SHA256 = '698195e3c6b785274055a3cc607251b9598e2fa166c1e20c
 export const KEEPER = `keeper.${OWNER}`;
 export const PATH = 'counterweight-1';
 export const PROBE_ADDRESS = '0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a';
-export const WASM = 'contracts/policy/artifacts/counterweight_policy.wasm';
+export const WASM = 'contracts/policy/artifacts/counterweight_policy.wasm'; // Historical v2, pinned by the legacy demo.
+export const V3_WASM = 'contracts/policy/artifacts/counterweight_policy_v3.wasm';
 export const LIMITS = { max_short_size: '1000000000000000000000000', per_order_notional_cap: '10000000',
   per_day_notional_cap: '20000000', cooldown_seconds: 60, price_band_bps: 100, price_max_age_seconds: 60 };
 export const ORACLE = { account_id: null, feed_id: 'c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750',
@@ -47,9 +49,10 @@ export function txHash(value: string) {
     throw new Error('Expected a base58 NEAR transaction hash');
   return value;
 }
-export async function committedWasm() {
-  const [bytes, manifest] = await Promise.all([readFile(WASM), readFile('contracts/policy/artifacts/SHA256SUMS', 'utf8')]);
-  const expected = /^([a-f0-9]{64})  artifacts\/counterweight_policy\.wasm\s*$/.exec(manifest)?.[1];
+export async function committedWasm(wasm = WASM) {
+  const [bytes, manifest] = await Promise.all([readFile(wasm), readFile('contracts/policy/artifacts/SHA256SUMS', 'utf8')]);
+  const filename = wasm.replace(/^contracts\/policy\//, '');
+  const expected = manifest.split('\n').find(line => line.endsWith(`  ${filename}`))?.split('  ')[0];
   const sha256 = createHash('sha256').update(bytes).digest('hex');
   if (sha256 !== expected) throw new Error('Committed WASM SHA-256 does not match SHA256SUMS; refusing');
   return { sha256, codeHash: base58.encode(Buffer.from(sha256, 'hex')), bytes: bytes.length };

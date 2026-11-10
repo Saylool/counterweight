@@ -32,7 +32,8 @@
     "keeper:dry": "tsx apps/keeper/src/dry.ts",
     "web": "npm --prefix apps/web run dev",
     "web:build": "npm --prefix apps/web run build",
-    "web:test": "npm --prefix apps/web test"
+    "web:test": "npm --prefix apps/web test",
+    "keeper:run": "tsx scripts/keeper-run.ts"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",

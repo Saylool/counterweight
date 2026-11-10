@@ -1,0 +1,11 @@
+[
+  {"name":"open short healthy", "short":"1000000000000000000000000", "price":"5000000", "equity":"100000000", "amount":"10000000"},
+  {"name":"exact H floor", "short":"1000000000000000000000000", "price":"5000000", "equity":"6655000", "amount":"1000000"},
+  {"name":"one micro below floor", "short":"1000000000000000000000000", "price":"5000000", "equity":"6654999", "amount":"1000000"},
+  {"name":"nonround exact H floor", "short":"1230000000000000000000000", "price":"5123001", "equity":"8100737", "amount":"1000000"},
+  {"name":"nonround one micro below", "short":"1230000000000000000000000", "price":"5123001", "equity":"8100736", "amount":"1000000"},
+  {"name":"flat exact residual", "short":"0", "price":"5000000", "equity":"2000000", "amount":"1000000"},
+  {"name":"flat below residual", "short":"0", "price":"5000000", "equity":"1999999", "amount":"1000000"},
+  {"name":"action cap", "short":"0", "price":"5000000", "equity":"100000000", "amount":"10000001"},
+  {"name":"outside opening band healthy", "short":"1000000000000000000000000", "price":"50000000", "equity":"100000000", "amount":"1000000"}
+]

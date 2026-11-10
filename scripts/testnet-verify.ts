@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, nearMarketIndex, testnetMeta, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
-import { NEXT_POLICY, V2_BASELINE_SHA256, committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
+import { NEXT_POLICY, V3_POLICY, V3_WASM, V2_BASELINE_SHA256, committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
 
 export const policyStateSchema = z.object({ owner: z.literal(OWNER), keeper: z.literal(KEEPER), coin: z.literal('NEAR'),
   signer_account: z.literal(TESTNET_SIGNER), wnear_account: z.literal('wrap.testnet'), near_recipient: z.literal(OWNER),
@@ -35,7 +35,7 @@ export async function verifyTestnet(argv: string[]) {
   const policy = testnetAccount(options.policy ?? NEXT_POLICY);
   const planFile = options.plan ?? (policy === NEXT_POLICY ? 'docs/evidence/policy-v2-plan.json' : undefined);
   if (policy !== POLICY && !planFile) throw new Error('Policy verification requires --plan for a custom account');
-  const artifact = await committedWasm();
+  const artifact = await committedWasm(policy === V3_POLICY ? V3_WASM : undefined);
   const saved = planFile ? JSON.parse(await readFile(planFile, 'utf8')) : undefined;
   if (saved && saved.policy !== policy) throw new Error('Policy plan account mismatch');
   if (saved && saved.artifact?.sha256 !== artifact.sha256 && !(policy === NEXT_POLICY && saved.artifact?.sha256 === V2_BASELINE_SHA256)) throw new Error('Policy plan artifact mismatch');
@@ -72,6 +72,14 @@ export async function verifyTestnet(argv: string[]) {
     const matchesPlan = planConfigMatches(state, saved?.init);
     return { ok: state.asset_index === index && state.size_decimals === meta.universe[index]?.szDecimals && recipientMatches && matchesPlan,
       details: { recipientMatches, matchesPlan, state, note: 'Identity, current venue metadata and plan baseline limits/resources checked. Mutable config drift fails this baseline check; inspect current state against owner intent. Use --owner-evm=0x... to assert your immutable EVM recipient.' } };
+  });
+  if (policy === V3_POLICY) await record('v3 adapter-free margin policy', async () => {
+    const result = z.object({ block_hash:z.literal(block.hash), result:z.array(z.number().int().min(0).max(255)) }).parse(await rpc('query', {
+      request_type:'call_function', account_id:policy, method_name:'get_margin', args_base64:'e30=', block_id:block.hash,
+    }));
+    const margin = z.object({limits:z.record(z.string(),z.union([z.string(),z.number()]))}).passthrough().parse(JSON.parse(Buffer.from(result.result).toString('utf8')));
+    const expected = z.record(z.string(),z.union([z.string(),z.number()])).parse(saved?.marginLimits);
+    return {ok:Object.entries(expected).every(([k,v])=>margin.limits[k]===v),details:{margin,expected,note:'Margin limits, including actual 1 USDC fee cap, match the fresh v3 plan.'}};
   });
   await record('policy-derived Hyperliquid address', async () => {
     const derived = await deriveTestnetAddress(policy, PATH);

@@ -8,8 +8,10 @@ use near_sdk::{
 pub mod hl_digest;
 pub mod oracle;
 pub mod rebalance;
+pub mod withdrawals;
 use oracle::*;
 use rebalance::*;
+
 const BASE: u128 = 10u128.pow(24); // wNEAR yocto base units
 const DAY: u64 = 86_400;
 
@@ -93,8 +95,10 @@ pub struct OrderParams {
     pub asset_index: u32,
     pub size: U128,
     pub reduce_only: bool,
-    /// Fallback micro-price for reductions; ignored when the public oracle is fresh.
+    /// Contemporaneous caller-attested micro-price for reductions; ignored for a fresh oracle.
     pub reference_price: Option<U128>,
+    /// Timestamp in seconds for a caller-attested reduction mark.
+    pub observed_at: Option<U64>,
 }
 
 /// SDK field order; the codec rebuilds it explicitly.
@@ -328,7 +332,8 @@ impl Policy {
         network: Network,
     ) -> Self {
         require!(
-            env::predecessor_account_id() == owner,
+            env::predecessor_account_id() == owner
+                || env::predecessor_account_id() == env::current_account_id(),
             "ERR_CALLER_NOT_OWNER"
         );
         // Local sandbox accounts may use Testnet; domains are selected once at init.
@@ -540,10 +545,10 @@ impl Policy {
         );
     }
 
-    /// An owner-approved observation, not an oracle. Keeper cannot choose its own band.
+    /// A sane owner-attested observation, not an oracle. Opening bounds are checked at signing.
     pub fn set_reference_price(&mut self, price: U128) {
         self.assert_owner();
-        self.assert_price_bounds(price.0);
+        assert_exit_price(price.0);
         require!(!self.oracle_fresh(), "ERR_ORACLE_PRIMARY");
         self.reference_price = price.0;
         self.reference_price_timestamp = now();
@@ -688,15 +693,22 @@ impl Policy {
     }
 
     #[payable]
-    pub fn emergency_reduce(&mut self, size: U128, price: U128) -> Promise {
+    pub fn emergency_reduce(&mut self, size: U128, price: U128, observed_at: U64) -> Promise {
         self.assert_owner();
         self.emergency_pause();
-        self.clear_signing_slot();
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|p| !matches!(p.kind, OperationKind::SpotWithdrawal))
+        {
+            self.clear_signing_slot();
+        }
         self.request_order(OrderParams {
             asset_index: self.asset_index,
             size,
             reduce_only: true,
             reference_price: Some(price),
+            observed_at: Some(observed_at),
         })
     }
 
@@ -785,7 +797,7 @@ impl Policy {
     }
 
     #[payable]
-    pub fn deleverage(&mut self, price: U128) -> Promise {
+    pub fn deleverage(&mut self, price: U128, observed_at: U64) -> Promise {
         require!(
             now().saturating_sub(self.last_keeper_heartbeat) >= self.heartbeat_timeout_seconds,
             "ERR_HEARTBEAT_ACTIVE"
@@ -802,6 +814,7 @@ impl Policy {
             size: U128(self.signed_short_size.max(self.limits.max_short_size.0)),
             reduce_only: true,
             reference_price: Some(price),
+            observed_at: Some(observed_at),
         })
     }
 
@@ -852,7 +865,7 @@ impl Policy {
             "ERR_RECIPIENT"
         );
         require!(amount.0 > 0, "ERR_AMOUNT");
-        require!(self.signed_short_size == 0, "ERR_OPEN_SHORT");
+
         require!(
             !self
                 .outstanding
@@ -908,8 +921,37 @@ impl Policy {
         ).then(self.callback("on_spot_withdrawal", id))
     }
 
+    /// A reduction may sign concurrently with a token transfer, whose callback must survive.
+    pub fn get_pending_exit(&self) -> Option<PendingOperation> {
+        read_extension(b"v3:concurrent_exit").or_else(|| {
+            self.pending
+                .clone()
+                .filter(|p| matches!(p.kind, OperationKind::Reduce))
+        })
+    }
     #[private]
     pub fn on_signature(&mut self, operation_id: U64) -> bool {
+        require!(
+            env::predecessor_account_id() == env::current_account_id(),
+            "ERR_PRIVATE_CALLBACK"
+        );
+        if let Some(op) = read_extension::<PendingOperation>(b"v3:concurrent_exit")
+            .filter(|p| p.id == operation_id.0)
+        {
+            let saved = self.pending.replace(op);
+            let result = self.resolve_signature(operation_id);
+            if let Some(op) = self.pending.take() {
+                write_extension(b"v3:concurrent_exit", &op);
+            } else {
+                env::storage_remove(b"v3:concurrent_exit");
+            }
+            self.pending = saved;
+            result
+        } else {
+            self.resolve_signature(operation_id)
+        }
+    }
+    fn resolve_signature(&mut self, operation_id: U64) -> bool {
         require!(
             env::predecessor_account_id() == env::current_account_id(),
             "ERR_PRIVATE_CALLBACK"
@@ -1142,6 +1184,11 @@ impl Policy {
         }
     }
     fn expire_pending(&mut self) {
+        if read_extension::<PendingOperation>(b"v3:concurrent_exit")
+            .is_some_and(|p| env::block_timestamp_ms() > p.callback_deadline_ms)
+        {
+            env::storage_remove(b"v3:concurrent_exit");
+        }
         if self.pending.as_ref().is_some_and(|p| {
             !matches!(p.kind, OperationKind::SpotWithdrawal)
                 && env::block_timestamp_ms() > p.callback_deadline_ms
@@ -1192,11 +1239,21 @@ impl Policy {
     }
     fn request_order(&mut self, order: OrderParams) -> Promise {
         let keeper = env::predecessor_account_id() == self.keeper;
-        if keeper {
+        if keeper && !order.reduce_only {
             require!(!self.paused, "ERR_PAUSED");
         }
         self.expire_pending();
-        self.assert_idle();
+        if order.reduce_only && self.pending.as_ref().is_some_and(|p| p.keeper) {
+            self.clear_signing_slot();
+        }
+        let concurrent_spot = order.reduce_only
+            && self
+                .pending
+                .as_ref()
+                .is_some_and(|p| matches!(p.kind, OperationKind::SpotWithdrawal));
+        if !concurrent_spot {
+            self.assert_idle();
+        }
         self.assert_signing_resources();
         require!(order.asset_index == self.asset_index, "ERR_MARKET");
         require!(
@@ -1210,21 +1267,27 @@ impl Policy {
         let band = u128::from(self.limits.price_band_bps);
         let (mark, marked_at) = self.active_price();
         let price = if order.reduce_only {
-            let mark = if self.oracle_fresh() {
-                mark
+            let (mark, observed_at) = if self.oracle_fresh() && now() - self.oracle_timestamp <= 60
+            {
+                (mark, marked_at)
+            } else if let Some(hint) = order.reference_price {
+                (hint.0, order.observed_at.expect("ERR_REDUCE_TIMESTAMP").0)
             } else {
-                let hint = order.reference_price.expect("ERR_REDUCE_PRICE").0;
-                self.assert_price_bounds(hint);
-                hint
+                (mark, marked_at)
             };
-            mark.checked_mul(10_000 + band)
-                .expect("ERR_OVERFLOW")
-                .div_ceil(10_000)
+            require!(
+                observed_at <= now() && now() - observed_at <= self.oracle.max_age_seconds.min(60),
+                "ERR_STALE_PRICE"
+            );
+            assert_exit_price(mark);
+            // Round DOWN to the venue tick: execution can never exceed mark + 1%.
+            mark.checked_mul(10_100).expect("ERR_OVERFLOW") / 10_000
         } else {
             require!(order.reference_price.is_none(), "ERR_OPEN_PRICE_OVERRIDE");
+            self.assert_price_bounds(mark);
             mark.checked_mul(10_000 - band).expect("ERR_OVERFLOW") / 10_000
         };
-        let price = quantize_price(price, self.size_decimals, order.reduce_only);
+        let price = quantize_price(price, self.size_decimals, false);
         require!(price > 0, "ERR_PRICE");
         if order.reduce_only {
             require!(
@@ -1280,10 +1343,14 @@ impl Policy {
                 );
             }
         }
-        self.charge_signing(
-            keeper,
-            !keeper && env::predecessor_account_id() != self.owner,
-        );
+        if order.reduce_only {
+            self.charge_exit(
+                keeper,
+                !keeper && env::predecessor_account_id() != self.owner,
+            );
+        } else {
+            self.charge_signing(keeper, false);
+        }
         let nonce = self.next_nonce();
         let payload = SigningPayload {
             action: HlAction::Order {
@@ -1342,9 +1409,10 @@ impl Policy {
         amount: u128,
     ) -> Promise {
         let invalidation = matches!(kind, OperationKind::Invalidation);
-        let keeper = env::predecessor_account_id() == self.keeper && !invalidation;
+        let reduction = matches!(kind, OperationKind::Reduce);
+        let keeper = env::predecessor_account_id() == self.keeper && !invalidation && !reduction;
         require!(
-            invalidation || self.outstanding.len() < 32,
+            invalidation || reduction || self.outstanding.len() < 32,
             "ERR_OUTSTANDING_CAP"
         );
         let user_signed = matches!(
@@ -1352,12 +1420,21 @@ impl Policy {
             OperationKind::EvmWithdrawal | OperationKind::UsdClassTransfer
         );
         let withdrawal = matches!(kind, OperationKind::EvmWithdrawal);
-        if withdrawal
-            && let Some(r) = &mut self.rebalance
-            && let Some(w) = &mut r.withdrawal
-        {
-            w.nonce = U64(payload.nonce);
+        if withdrawal {
+            let mut m = self.margin_state();
+            m.withdrawal.as_mut().expect("ERR_MARGIN_CONFIG").nonce = U64(payload.nonce);
+            self.save_margin(m);
         }
+        let parked_spot = if reduction
+            && self
+                .pending
+                .as_ref()
+                .is_some_and(|p| matches!(p.kind, OperationKind::SpotWithdrawal))
+        {
+            self.pending.take()
+        } else {
+            None
+        };
         let id = self.begin(kind, amount);
         let op = self.pending.as_mut().unwrap();
         op.nonce = payload.nonce;
@@ -1372,6 +1449,7 @@ impl Policy {
             self.last_nonce = payload.nonce;
             if let Some(expiry) = payload
                 .expires_after
+                .filter(|_| !reduction)
                 .or_else(|| user_signed.then_some(payload.nonce + 2 * DAY * 1000 + 1))
             {
                 self.outstanding.push(Authorization {
@@ -1396,6 +1474,10 @@ impl Policy {
                 "withdrawal",
                 near_sdk::serde_json::json!({"id": U64(id), "kind": "withdraw3", "recipient": self.evm_recipient, "amount": U128(amount), "status": "requested"}),
             );
+        }
+        if let Some(spot) = parked_spot {
+            write_extension(b"v3:concurrent_exit", self.pending.as_ref().unwrap());
+            self.pending = Some(spot);
         }
         Promise::new(self.signer_account.clone()).function_call(
             "sign", json_bytes(near_sdk::serde_json::json!({"request": {"payload_v2": {"Ecdsa": hex(&digest)}, "path": self.derivation_path, "domain_id": 0}})),

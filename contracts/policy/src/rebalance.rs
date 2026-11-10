@@ -89,7 +89,10 @@ impl Policy {
     pub fn configure_rebalancing(&mut self, limits: RebalanceLimits) {
         self.assert_owner();
         self.owner_idle();
-        require!(self.rebalance.is_none(), "ERR_ROUTE_IMMUTABLE");
+        require!(
+            self.rebalance.is_none() && self.get_margin().is_none(),
+            "ERR_ROUTE_IMMUTABLE"
+        );
         validate_evm(&limits.strategy_margin_address);
         require!(
             self.network.matches_account(&limits.adapter)
@@ -175,10 +178,11 @@ impl Policy {
             withdrawable_usdc.0 <= equity_usdc.0,
             "ERR_MARGIN_OBSERVATION"
         );
-        let r = self.rebalance.as_mut().expect("ERR_REBALANCE_CONFIG");
+        let mut r = self.margin_state();
         r.usable_margin = equity_usdc;
         r.withdrawable = withdrawable_usdc;
         r.observed_at_ms = observed_at_ms;
+        self.save_margin(r);
         event(
             "margin_observation",
             near_sdk::serde_json::json!({"equity_usdc": equity_usdc, "withdrawable_usdc": withdrawable_usdc, "observed_at_ms": observed_at_ms, "source": "owner_finality_attestation"}),
@@ -356,7 +360,7 @@ impl Policy {
             !receipt_id.is_empty() && receipt_id.len() <= 128,
             "ERR_RECEIPT"
         );
-        let r = self.rebalance.as_ref().expect("ERR_REBALANCE_CONFIG");
+        let mut r = self.margin_state();
         let w = r
             .withdrawal
             .as_ref()
@@ -368,11 +372,19 @@ impl Policy {
                 && fee_usdc.0 <= r.limits.max_fee_usdc.0,
             "ERR_WITHDRAWAL_RECEIPT"
         );
-        self.record_receipt(&receipt_id);
-        let r = self.rebalance.as_mut().unwrap();
-        r.acquisition_budget_usdc.0 = add(r.acquisition_budget_usdc.0, received_usdc.0);
-        r.reentry_required = true;
+        let digest = env::sha256_array(receipt_id.as_bytes());
+        require!(
+            !r.processed_receipts.contains(&digest),
+            "ERR_DUPLICATE_RECEIPT"
+        );
+        require!(r.processed_receipts.len() < 1024, "ERR_RECEIPT_CAPACITY");
+        r.processed_receipts.push(digest);
         r.withdrawal = None;
+        self.save_margin(r);
+        if let Some(r) = &mut self.rebalance {
+            r.acquisition_budget_usdc.0 = add(r.acquisition_budget_usdc.0, received_usdc.0);
+            r.reentry_required = true;
+        }
         if let Some(a) = self
             .outstanding
             .iter_mut()
@@ -389,7 +401,7 @@ impl Policy {
     /// Margin is not refunded: owner must refresh finalized venue equity separately.
     pub fn abandon_margin_withdrawal(&mut self) {
         self.assert_owner();
-        let r = self.rebalance.as_ref().expect("ERR_REBALANCE_CONFIG");
+        let mut r = self.margin_state();
         let w = r.withdrawal.as_ref().expect("ERR_WITHDRAWAL_UNRESOLVED");
         require!(
             self.outstanding.iter().all(|a| a.nonce != w.nonce.0
@@ -397,7 +409,8 @@ impl Policy {
                 || a.expires_after < env::block_timestamp_ms()),
             "ERR_WITHDRAWAL_UNRESOLVED"
         );
-        self.rebalance.as_mut().unwrap().withdrawal = None;
+        r.withdrawal = None;
+        self.save_margin(r);
     }
 
     /// Owner verifies the finalized adapter/venue receipt for this exact fixed route.
@@ -485,17 +498,24 @@ impl Policy {
                 .is_none_or(|r| r.route.is_none() && r.withdrawal.is_none()),
             "ERR_ROUTE_UNRESOLVED"
         );
+        require!(
+            self.get_margin().is_none_or(|m| m.withdrawal.is_none()),
+            "ERR_ROUTE_UNRESOLVED"
+        );
     }
     pub(crate) fn assert_margin_health(&self, short: u128, equity: u128) {
-        let r = self.rebalance.as_ref().expect("ERR_REBALANCE_CONFIG");
+        let r = self.margin_state();
         fresh(r.observed_at_ms.0, 30_000);
-        fresh(self.active_price().1 * 1000, 30_000);
-        let upper = self
-            .active_price()
-            .0
-            .checked_mul(10_000 + u128::from(self.limits.price_band_bps))
-            .expect("ERR_OVERFLOW")
-            .div_ceil(10_000);
+        let upper = if short == 0 {
+            0
+        } else {
+            fresh(self.active_price().1 * 1000, 30_000);
+            self.active_price()
+                .0
+                .checked_mul(10_000 + u128::from(self.limits.price_band_bps))
+                .expect("ERR_OVERFLOW")
+                .div_ceil(10_000)
+        };
         let notional = short
             .checked_mul(upper)
             .expect("ERR_OVERFLOW")
@@ -503,6 +523,7 @@ impl Policy {
         let usable = equity.saturating_sub(r.limits.fee_reserve_usdc.0);
         require!(
             equity >= r.limits.min_residual_equity_usdc.0
+                && equity >= r.limits.fee_reserve_usdc.0
                 && usable >= notional
                 && usable.saturating_sub(notional)
                     >= notional
@@ -514,7 +535,7 @@ impl Policy {
     }
     pub(crate) fn reserve_margin_withdrawal(&mut self, amount: u128) {
         self.assert_route_idle();
-        let r = self.rebalance.as_ref().expect("ERR_REBALANCE_CONFIG");
+        let r = self.margin_state();
         require!(
             amount <= r.limits.per_withdrawal_usdc.0
                 && amount <= r.withdrawable.0
@@ -524,7 +545,7 @@ impl Policy {
         );
         require!(amount <= r.usable_margin.0, "ERR_MARGIN_HEALTH");
         self.assert_margin_health(self.signed_short_size, r.usable_margin.0 - amount);
-        let r = self.rebalance.as_mut().unwrap();
+        let mut r = self.margin_state();
         prune_usage(&mut r.withdrawals);
         r.withdrawals.push((env::block_timestamp_ms(), amount));
         r.withdrawal = Some(MarginWithdrawal {
@@ -533,9 +554,13 @@ impl Policy {
         });
         r.usable_margin.0 -= amount;
         r.withdrawable.0 -= amount;
+        self.save_margin(r);
     }
     pub(crate) fn check_rebalance_increase(&self, total: u128) {
         self.assert_route_idle();
+        if self.get_margin().is_some() {
+            self.assert_margin_health(total, self.margin_state().usable_margin.0);
+        }
         if let Some(r) = &self.rebalance {
             require!(
                 total <= r.initial_inventory.0

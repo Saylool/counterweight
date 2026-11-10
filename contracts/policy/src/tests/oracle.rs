@@ -43,7 +43,7 @@ fn oracle_stale_absent_uncertain_invalid_and_out_of_order_fail_closed() {
         price("500000000", "0", -19, 1000),
         price("500000000", "0", -8, 1002),
         price("500000000", "0", -8, 1),
-        price("800000000", "0", -8, 1000),
+        price("100000000000001", "0", 6, 1000),
     ] {
         callback(result, 1001);
         assert!(!p.on_oracle_price());
@@ -66,14 +66,14 @@ fn oracle_stale_absent_uncertain_invalid_and_out_of_order_fail_closed() {
     p.request_order_signature(order(BASE, false));
 }
 #[test]
-fn bounded_fallback_cannot_ratchet_or_refresh_stale_future_or_owner_override() {
+fn sane_fallback_rejects_scale_errors_stale_future_and_owner_oracle_override() {
     let mut p = policy();
     for px in [4_000_000, 6_000_000, 7_000_000] {
         p.set_keeper_price(U128(px), U64(1000));
     }
     for (px, ts) in [
-        (7_000_001, 1000),
-        (3_999_999, 1000),
+        (1_000_000_000_001, 1000),
+        (9, 1000),
         (5_000_000, 1001),
         (5_000_000, 1),
     ] {
@@ -87,7 +87,7 @@ fn bounded_fallback_cannot_ratchet_or_refresh_stale_future_or_owner_override() {
     at(OWNER, 1001);
     assert!(
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(
-            || p.set_reference_price(U128(7_000_001))
+            || p.set_reference_price(U128(1_000_000_000_001))
         ))
         .is_err()
     );

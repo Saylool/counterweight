@@ -1,0 +1,78 @@
+{
+  "policy": "policy-v3.counterweight-samet.testnet",
+  "capturedAt": "2026-11-10T18:07:37.067Z",
+  "market": {
+    "assetIndex": 54,
+    "szDecimals": 1,
+    "mark": "3.551",
+    "funding": "0.0000125",
+    "capturedAt": "2026-11-10T18:07:37.067Z",
+    "source": "https://api.hyperliquid-testnet.xyz/info",
+    "request": {
+      "type": "metaAndAssetCtxs"
+    }
+  },
+  "derived": {
+    "address": "0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5",
+    "publicKey": "0x049291386cf4ed4a8e0011b19c9ba338397c7ff5f2fded38aac8f2c8c993b69112de24132bd9343b5f927b101a0761dbb9647a25181d728fd61be2ffaafea582df",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277102080,
+    "derivedBlockHeight": 277102080
+  },
+  "artifact": {
+    "sha256": "8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3",
+    "codeHash": "AWkAtDEi2xstvjjpvwHA2t2nMR48mSbBBTZKkmLTPkLi",
+    "bytes": 672309
+  },
+  "init": {
+    "owner": "counterweight-samet.testnet",
+    "keeper": "keeper.counterweight-samet.testnet",
+    "asset_index": 54,
+    "size_decimals": 1,
+    "derivation_path": "counterweight-1",
+    "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+    "signer_account": "v1.signer-prod.testnet",
+    "wnear_account": "wrap.testnet",
+    "network": "Testnet",
+    "oracle": {
+      "account_id": null,
+      "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+      "max_age_seconds": 60,
+      "max_confidence_bps": 100,
+      "min_price": "2840800",
+      "max_price": "4261200"
+    },
+    "limits": {
+      "max_short_size": "5000000000000000000000000",
+      "per_order_notional_cap": "20000000",
+      "per_day_notional_cap": "40000000",
+      "cooldown_seconds": 60,
+      "price_band_bps": 100,
+      "price_max_age_seconds": 60
+    },
+    "heartbeat_timeout_seconds": 3600,
+    "reference_price": "3551000",
+    "signing_limits": {
+      "keeper_per_block": 2,
+      "keeper_per_window": 8,
+      "keeper_outstanding": 8,
+      "owner_per_window": 16,
+      "window_ms": 60000,
+      "max_nonce_ahead_ms": 1000
+    }
+  },
+  "marginLimits": {
+    "per_withdrawal_usdc": "50000000",
+    "daily_withdrawal_usdc": "100000000",
+    "min_residual_equity_usdc": "1000000",
+    "min_headroom_bps": 1000,
+    "fee_reserve_usdc": "100000",
+    "max_fee_usdc": "1000000"
+  },
+  "priceBoundsDelaySeconds": 86400,
+  "exitMaxSlippageBps": 100,
+  "exitSanityMicroUsd": [
+    "10",
+    "1000000000000"
+  ]
+}

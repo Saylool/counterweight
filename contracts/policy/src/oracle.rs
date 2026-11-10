@@ -1,4 +1,4 @@
-//! Optional public Pyth-compatible reads plus an immutable bounded keeper fallback.
+//! Opening bounds are owner time-locked; exits use a separate wide sanity range.
 use super::*;
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug)]
@@ -7,7 +7,7 @@ pub struct OracleConfig {
     pub feed_id: String,
     pub max_age_seconds: u64,
     pub max_confidence_bps: u16,
-    /// Absolute micro-USD bounds apply to oracle AND fallback. No update can ratchet them.
+    /// Absolute micro-USD opening bounds; updates require a 24-hour owner timelock.
     pub min_price: U128,
     pub max_price: U128,
 }
@@ -76,7 +76,7 @@ impl Policy {
         true
     }
     /// Only keeper may supply fresh observations when the public feed is unavailable/stale.
-    /// Fixed init bounds, rather than the previous observation, prevent a price ratchet.
+    /// Cache wide sane marks for exits/health; opens separately enforce time-locked bounds.
     pub fn set_keeper_price(&mut self, price: U128, observed_at: U64) {
         self.assert_keeper();
         require!(!self.oracle_fresh(), "ERR_ORACLE_PRIMARY");
@@ -84,7 +84,7 @@ impl Policy {
             observed_at.0 <= now() && now() - observed_at.0 <= self.oracle.max_age_seconds,
             "ERR_STALE_PRICE"
         );
-        self.assert_price_bounds(price.0);
+        assert_exit_price(price.0);
         require!(
             observed_at.0 >= self.reference_price_timestamp,
             "ERR_PRICE_ROLLBACK"
@@ -133,9 +133,73 @@ impl Policy {
         } else {
             value / 10u128.pow((-shift) as u32)
         };
-        if !(self.oracle.min_price.0..=self.oracle.max_price.0).contains(&price) {
+        if !(10..=1_000_000_000_000).contains(&price) {
             return None;
         }
         Some((price, published))
     }
+}
+
+const BOUNDS_KEY: &[u8] = b"v3:bounds";
+pub const BOUNDS_DELAY_SECONDS: u64 = 86_400;
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug)]
+pub struct PriceBoundsProposal {
+    pub min_price: U128,
+    pub max_price: U128,
+    pub execute_after: U64,
+}
+#[near]
+impl Policy {
+    pub fn get_price_bounds_proposal(&self) -> Option<PriceBoundsProposal> {
+        read_extension(BOUNDS_KEY)
+    }
+    pub fn propose_price_bounds(&mut self, min_price: U128, max_price: U128) {
+        self.assert_owner();
+        require!(
+            min_price.0 >= 10 && min_price.0 < max_price.0 && max_price.0 <= 1_000_000_000_000,
+            "ERR_PRICE_BOUNDS"
+        );
+        let p = PriceBoundsProposal {
+            min_price,
+            max_price,
+            execute_after: U64(now()
+                .checked_add(BOUNDS_DELAY_SECONDS)
+                .expect("ERR_OVERFLOW")),
+        };
+        write_extension(BOUNDS_KEY, &p);
+        event("price_bounds_proposed", near_sdk::serde_json::json!(p));
+    }
+    pub fn cancel_price_bounds(&mut self) {
+        self.assert_owner();
+        env::storage_remove(BOUNDS_KEY);
+        event("price_bounds_cancelled", near_sdk::serde_json::json!({}));
+    }
+    pub fn execute_price_bounds(&mut self) {
+        self.assert_owner();
+        let p = self
+            .get_price_bounds_proposal()
+            .expect("ERR_NO_BOUNDS_PROPOSAL");
+        require!(now() >= p.execute_after.0, "ERR_BOUNDS_TIMELOCK");
+        self.oracle.min_price = p.min_price;
+        self.oracle.max_price = p.max_price;
+        env::storage_remove(BOUNDS_KEY);
+        event("price_bounds_executed", near_sdk::serde_json::json!(p));
+    }
+}
+pub(crate) fn assert_exit_price(price: u128) {
+    require!(
+        (10..=1_000_000_000_000).contains(&price),
+        "ERR_EXIT_PRICE_SANITY"
+    );
+}
+// Versioned extension keys preserve the v2 Borsh layout; v3 is planned as a fresh account.
+pub(crate) fn read_extension<T: near_sdk::borsh::BorshDeserialize>(key: &[u8]) -> Option<T> {
+    env::storage_read(key).map(|bytes| T::try_from_slice(&bytes).expect("ERR_EXTENSION_STATE"))
+}
+pub(crate) fn write_extension<T: near_sdk::borsh::BorshSerialize>(key: &[u8], value: &T) {
+    env::storage_write(
+        key,
+        &near_sdk::borsh::to_vec(value).expect("ERR_EXTENSION_STATE"),
+    );
 }

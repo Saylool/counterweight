@@ -147,7 +147,7 @@ fn rebalance_pending_route_blocks_additions_withdrawals_and_second_route_but_not
         p.request_order_signature(order(BASE, false));
     });
     at(OWNER, 1001);
-    p.emergency_reduce(U128(100 * BASE), U128(5_750_000));
+    p.emergency_reduce(U128(100 * BASE), U128(5_750_000), U64(now()));
     assert!(p.rebalance.as_ref().unwrap().route.is_some());
 }
 #[test]

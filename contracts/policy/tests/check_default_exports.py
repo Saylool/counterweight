@@ -32,6 +32,8 @@ while offset < len(data):
         _, cursor = read_u32(data, cursor)
 
 required = {
+    "get_pending_exit", "get_margin", "configure_margin_withdrawals", "get_price_bounds_proposal",
+    "propose_price_bounds", "cancel_price_bounds", "execute_price_bounds",
     "refresh_oracle", "on_oracle_price", "set_keeper_price",
     "new", "get_state", "set_config", "set_reference_price", "set_paused",
     "heartbeat", "ft_on_transfer", "request_order_signature", "deleverage",

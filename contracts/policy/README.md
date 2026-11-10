@@ -1,4 +1,11 @@
-# Counterweight policy contract — testnet prototype
+# Counterweight policy contract — v3 source, testnet prototype
+
+**V3 is undeployed.** Use `artifacts/counterweight_policy_v3.wasm` and the fresh
+[POLICY-V3 plan](../../docs/POLICY-V3.md). `artifacts/counterweight_policy.wasm`
+is the retained historical v2 binary for existing demo pins. Deployed keyless v2
+has the immutable-band exit bug and cannot be upgraded; its cleanup is printed in
+[V2-CLEANUP](../../docs/V2-CLEANUP.md). The v3 guide supersedes historical behavior
+and in-place deployment instructions below.
 
 Implements DESIGN Part B custody tiers and the owner-approved rebalancing revision
 in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). The previous artifact was deployed on testnet by the team lead; this updated
@@ -22,7 +29,8 @@ local callback deadlines do not revoke disclosed signatures. See the
 
 The exact old production binary is retained in `tests/fixtures/policy-v2-d85b2f91.wasm`.
 The sandbox initializes/deposits under that code before upgrading to the new
-`artifacts/counterweight_policy.wasm`, with no init or migration call.
+`artifacts/counterweight_policy_v3.wasm`, with no init or migration call. This is
+a localhost layout regression test, not a possible upgrade path for keyless v2.
 
 ## Reproduce
 
@@ -41,6 +49,8 @@ cargo test --locked
 cargo test --locked --features test-utils
 cargo build --locked --release --target wasm32-unknown-unknown -p counterweight-policy
 python3 tests/check_default_exports.py target/wasm32-unknown-unknown/release/counterweight_policy.wasm
+cp target/wasm32-unknown-unknown/release/counterweight_policy.wasm artifacts/counterweight_policy_v3.wasm
+shasum -a 256 -c artifacts/SHA256SUMS
 cargo build --locked --release --target wasm32-unknown-unknown --features test-utils --workspace
 TMPDIR=/private/tmp COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS=1 \
   cargo test --locked --features sandbox-tests --test sandbox -- --test-threads=1
@@ -48,7 +58,7 @@ TMPDIR=/private/tmp COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS=1 \
 
 The harness checks that TMPDIR is outside the repository and RPC is loopback.
 near-workspaces alone manages disposable local sandbox keys. Never print keys.
-The default artifact is `artifacts/counterweight_policy.wasm`; test-utils setters
+The v3 default-feature artifact is `artifacts/counterweight_policy_v3.wasm`; test-utils setters
 are absent from it. Sandbox contracts and artifacts must never custody funds.
 
 From the repository root, the key-free SDK generator and scoped relay check are:
@@ -67,7 +77,8 @@ interoperability fixtures and have no controller signing entry point.
 ## Authority, prices, and accounting
 
 Initialization fixes owner, market/precision, signer, wNEAR, derivation path and
-EVM withdrawal recipient, network and oracle/range config. The immutable network selects Testnet/Mainnet account guards and EIP-712 source/domain; mainnet operation is unverified;
+EVM withdrawal recipient, network and oracle feed config. Opening bounds require
+a cancellable 24h owner proposal to change; exits do not wait for it. The immutable network selects Testnet/Mainnet account guards and EIP-712 source/domain; mainnet operation is unverified;
 `.test.near` is enabled solely by test-utils. Verify NEAR metadata before funding:
 read-only venue metadata on 2026-11-10 Istanbul time reported testnet index 54,
 mainnet index 74, `szDecimals=1` ([captured metadata](fixtures/near-market-meta.json)). Historical index 4 / precision 2 tests are mocks.
@@ -79,15 +90,17 @@ supply prices. Signing counts reservations, not fills. Failed malformed/missing
 callbacks retain exposure; a **definite failed signer receipt** releases its
 opening exposure, while keeping turnover/cooldown/nonce charges.
 
-Keeper reductions use the fresh oracle when available; otherwise they require bounded `order.reference_price`; owner
-`emergency_reduce(size, price)` and public `deleverage(price)` also take micro-USD
-fallback marks within immutable init bounds. These buy IOC orders apply the configured band and
-`r=true`, independently of owner price freshness. Reduction size is capped at max(reserved exposure, configured maximum short). Public recovery requests at least the configured maximum
-short size, permitting residual recovery after an understated settlement.
-Prices floor for sells and ceil for buys to the official five-significant-digit
-and `6 - szDecimals` tick rules; integer prices follow the venue exception.
-[Official tick source](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/tick-and-lot-size).
-Liquidity, mark accuracy and a move outside the band can still prevent an IOC fill.
+V3 reductions use a fresh oracle or caller-attested fresh hint with `observed_at` seconds,
+independent of the opening band. Owner `emergency_reduce(size,price,observed_at)` and
+public `deleverage(price,observed_at)` use the same checks. Sanity range is
+10–1,000,000,000,000 micro-USD. Buy reduce-only IOC limits are capped at mark+1%,
+rounded DOWN to the venue tick, even if opening slippage is wider. An unauthenticated
+mark can be false: the 1% guarantee is relative to the reported mark. Venue tick,
+size, liquidity, fee/gas and signer availability remain necessary. Reduction size
+is bounded by max(reserved exposure, configured maximum short). Exit budgets are
+separate from opening/cancel budgets and reductions do not fill the invalidation
+queue; keeper reductions also work while paused. Owner/public can recover residual
+shorts after an understated settlement. See the full trust boundary in POLICY-V3.
 
 `settle_position` is a fresh, expiry-gated **owner position attestation**, never a
 signature-as-fill inference. It releases matching backing without refunding churn.
@@ -101,16 +114,16 @@ their callbacks to prevent double credit.
 
 Fresh nonces are persisted as `max(last_nonce+1, block_timestamp_ms)`. L1 expiry is
 at most 60 seconds; withdraw3 instead has a 60-second local callback deadline and
-is tracked through its two-day nonce replay horizon. At most 32 outstanding
+is tracked through its two-day nonce replay horizon. At most 32 outstanding non-reducing
 authorizations are retained; invalidations still work with a full queue.
 
 SigningLimits defaults: keeper 2/block, 8/rolling-minute, 8 outstanding; owner
 16/rolling-minute (permitted 10–16); public 1/minute; window 60,000ms;
-nonce-ahead drift 1,000ms (permitted 20–1,000). Every keeper **and public**
-authorization additionally costs five units of a cumulative address allowance,
+nonce-ahead drift 1,000ms (permitted 20–1,000). Keeper additions/cancels
+additionally cost five units of a cumulative address allowance,
 default/max 5,000. Owner alone can grant another epoch after verifying actual
-venue capacity. No automatic volume credit or daily reset exists. Owner emergency
-and invalidation capacity is separate. The budget bounds authorizations, not
+venue capacity. No automatic volume credit or daily reset exists. Exit rate counters are separate and do not consume that local epoch allowance.
+Owner invalidation capacity is also separate; venue address limits still apply. The budget bounds authorizations, not
 repeated relaying of public signatures.
 [Venue address budget source](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/rate-limits-and-user-limits).
 
@@ -123,12 +136,13 @@ caller and cumulative address budgets also bound reserve-funded requests. Spot t
 exactly 1 yoctoNEAR and 80 Tgas. Native sweep retains storage stake + 128 KiB future
 state reserve + 1 NEAR, and sends only to the owner.
 
-Pause commits with no deposit/low gas, blocks keeper signing, discards its local
-callback, and queues original-nonce noop invalidations. Emergency/public recovery
+Pause commits with no deposit/low gas, blocks keeper additions/cancels, discards their local
+callbacks, and queues original-nonce noop invalidations. Emergency/public recovery
 also pause and mark keeper nonces. A newer nonce never proves revocation. The
 owner must relay each noop and attest consumption; unpause waits for confirmed
-consumption or expiry. Withdrawals require zero reserved short, configured margin
-limits/observations, and resolution of earlier withdrawals before retry.
+consumption or expiry. Withdrawals require configured margin limits/observations, post-withdrawal stress
+headroom at/above the policy floor, and resolution of earlier withdrawals before retry.
+`configure_margin_withdrawals` configures these without any route adapter.
 
 The shared codec is [packages/hyperliquid/src/signing.ts](../../packages/hyperliquid/src/signing.ts), including canonical noop support. The duplicate relay codec is removed. `relay/noop.test.ts` compares SDK vectors and assembles a real unit-host pause request with the public MPC fixture; it constructs wire bytes only and never relays to a network.
 
@@ -157,7 +171,7 @@ blocks additions and withdrawals. Final owner-attested receipts reconcile actual
 refunds and proportional minimum output, then credit only finalized margin.
 Receipt hashes reject duplicates across route IDs; history is bounded to 1,024.
 
-Margin withdrawals check zero short, fresh finalized equity and venue withdrawal
+Margin withdrawals allow open shorts subject to post-withdrawal health, fresh owner-attested equity and venue withdrawal
 availability, fee reserve, residual equity, owner-attested margin health, per-action/rolling USDC
 limits and minimum H (>=10%). The full withdrawal immediately leaves usable
 margin. A final fixed-recipient receipt checks net+fee against the original amount

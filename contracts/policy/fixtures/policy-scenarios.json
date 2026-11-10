@@ -247,7 +247,7 @@
     "short": "1000000000000000000000000",
     "spot": "100000000000000000000000000",
     "price": "5000000",
-    "equity": "100000000",
+    "equity": "15554999",
     "reserve": "100000",
     "maxShort": "100000000000000000000000000",
     "perOrder": "10100000",
@@ -261,7 +261,7 @@
     "withdrawalCap": "10000000",
     "withdrawalDayCap": "20000000",
     "withdrawalUsed": "0",
-    "name": "withdraw open short"
+    "name": "withdraw open short below minimum headroom"
   },
   {
     "action": "withdraw",

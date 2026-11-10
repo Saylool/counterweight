@@ -1,0 +1,48 @@
+TESTNET ONLY. Prints exact commands; never reads keys or sends NEAR transactions. Plan saved exclusively to docs/evidence/policy-v3-plan.json; retain it for verification (do not overwrite after deployment).
+Derived strategy address: 0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5; signer v1.signer-prod.testnet; path counterweight-1; local derivation cross-checked with signer view.
+Source: POST https://api.hyperliquid-testnet.xyz/info {"type":"metaAndAssetCtxs"} at 2026-11-10T18:07:37.067Z. NEAR mark $3.551, reference 3551000 micro-USD; opening bounds $2.8408–$4.2612 (initially 80–120% of mark; cancellable 24h owner timelock to update).
+Opening fallback: fresh sane keeper observations; opens enforce the opening band at signing. Exits use oracle or caller-attested mark + observed_at (seconds, <=60s old), sanity $0.00001–$1,000,000, independent of opening bounds. Buy reduce-only IOC <= mark +1%, rounded DOWN; never waits for band updates. This bounds slippage against the reported mark, not an independently authenticated market. See docs/POLICY-V3.md.
+Limits: 5 NEAR maximum signed short, $20/order, $40/rolling day, 60s cooldown, 1% IOC price band. Open targets $12 (above $10 venue minimum), never exceeds spot. Fund venue with 50 mock USDC, plus 5 wNEAR spot; no bridge from NEAR is implied.
+Owner UI: unlock and claim faucet with your own wallet at https://app.hyperliquid-testnet.xyz/drip, then Send 50 mock USDC to 0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5 which credits SPOT USDC. Use explicit v3 request_usd_class_transfer and public venue checks; the old lifecycle CLI targets v2. Fixed withdraw3 recipient is 0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a (Arbitrum Sepolia withdrawal, not a HyperCore Send).
+
+1. Expect: Create a FRESH v3 account; do not touch the keyless v2 account.
+near account create-account fund-myself policy-v3.counterweight-samet.testnet '9 NEAR' use-manually-provided-public-key "${POLICY_PUBLIC_KEY:?Set POLICY_PUBLIC_KEY to an already-provisioned public key; never paste a private key}" sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+2. Expect: Check SHA-256 8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3. Atomic deploy+init prevents an uninitialized interval; init permits the temporary policy key to initialize on behalf of the fixed owner.
+test "$(shasum -a 256 contracts/policy/artifacts/counterweight_policy_v3.wasm | cut -d ' ' -f 1)" = '8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3' && near contract deploy policy-v3.counterweight-samet.testnet use-file contracts/policy/artifacts/counterweight_policy_v3.wasm with-init-call new json-args '{"owner":"counterweight-samet.testnet","keeper":"keeper.counterweight-samet.testnet","asset_index":54,"size_decimals":1,"derivation_path":"counterweight-1","evm_recipient":"0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a","signer_account":"v1.signer-prod.testnet","wnear_account":"wrap.testnet","network":"Testnet","oracle":{"account_id":null,"feed_id":"c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750","max_age_seconds":60,"max_confidence_bps":100,"min_price":"2840800","max_price":"4261200"},"limits":{"max_short_size":"5000000000000000000000000","per_order_notional_cap":"20000000","per_day_notional_cap":"40000000","cooldown_seconds":60,"price_band_bps":100,"price_max_age_seconds":60},"heartbeat_timeout_seconds":3600,"reference_price":"3551000","signing_limits":{"keeper_per_block":2,"keeper_per_window":8,"keeper_outstanding":8,"owner_per_window":16,"window_ms":60000,"max_nonce_ahead_ms":1000}}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
+
+3. Expect: Configure fixed-recipient withdrawal controls without any adapter or route.
+near contract call-function as-transaction policy-v3.counterweight-samet.testnet configure_margin_withdrawals json-args '{"limits":{"per_withdrawal_usdc":"50000000","daily_withdrawal_usdc":"100000000","min_residual_equity_usdc":"1000000","min_headroom_bps":1000,"fee_reserve_usdc":"100000","max_fee_usdc":"1000000"}}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+4. Expect: Verify the artifact, fixed identities, public derivation and temporary access key.
+npm run testnet:verify -- --policy=policy-v3.counterweight-samet.testnet --before-key-removal=true --owner-evm=0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a --plan=docs/evidence/policy-v3-plan.json
+
+5. Expect: Register policy on wrap.testnet; registration_only refunds excess. Owner pays storage.
+near contract call-function as-transaction wrap.testnet storage_deposit json-args '{"account_id":"policy-v3.counterweight-samet.testnet","registration_only":true}' prepaid-gas '30 Tgas' attached-deposit '0.01 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+6. Expect: Register owner on wrap.testnet (idempotent).
+near contract call-function as-transaction wrap.testnet storage_deposit json-args '{"account_id":"counterweight-samet.testnet","registration_only":true}' prepaid-gas '30 Tgas' attached-deposit '0.01 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+7. Expect: Wrap 5 testnet NEAR. This is separate from policy native storage/operating balance.
+near contract call-function as-transaction wrap.testnet near_deposit json-args '{}' prepaid-gas '30 Tgas' attached-deposit '5 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+8. Expect: Deposit 5 wNEAR; msg MUST be the empty string. Only owner deposits are accepted.
+near contract call-function as-transaction wrap.testnet ft_transfer_call json-args '{"receiver_id":"policy-v3.counterweight-samet.testnet","amount":"5000000000000000000000000","msg":""}' prepaid-gas '100 Tgas' attached-deposit '1 yoctoNEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+9. Expect: After the new derived address has received 50 mock USDC in SPOT, request an owner same-account 49 USDC spot-to-perps transfer. Verify the public digest/signature and venue result before continuing; do not use the v2 lifecycle relay.
+near contract call-function as-transaction policy-v3.counterweight-samet.testnet request_usd_class_transfer json-args '{"amount":"49000000","to_perp":true}' prepaid-gas '300 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+10. Expect: PLACEHOLDERS: fetch a fresh mark; replace both values with micro-USD and observation seconds (<=60s old). Opening band is enforced when signing an open; the cache itself uses the wide sanity range. This is keeper price authority, not a verified oracle.
+near contract call-function as-transaction policy-v3.counterweight-samet.testnet set_keeper_price json-args '{"price":"REPLACE_FRESH_MARK_MICRO_USD","observed_at":"REPLACE_OBSERVATION_SECONDS"}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as keeper.counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+11. Expect: PLACEHOLDERS: independently verify finalized venue equity/withdrawable micro-USDC and replace all values; timestamp milliseconds <=30s old. Confirm fee cap is 1000000, no short/route/pending withdrawal, then inspect get_margin before freezing keys.
+near contract call-function as-transaction policy-v3.counterweight-samet.testnet observe_margin json-args '{"equity_usdc":"REPLACE_VERIFIED_EQUITY_MICRO_USDC","withdrawable_usdc":"REPLACE_VERIFIED_WITHDRAWABLE_MICRO_USDC","observed_at_ms":"REPLACE_VERIFICATION_MILLISECONDS"}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+12. Expect: READ ONLY. After manual venue funding/class transfer and owner margin observation, inspect state. Use explicit v3 calls; existing lifecycle CLI targets historical v2.
+near contract call-function as-read-only policy-v3.counterweight-samet.testnet get_state json-args '{}' network-config testnet now
+
+13. Expect: IRREVERSIBLE, owner executes only after validating custody, margin and config: delete the sole temporary full-access key. Owner contract calls, including timelocked bounds, remain usable after key deletion.
+near account delete-keys policy-v3.counterweight-samet.testnet public-keys "${POLICY_PUBLIC_KEY:?Set POLICY_PUBLIC_KEY to an already-provisioned public key; never paste a private key}" network-config testnet sign-with-keychain send
+
+14. Expect: Verify zero keys and saved config before any trading.
+npm run testnet:verify -- --policy=policy-v3.counterweight-samet.testnet --owner-evm=0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a --plan=docs/evidence/policy-v3-plan.json

@@ -38,6 +38,14 @@ fn limits() -> Limits {
 }
 fn policy() -> Policy {
     at(OWNER, 1000);
+    for key in [
+        b"v3:margin".as_slice(),
+        b"v3:bounds",
+        b"v3:exit_requests",
+        b"v3:concurrent_exit",
+    ] {
+        env::storage_remove(key);
+    }
     let mut p = Policy::new(
         account(OWNER),
         account(KEEPER),
@@ -65,6 +73,7 @@ fn order(size: u128, reduce_only: bool) -> OrderParams {
         size: U128(size),
         reduce_only,
         reference_price: reduce_only.then_some(U128(5_000_000)),
+        observed_at: reduce_only.then_some(U64(now())),
     }
 }
 fn success(p: &mut Policy, seconds: u64) {
@@ -244,7 +253,7 @@ fn reduce_can_exceed_local_exposure_bound() {
 fn public_deleverage_requires_timeout() {
     let mut p = policy();
     at("stranger.testnet", 1599);
-    p.deleverage(U128(5_000_000));
+    p.deleverage(U128(5_000_000), U64(now()));
 }
 #[test]
 fn heartbeat_keeper_only_and_refreshes() {
@@ -350,7 +359,7 @@ mod signing {
         p.daily_usage = p.limits.per_day_notional_cap.0;
         p.last_increase = Some(5000);
         at(OWNER, 5000);
-        p.emergency_reduce(U128(100 * BASE), U128(5_000_000));
+        p.emergency_reduce(U128(100 * BASE), U128(5_000_000), U64(now()));
         success(&mut p, 5001);
         assert_eq!(p.signed_short_size, 100 * BASE);
         at(OWNER, 5062);
@@ -364,7 +373,7 @@ mod signing {
         p.signed_short_size = BASE;
         p.paused = true;
         at("stranger.testnet", 1600);
-        p.deleverage(U128(5_000_000));
+        p.deleverage(U128(5_000_000), U64(now()));
         let logs = get_logs().join("");
         assert!(logs.contains("\"r\":true"));
         assert!(logs.contains("\"b\":true"));
@@ -374,7 +383,7 @@ mod signing {
     fn duplicate_pending_operation_rejected() {
         let mut p = policy();
         p.request_order_signature(order(BASE, false));
-        p.request_order_signature(order(BASE, true));
+        p.request_order_signature(order(BASE, false));
     }
     #[test]
     fn definite_failed_callback_releases_exposure_without_refunding_churn() {
@@ -515,8 +524,8 @@ fn keeper_block_limit_and_owner_reserved_emergency() {
         p.request_cancel_signature(U64(1));
     });
     at(OWNER, 1000);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
-    assert_eq!(p.owner_requests.len(), 1);
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
+    assert_eq!(p.owner_requests.len(), 0);
     assert_eq!(p.keeper_requests.len(), 1);
 }
 #[test]
@@ -563,7 +572,7 @@ fn emergency_detaches_stuck_signer_and_late_callback_cannot_clear_new_slot() {
     let mut p = policy();
     p.request_order_signature(order(BASE, false));
     at(OWNER, 1001);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
     callback(PromiseResult::Failed, 1002);
     assert!(!p.on_signature(U64(1)));
     assert_eq!(p.pending.as_ref().unwrap().id, 2);
@@ -673,35 +682,38 @@ fn withheld_signature_keeps_pause_incomplete_until_expiry_without_confirmation()
     assert_eq!(p.signed_short_size, BASE);
 }
 #[test]
-fn pause_blocks_all_keeper_signing_but_owner_can_reduce() {
+fn pause_blocks_keeper_additions_and_cancels_but_all_can_reduce() {
     let mut p = policy();
     p.signed_short_size = BASE;
     at(OWNER, 1000);
     p.set_paused(true);
     at(KEEPER, 1000);
+    p.request_order_signature(order(BASE, true));
+    success(&mut p, 1000);
+    at(KEEPER, 1000);
     rejected(|| {
-        p.request_order_signature(order(BASE, true));
+        p.request_order_signature(order(BASE, false));
     });
     rejected(|| {
         p.request_cancel_signature(U64(0));
     });
     at(OWNER, 1000);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
 }
 #[test]
 fn public_rate_limit_cannot_consume_owner_capacity() {
     let mut p = policy();
     p.signed_short_size = BASE;
     at("stranger.testnet", 1600);
-    p.deleverage(U128(5_000_000));
+    p.deleverage(U128(5_000_000), U64(now()));
     success(&mut p, 1601);
     at("another.testnet", 1602);
     rejected(|| {
-        p.deleverage(U128(5_000_000));
+        p.deleverage(U128(5_000_000), U64(now()));
     });
     at(OWNER, 1602);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
-    assert_eq!(p.owner_requests.len(), 1);
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
+    assert_eq!(p.owner_requests.len(), 0);
 }
 #[test]
 fn settlement_releases_partial_and_full_backing_but_never_daily_churn_budget() {
@@ -783,7 +795,7 @@ fn interrupted_invalidation_can_retry_same_nonce() {
     p.set_paused(true);
     assert!(p.outstanding[0].invalidation_requested);
     at(OWNER, 1002);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
     assert!(!p.outstanding[0].invalidation_requested);
     success(&mut p, 1003);
     at(OWNER, 1004);
@@ -791,19 +803,19 @@ fn interrupted_invalidation_can_retry_same_nonce() {
     assert_eq!(request_event()["payload"]["nonce"], 1_000_000);
 }
 #[test]
-fn pause_also_tracks_existing_owner_and_public_l1_authorizations() {
+fn reductions_do_not_consume_invalidation_queue_capacity() {
     let mut p = policy();
     p.signed_short_size = BASE;
     at(OWNER, 1600);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
     success(&mut p, 1601);
     at("stranger.testnet", 1602);
-    p.deleverage(U128(5_000_000));
+    p.deleverage(U128(5_000_000), U64(now()));
     success(&mut p, 1603);
     at(OWNER, 1604);
     p.set_paused(true);
-    assert_eq!(p.outstanding.iter().filter(|a| a.discarded).count(), 2);
-    assert!(!p.pause_complete());
+    assert!(p.outstanding.is_empty());
+    assert!(p.pause_complete());
 }
 #[test]
 fn exhausted_owner_budget_still_commits_local_pause_and_discards_keeper_callback() {
@@ -824,10 +836,10 @@ fn public_cannot_interrupt_owner_emergency_or_invalidation() {
     let mut p = policy();
     p.signed_short_size = BASE;
     at(OWNER, 1600);
-    p.emergency_reduce(U128(BASE), U128(5_000_000));
+    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
     at("stranger.testnet", 1601);
     rejected(|| {
-        p.deleverage(U128(5_000_000));
+        p.deleverage(U128(5_000_000), U64(now()));
     });
     assert_eq!(p.pending.as_ref().unwrap().id, 1);
     at(OWNER, 1602);
@@ -835,7 +847,7 @@ fn public_cannot_interrupt_owner_emergency_or_invalidation() {
     let id = p.pending.as_ref().unwrap().id;
     at("stranger.testnet", 1603);
     rejected(|| {
-        p.deleverage(U128(5_000_000));
+        p.deleverage(U128(5_000_000), U64(now()));
     });
     assert_eq!(p.pending.as_ref().unwrap().id, id);
 }
@@ -864,7 +876,7 @@ fn public_can_preempt_keeper_but_uses_separate_bounded_capacity() {
     p.set_keeper_price(U128(5_000_000), U64(1600));
     p.request_order_signature(order(BASE, false));
     at("stranger.testnet", 1601);
-    p.deleverage(U128(5_000_000));
+    p.deleverage(U128(5_000_000), U64(now()));
     assert!(!p.pending.as_ref().unwrap().keeper);
     assert_eq!(p.keeper_requests.len(), 1);
     assert!(p.owner_requests.is_empty());
@@ -922,3 +934,5 @@ fn oracle_config() -> OracleConfig {
 mod oracle;
 
 mod class_transfer;
+
+mod v3;

@@ -1,0 +1,56 @@
+{
+  "capturedAt": "2026-11-10T18:29:27.201590+00:00",
+  "artifact": {
+    "path": "contracts/policy/artifacts/counterweight_policy_v3.wasm",
+    "sha256": "8d57d6b681ac68fb7e677c8d7b966c8715862a4ffdcbacfad2e4069dc31767f3",
+    "codeHash": "AWkAtDEi2xstvjjpvwHA2t2nMR48mSbBBTZKkmLTPkLi",
+    "bytes": 672309
+  },
+  "policy": "policy-v3.counterweight-samet.testnet",
+  "derivedAddress": "0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5",
+  "deploymentStatus": "undeployed; printed plan only",
+  "unit": {
+    "defaultPassed": 134,
+    "testUtilsPassed": 134,
+    "distinctTests": 134
+  },
+  "sandbox": {
+    "passed": 24,
+    "threads": 2,
+    "network": "disposable localhost mocks only",
+    "timelockMaturity": "native tests use exact clock boundaries; sandbox models maturity with local state patch after testing early execution rejection"
+  },
+  "typescript": {
+    "rootPassed": 464,
+    "rootFiles": 22,
+    "webPassed": 30,
+    "webFiles": 2,
+    "total": 494
+  },
+  "checks": {
+    "typecheck": "passed",
+    "clippyWarningsDenied": "passed",
+    "format": "passed",
+    "requiredProductionExports": 42,
+    "productionRepeatBuild": "byte-for-byte identical",
+    "sha256sums": "both v2 and v3 passed"
+  },
+  "sharedScenarios": {
+    "legacy": 19,
+    "v3PostWithdrawal": 9
+  },
+  "testnetTransactionsSent": 0,
+  "realPrivateKeysUsed": false,
+  "gitMutations": false,
+  "v2Cleanup": {
+    "status": "not executed",
+    "feeCapMicroUsdc": "1",
+    "actualFeeMicroUsdc": "1000000",
+    "retainedNonces": [
+      "1794331472735",
+      "1794331863418"
+    ],
+    "safePruneAfterMs": "1794504663419",
+    "procedure": "docs/V2-CLEANUP.md"
+  }
+}

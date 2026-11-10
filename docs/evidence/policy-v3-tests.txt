@@ -1,0 +1,10 @@
+Policy v3 final validation — local tests and public reads only; no testnet sends.
+Rust default: 134 passed. Rust test-utils: same 134 distinct tests passed.
+Sandbox: 24 passed, 2 threads, 185.23s; localhost mocks/disposable keys only.
+TypeScript: 464 root tests (22 files) + 30 frontend tests (2 files) = 494.
+Typecheck, Clippy --workspace --all-targets --all-features -D warnings, format: passed.
+Default WASM exports: 42 required; no raw-signing/upgrade/test-only methods.
+Shared cross-layer cases: 19 legacy + 9 v3 partial-withdrawal cases.
+Timelock exact 24h boundary: native host; keyless sandbox maturity uses local state patch.
+Production byte-for-byte repeat build + SHA256SUMS checks (v2 and v3): passed.
+V3 is undeployed. V2 cleanup commands printed but not executed.

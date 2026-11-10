@@ -1,6 +1,36 @@
 # Known issues
 
-## Funded keyless v2 is complete; v1 remains a rehearsal
+## V2 has the immutable-band exit bug; v3 is undeployed
+
+**Deployed keyless v2 has the band bug:** when NEAR leaves its fixed
+$2.784560–$4.176840 band, keeper closes and public deleverage can panic
+`ERR_PRICE_BOUNDS`. Deleting its keys made that code unupgradable. Do not describe
+its dead-man exit as available across price regimes. It also rejects withdrawals
+while a short is open and requires the dummy route for flat withdrawals.
+
+The separate [v3 source/artifact and fresh-deploy plan](POLICY-V3.md) remove those
+contract gates, add independent exit rate capacity, adapter-free partial withdrawals
+with post-withdrawal H checks, and cancellable 24h owner opening-bound updates.
+V3 is **not deployed**; these changes do not repair the live v2 account. The v2
+artifact remains pinned for historical demo/code verification; v3 has its own WASM.
+
+V2 cleanup is **pending**, not complete. Its retained nonces are
+`1794331472735` and `1794331863418`; the review's first nonce was incorrect.
+The configured fee cap is 1 micro-USDC versus the actual 1 USDC withdrawal fee,
+so truthful `reconcile_margin_withdrawal` cannot succeed on v2. The printed
+[V2-CLEANUP procedure](V2-CLEANUP.md) waits until after 2026-11-12 17:31:03.419 UTC,
+prunes expired nonces, abandons the reservation without margin credit, and returns
+4 wNEAR to the fixed owner. None of those calls was sent.
+
+V3's exit IOC guarantees at most 1% above its fresh **reported** mark (fees extra),
+rounded down. With no authenticated oracle, callers can lie about price or timestamp;
+there is no 1% guarantee relative to the real market, no absolute lifetime buy-debit
+ceiling, and no guaranteed fill. Price sanity ($0.00001–$1,000,000), venue tick/size,
+short-only direction, freshness and separate rate limits remain enforced. Signer,
+venue, gas and fee availability still matter. See the explicit trust boundary in
+[POLICY-V3](POLICY-V3.md).
+
+## Historical funded keyless v2 smoke test; v1 remains a rehearsal
 
 [Primary lifecycle evidence](evidence/2026-11-10-lifecycle-summary.md) now establishes a supervised funded testnet
 run on `policy-v2.counterweight-samet.testnet`, committed WASM `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`,
@@ -49,7 +79,7 @@ Order proofs expire after 60 seconds; historical transactions cannot be revived.
 
 Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
 no multi-day carry, Intents dry quotes only, no live rebalancing route, and no destination-chain arrival verification.
-The 4 wNEAR spot leg remains directional after the perp close. Price bands and IOC orders can prevent fills;
+The 4 wNEAR spot leg remains directional until the unsent cleanup completes. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
 signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
 
 ## 3. Demo attack semantics and owner boundary
@@ -76,21 +106,23 @@ contract upper-band notional and micro-unit rounding, fee reserve and minimum
 headroom, quantity/notional/cooldown/sale caps. Research sizes have explicit scaled
 caps, rather than claiming to run unchanged under policy-v2's tiny limits. The
 cross-layer TS test invokes real Rust contract methods on identical scenarios.
-Margin withdrawal still requires zero reserved short; reverse rebalancing is disabled
-in replay. Settlement, equity and route finality remain owner-attested.
+The historical TS replay still requires zero reserved short; reverse rebalancing is disabled
+in that replay. V3 contract partial withdrawals use the same post-withdrawal health
+formula, tested against the TS engine; this revision does not rerun or alter replay economics. Settlement, equity and route finality remain owner-attested.
 
 Pyth officially retired NEAR support on 2026-08-26. The init plan has no oracle account,
 and uses the immutable bounded keeper fallback described in [ORACLE](ORACLE.md).
 The optional Pyth-compatible reader is tested against a local mock only, not a
 maintained public NEAR deployment. Stale/absent/uncertain feeds never refresh the
 oracle cache. Fresh oracle readings take precedence; owner fallback cannot override
-them. Fixed fallback bounds cannot ratchet; motion outside them fails closed and
-can prevent fills. The dummy $0.95–$1.05 proof configuration must not be funded.
+them. In deployed v2, fixed fallback bounds cannot ratchet; motion outside them fails closed and
+bricks the exit request itself. V3 permits 24h time-locked owner band updates and
+keeps exits independent of those bounds. The dummy $0.95–$1.05 proof configuration must not be funded.
 
-Keeper/public reductions now have configured price bands and bounded quantities.
+Historical v2 keeper/public reductions have configured price bands and bounded quantities.
 README authority tiers publishes the conservative $1,060.978 lifetime direct buy-debit
 ceiling at the current plan's limits, with fee and owner-replenishment assumptions;
-this is not a total portfolio-loss or liquidation guarantee. Subsidized MPC costs
+this is not a total portfolio-loss or liquidation guarantee and is not a bound for v3. Subsidized MPC costs
 have a separate worst-case 10 NEAR lifetime ceiling at the per-request fee maximum.
 
 Network is now an immutable `Testnet` / `Mainnet` init enum, binding both account

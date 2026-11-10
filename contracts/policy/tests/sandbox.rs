@@ -90,7 +90,15 @@ impl Fixture {
         mut args: Value,
     ) -> Result<near_workspaces::result::ExecutionFinalResult> {
         if matches!(method, "emergency_reduce" | "deleverage") {
-            args["price"] = json!("5750000");
+            if args.get("price").is_none() {
+                args["price"] = json!("5750000");
+            }
+            args["observed_at"] =
+                json!((self.worker.view_block().await?.timestamp() / 1_000_000_000).to_string());
+        }
+        if method == "request_order_signature" && args["order"]["reduce_only"] == true {
+            args["order"]["observed_at"] =
+                json!((self.worker.view_block().await?.timestamp() / 1_000_000_000).to_string());
         }
         Ok(who
             .call(self.contract.id(), method)
@@ -298,14 +306,14 @@ async fn sandbox_short_spot_invariant() -> Result<()> {
     Ok(())
 }
 #[tokio::test]
-async fn sandbox_pause_blocks_keeper_but_allows_owner_emergency() -> Result<()> {
+async fn sandbox_pause_blocks_keeper_additions_but_allows_reductions() -> Result<()> {
     let f = Fixture::new(0).await?;
     f.order(BASE, false).await?.into_result()?;
     f.call(&f.owner, "set_paused", json!({"paused": true}))
         .await?
         .into_result()?;
     rejects(f.order(BASE, false).await?, "ERR_PAUSED");
-    rejects(f.order(BASE, true).await?, "ERR_PAUSED");
+    f.order(BASE, true).await?.into_result()?;
     f.call(
         &f.owner,
         "emergency_reduce",
@@ -1067,7 +1075,7 @@ async fn sandbox_public_oracle_age_confidence_and_absent_fallback() -> Result<()
     );
     // Even a malicious keeper hint cannot replace a fresh oracle close price.
     let result = f.keeper.call(f.contract.id(),"request_order_signature").args_json(json!({"order":{
-        "asset_index":4,"size":BASE.to_string(),"reduce_only":true,"reference_price":"999999999999"
+        "asset_index":4,"size":BASE.to_string(),"reduce_only":true,"reference_price":"999999999999","observed_at":"0"
     }})).deposit(NearToken::from_yoctonear(1)).max_gas().transact().await?.into_result()?;
     assert!(result.logs().iter().any(|l| l.contains("\"p\":\"5.05\"")));
     Ok(())
@@ -1139,7 +1147,7 @@ async fn sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer() -
     let before: Value = contract.view("get_state").await?.json()?;
     assert_eq!(before["spot_balance"], (5 * BASE).to_string());
     named[0]
-        .deploy(&std::fs::read("artifacts/counterweight_policy.wasm")?)
+        .deploy(&std::fs::read("artifacts/counterweight_policy_v3.wasm")?)
         .await?
         .into_result()?;
     let after: Value = contract.view("get_state").await?.json()?;
@@ -1172,5 +1180,156 @@ async fn sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer() -
     assert_eq!(after["owner"], before["owner"]);
     assert_eq!(after["pending"], Value::Null);
     assert!(after["last_nonce"].as_str().unwrap().parse::<u64>()? > 0);
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_v3_keyless_timelock_and_out_of_band_exits() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.call(
+        &f.owner,
+        "propose_price_bounds",
+        json!({"min_price":"40000000","max_price":"60000000"}),
+    )
+    .await?
+    .into_result()?;
+    f.contract
+        .as_account()
+        .batch(f.contract.id())
+        .delete_key(f.contract.as_account().secret_key().public_key())
+        .transact()
+        .await?
+        .into_result()?;
+    assert!(f.contract.view_access_keys().await?.is_empty());
+    rejects(
+        f.call(&f.stranger, "execute_price_bounds", json!({}))
+            .await?,
+        "ERR_CALLER_NOT_OWNER",
+    );
+    rejects(
+        f.call(&f.owner, "execute_price_bounds", json!({})).await?,
+        "ERR_BOUNDS_TIMELOCK",
+    );
+    // Owner and keeper can exit immediately at 10x and 0.1x the original mark.
+    for (caller, mark) in [(&f.owner, "50000000"), (&f.keeper, "500000")] {
+        let result = if caller.id() == f.owner.id() {
+            f.call(
+                caller,
+                "emergency_reduce",
+                json!({"size":BASE.to_string(),"price":mark}),
+            )
+            .await?
+        } else {
+            f.call(caller,"request_order_signature",json!({"order":{"asset_index":4,"size":BASE.to_string(),"reduce_only":true,"reference_price":mark}})).await?
+        };
+        let e = request(&result);
+        verify_request_digest(&e);
+        let o = &e["payload"]["action"]["orders"][0];
+        assert_eq!(o["r"], true);
+        assert!(
+            o["p"].as_str().unwrap().parse::<f64>()? <= mark.parse::<f64>()? / 1e6 * 1.01 + 1e-12
+        );
+        result.into_result()?;
+    }
+    f.call(&f.owner, "cancel_price_bounds", json!({}))
+        .await?
+        .into_result()?;
+    assert!(
+        f.contract
+            .view("get_price_bounds_proposal")
+            .await?
+            .json::<Value>()?
+            .is_null()
+    );
+    f.call(
+        &f.owner,
+        "propose_price_bounds",
+        json!({"min_price":"40000000","max_price":"60000000"}),
+    )
+    .await?
+    .into_result()?;
+    let p: Value = f.contract.view("get_price_bounds_proposal").await?.json()?;
+    let deadline = p["execute_after"].as_str().unwrap().parse::<u64>()?;
+    let current_seconds = f.worker.view_block().await?.timestamp() / 1_000_000_000;
+    assert!(deadline >= current_seconds + 86_390);
+    // Local fixture maturity only: exact 24h boundary is exercised in native tests.
+    // Avoid mining a day of sandbox blocks; no production setter exists.
+    let matured = counterweight_policy::oracle::PriceBoundsProposal {
+        min_price: near_sdk::json_types::U128(40_000_000),
+        max_price: near_sdk::json_types::U128(60_000_000),
+        execute_after: near_sdk::json_types::U64(current_seconds),
+    };
+    f.worker
+        .patch(f.contract.id())
+        .state(b"v3:bounds", &near_sdk::borsh::to_vec(&matured)?)
+        .transact()
+        .await?;
+    f.call(&f.owner, "execute_price_bounds", json!({}))
+        .await?
+        .into_result()?;
+    assert_eq!(f.state().await?["oracle"]["min_price"], "40000000");
+    // Public recovery also ignores the old band, the pause, and keeper epoch budget.
+    let heartbeat = f.state().await?["last_keeper_heartbeat"]
+        .as_str()
+        .unwrap()
+        .parse::<u64>()?;
+    f.advance_past_ms((heartbeat + 600) * 1000).await?;
+    f.call(&f.owner, "set_keeper_address_budget", json!({"weight":"0"}))
+        .await?
+        .into_result()?;
+    let result = f
+        .call(&f.stranger, "deleverage", json!({"price":"500000"}))
+        .await?;
+    assert_eq!(
+        request(&result)["payload"]["action"]["orders"][0]["p"],
+        "0.505"
+    );
+    result.into_result()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_v3_partial_margin_without_route_and_receipt_reconciliation() -> Result<()> {
+    let f = Fixture::new(0).await?;
+    f.order(BASE, false).await?.into_result()?;
+    f.call(&f.owner,"configure_margin_withdrawals",json!({"limits":{
+        "per_withdrawal_usdc":"10000000","daily_withdrawal_usdc":"20000000","min_residual_equity_usdc":"1000000",
+        "min_headroom_bps":1000,"fee_reserve_usdc":"100000","max_fee_usdc":"1000000"
+    }})).await?.into_result()?;
+    let ms = f.worker.view_block().await?.timestamp() / 1_000_000;
+    f.call(&f.owner,"observe_margin",json!({"equity_usdc":"100000000","withdrawable_usdc":"80000000","observed_at_ms":ms.to_string()})).await?.into_result()?;
+    let result = f
+        .call(
+            &f.owner,
+            "request_evm_withdrawal",
+            json!({"recipient":EVM,"amount":"10000000"}),
+        )
+        .await?;
+    let e = request(&result);
+    verify_request_digest(&e);
+    let nonce = e["payload"]["nonce"].as_u64().unwrap();
+    result.into_result()?;
+    assert!(
+        f.contract
+            .view("get_rebalance")
+            .await?
+            .json::<Value>()?
+            .is_null()
+    );
+    let m: Value = f.contract.view("get_margin").await?.json()?;
+    assert_eq!(m["usable_margin"], "90000000");
+    assert_eq!(f.state().await?["signed_short_size"], BASE.to_string());
+    rejects(
+        f.call(
+            &f.owner,
+            "request_evm_withdrawal",
+            json!({"recipient":EVM,"amount":"1000000"}),
+        )
+        .await?,
+        "ERR_WITHDRAWAL_UNRESOLVED",
+    );
+    let ms = f.worker.view_block().await?.timestamp() / 1_000_000;
+    f.call(&f.owner,"reconcile_margin_withdrawal",json!({"nonce":nonce.to_string(),"received_usdc":"9000000","fee_usdc":"1000000","receipt_id":"mock-final-destination-receipt","finalized_at_ms":ms.to_string()})).await?.into_result()?;
+    assert!(f.contract.view("get_margin").await?.json::<Value>()?["withdrawal"].is_null());
     Ok(())
 }
