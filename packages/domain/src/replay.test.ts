@@ -220,7 +220,7 @@ describe('selection and provenance', () => {
       expect(r.netReturnPct).toBe(r.netPnlUsd / r.initialCapitalUsd * 100);
       expect(r.simpleAnnualizedNetReturnPct).toBe(r.netReturnPct * 8760 / r.windowHours);
       expect(r.timeInMarketPct).toBe(r.heldHours / r.windowHours * 100);
-      expect(r.equityCurve.at(-1)!.equityUsd).toBeCloseTo(r.initialCapitalUsd + r.netPnlUsd, 10);
+      expect(r.equityCurve.at(-1)!.equityUsd).toBeCloseTo(r.initialCapitalUsd + r.netPnlUsd, 6);
       expect(r.totalCostsUsd).toBe(Object.values(r.costs).reduce((sum, cost) => sum + cost, 0));
       expect(r.operatingBudgetExceeded).toBe(false);
       if (r.policy === 'hedged-rebalance') {

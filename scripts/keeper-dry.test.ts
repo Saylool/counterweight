@@ -44,7 +44,7 @@ describe('key-free live keeper dry run', () => {
     const result = await keeperDry(fetcher, now);
     expect(result.status).toBe('ready');
     expect(result.market).toMatchObject({ assetIndex: 1, markPrice: 3.5, szDecimals: 1 });
-    expect(result.risk).toMatchObject({ metrics: { headroom: 10.625 }, funding: { complete24h: true } });
+    expect(result.risk).toMatchObject({ metrics: { headroom: 4.65 }, funding: { complete24h: true } });
     expect(result.rebalanceRoute).toMatchObject({ outputUsdc: 35, minOutputUsdc: 34.5 });
     expect(result.wouldSend).toMatchObject({ rebalance: { dry: true, ownerApprovalRequired: true } });
     expect(result.signingRequests).toBe(0); expect(result.transactions).toBe(0);

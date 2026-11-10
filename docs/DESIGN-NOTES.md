@@ -1,3 +1,5 @@
+> Current revision: pricing and replay follow [ORACLE.md](ORACLE.md) and [REPLAY-PROTOCOL.md](REPLAY-PROTOCOL.md). Historical implementation notes below are qualified by those rules.
+
 # Signing requirements for the contract engineer
 
 These are required controller rules. The implementation and remaining external proof boundaries are documented in the 2026-11-10 revision below.
@@ -56,7 +58,7 @@ recipient override, private key, `usdSend`, or `approveAgent` authority is impli
   leverage <= 1 after fees, approved liquidity/impact limits, and owner's total exposure
   limit. Check lower/target/upper H bands and interim H >= 10% notional using fresh
   authenticated balances/marks and conservative fees. Replay's selected 30/60/90% bands
-  and one-hour latency are historical model settings, not production safety guarantees.
+  and one-hour latency are superseded historical model settings, not production safety guarantees.
 - **Asynchronous failure:** use an on-chain state machine for intent, spot/perp fills,
   route dispatch, final receipt, reconciliation and completion/refund. Prevent duplicate
   keeper actions and additions while unresolved. Enforce a maximum temporary NEAR mismatch,
@@ -76,35 +78,21 @@ pause while a signature or route is outstanding. No contract code is changed by 
 The controller implementation is in `contracts/policy/`. The requirements above
 now have owner-approved on-chain sale/receipt and withdrawal state machines;
 external venue balances, fills, and finality remain **owner attestations**, as in
-DESIGN Part B. There is no oracle, light client, solver, atomic paired fill, or
+DESIGN Part B. There is an optional Pyth-compatible oracle reader, but no venue light client, solver, atomic paired fill, or
 automatic public-network execution claim. The configured route adapter is a
 separate, immutable, owner-approved execution trust boundary. A keeper cannot
 approve a sale, change a route, attest a fill/receipt, or invent usable margin.
 
 ### Reduce-only recovery and prices
 
-All buys that close shorts are IOC with `r=true`. They take a caller-supplied
-current micro-dollar mark, bounded to $0.00001–$1,000,000, and apply a 50% buy
-slippage band. They never consult the owner reference mark or its age. Public
-`deleverage(price)` requests the larger of reserved exposure and configured maximum
-short size, so even an understated zero settlement cannot eliminate recovery.
-Owner `emergency_reduce(size, price)` accepts any positive exact-lot size. The
-venue's reduce-only rule prevents an oversized order from creating a long.
-Keepers pass `order.reference_price` only for reductions; opens reject overrides.
-This deliberately trades a wider adverse-execution allowance for recovery during
-owner absence. IOC liquidity and movement beyond that band can still prevent fills;
-callers must obtain a fresh public venue mark. These inputs are not an oracle.
-
-Prices are quantized with integer arithmetic: floor opens, ceil reduce-only buys;
-at most five significant digits and at most `6 - szDecimals` fractional digits,
-with Hyperliquid's exception allowing integer prices of any digit count. The
-initializer rejects `size_decimals > 6`. Source:
-[official tick/lot rules](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/tick-and-lot-size).
-Read-only `POST /info {"type":"meta"}` on 2026-11-10 Istanbul time reported
-NEAR `szDecimals=1`, testnet index **54**, mainnet index **74**
-([captured metadata](../contracts/policy/fixtures/near-market-meta.json)). Metadata must be
-rechecked before initialization; index 4 / precision 2 in old mock tests is
-synthetic, not NEAR metadata. Mainnet initialization remains prohibited.
+All buys that close shorts are IOC with `r=true`, the configured price band,
+and size bounded by max(reserved short, configured maximum). Fresh public oracle
+prices take precedence; caller hints cannot override them. When the oracle is
+absent/stale, caller hints must remain inside immutable absolute init bounds.
+Keeper updates and owner pushes cannot ratchet that range. Public recovery uses
+the same price rules. Recovery can fail to fill when prices leave the range;
+there is no liquidation guarantee. See [ORACLE](ORACLE.md) for retired Pyth NEAR
+availability, staleness/confidence checks and the fallback trust boundary.
 
 ### Revocation, replay, and operating resources
 
@@ -206,12 +194,5 @@ an access key defeats custody regardless of contract tests. Immutable account,
 market, path, and recipient choices intentionally require a fresh controller to
 change; MPC resources and delegated signing allowance are owner-configurable.
 
-The scoped `contracts/policy/relay/signing.ts` supports noop without changing files
-outside the authorized edit scope. Policy request consumers must use this module
-for invalidations; the unchanged `packages/hyperliquid/src/signing.ts` still rejects
-noop. Its test assembles an actual unit-host pause request and the captured public
-MPC response, and compares four official SDK noop vectors. Signature callbacks
-accept flat/nested MPC schemas and reject zero/out-of-range/high-s scalars. Full
-curve validation, recovery, and binding to the derived signer address remain the
-relayer's responsibility; this cheap Low hardening is not a full cryptographic
-signature-verification claim.
+The shared `packages/hyperliquid/src/signing.ts` supports canonical noop actions.
+The duplicate relay codec is removed. SDK noop vectors cover both networks and expiry.

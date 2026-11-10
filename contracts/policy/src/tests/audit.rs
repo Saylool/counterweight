@@ -161,6 +161,8 @@ fn audit_rally_closes_and_price_precision_matrix() {
         999_999_999_999,
     ] {
         let mut p = policy();
+        p.oracle.min_price = U128(10);
+        p.oracle.max_price = U128(1_000_000_000_000); // precision test explicitly spans full configured range
         p.size_decimals = 1;
         p.reference_price = 5_123_000;
         p.reference_price_timestamp = 1;
@@ -280,6 +282,8 @@ fn audit_initializer_and_resource_guards() {
                 600,
                 U128(5_000_000),
                 None,
+                oracle_config(),
+                Network::Testnet,
             )
         });
         assert!(format!("{:?}", result.err().unwrap().downcast_ref::<String>()).contains(expected));
@@ -302,6 +306,8 @@ fn audit_initializer_and_resource_guards() {
                 600,
                 U128(5_000_000),
                 None,
+                oracle_config(),
+                Network::Testnet,
             );
         });
     }
@@ -445,6 +451,8 @@ fn audit_limits_evm_self_authority_and_spot_resources() {
             600,
             U128(5_000_000),
             None,
+            oracle_config(),
+            Network::Testnet,
         );
     });
     let mut p = policy();

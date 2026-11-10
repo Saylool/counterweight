@@ -61,7 +61,8 @@ impl Fixture {
             "owner": owner.id(), "keeper": keeper.id(), "asset_index": 4, "size_decimals": 2,
             "derivation_path": "counterweight-1", "evm_recipient": EVM, "signer_account": signer.id(),
             "wnear_account": signer.id(), "limits": limits(cooldown), "heartbeat_timeout_seconds": 600,
-            "reference_price": "5000000", "signing_limits": signing_limits
+            "network":"Testnet", "reference_price": "5000000", "signing_limits": signing_limits,
+            "oracle": {"account_id": signer.id(), "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750", "max_age_seconds":300,"max_confidence_bps":100,"min_price":"4000000","max_price":"7000000"}
         })).transact().await?.into_result()?;
         owner
             .call(signer.id(), "deposit_to")
@@ -394,7 +395,7 @@ fn request(result: &near_workspaces::result::ExecutionFinalResult) -> Value {
 fn verify_request_digest(r: &Value) {
     near_sdk::testing_env!(near_sdk::test_utils::VMContextBuilder::new().build());
     let payload: SigningPayload = near_sdk::serde_json::from_value(r["payload"].clone()).unwrap();
-    let digest = hl_digest::digest(&payload).unwrap();
+    let digest = hl_digest::digest(&payload, false).unwrap();
     let encoded: String = digest.iter().map(|b| format!("{b:02x}")).collect();
     assert_eq!(r["digest"], encoded);
     assert_eq!(r["digest_implementation"], hl_digest::IMPLEMENTATION);
@@ -611,6 +612,16 @@ async fn sandbox_settlement_releases_backing_and_opening_capacity_after_expiry()
     .into_result()?;
     assert_eq!(f.state().await?["signed_short_size"], "0");
     assert_eq!(f.state().await?["daily_usage"], "5050000");
+    // Time advancement may exceed the new price-age limit. Keeper refreshes the
+    // immutable bounded fallback; settlement itself is not a price observation.
+    let observed_seconds = f.worker.view_block().await?.timestamp() / 1_000_000_000;
+    f.call(
+        &f.keeper,
+        "set_keeper_price",
+        json!({"price":"5000000", "observed_at":observed_seconds.to_string()}),
+    )
+    .await?
+    .into_result()?;
     f.order(BASE, false).await?.into_result()?;
     assert_eq!(f.state().await?["signed_short_size"], BASE.to_string());
     assert_eq!(f.state().await?["lifetime_opened"], (2 * BASE).to_string());
@@ -1003,5 +1014,61 @@ async fn sandbox_function_call_keeper_uses_contract_fee_reserve() -> Result<()> 
         "ERR_MPC_FEE",
     );
     assert_eq!(f.state().await?, before_state);
+    Ok(())
+}
+
+#[tokio::test]
+async fn sandbox_public_oracle_age_confidence_and_absent_fallback() -> Result<()> {
+    let f = Fixture::new(60).await?;
+    // Default mock returns null. No price or timestamp is changed on an absent response.
+    let before = f.state().await?;
+    f.call(&f.stranger, "refresh_oracle", json!({}))
+        .await?
+        .into_result()?;
+    assert_eq!(f.state().await?["oracle_timestamp"], "0");
+    for mode in [10, 11] {
+        // stale and confidence wider than 1%
+        f.owner
+            .call(f.signer.id(), "set_mode")
+            .args_json(json!({"mode":mode}))
+            .transact()
+            .await?
+            .into_result()?;
+        f.call(&f.stranger, "refresh_oracle", json!({}))
+            .await?
+            .into_result()?;
+        assert_eq!(f.state().await?["oracle_timestamp"], "0");
+    }
+    f.owner
+        .call(f.signer.id(), "set_mode")
+        .args_json(json!({"mode":9}))
+        .transact()
+        .await?
+        .into_result()?;
+    f.call(&f.stranger, "refresh_oracle", json!({}))
+        .await?
+        .into_result()?;
+    let state = f.state().await?;
+    assert_eq!(state["oracle_price"], "5000000");
+    assert_ne!(state["oracle_timestamp"], "0");
+    assert_eq!(
+        state["reference_price_timestamp"],
+        before["reference_price_timestamp"]
+    );
+    assert!(
+        f.call(&f.owner, "set_reference_price", json!({"price":"5000000"}))
+            .await?
+            .is_failure()
+    );
+    assert!(
+        f.call(&f.stranger, "on_oracle_price", json!({}))
+            .await?
+            .is_failure()
+    );
+    // Even a malicious keeper hint cannot replace a fresh oracle close price.
+    let result = f.keeper.call(f.contract.id(),"request_order_signature").args_json(json!({"order":{
+        "asset_index":4,"size":BASE.to_string(),"reduce_only":true,"reference_price":"999999999999"
+    }})).deposit(NearToken::from_yoctonear(1)).max_gas().transact().await?.into_result()?;
+    assert!(result.logs().iter().any(|l| l.contains("\"p\":\"5.05\"")));
     Ok(())
 }

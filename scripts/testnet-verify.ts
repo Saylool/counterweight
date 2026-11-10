@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, nearMarketIndex, testnetMeta, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
-import { committedWasm, KEEPER, LIMITS, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
+import { committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
 
 export const policyStateSchema = z.object({ owner: z.literal(OWNER), keeper: z.literal(KEEPER), coin: z.literal('NEAR'),
   signer_account: z.literal(TESTNET_SIGNER), wnear_account: z.literal('wrap.testnet'), near_recipient: z.literal(OWNER),
@@ -23,6 +23,7 @@ export function checkKeys(value: unknown, beforeRemoval = false) {
 export function planConfigMatches(state: z.infer<typeof policyStateSchema>) {
   return Object.entries(LIMITS).every(([key, value]) => state.limits[key as keyof typeof LIMITS] === value)
     && Object.entries(SIGNING_LIMITS).every(([key, value]) => state.signing_limits[key] === value)
+    && state.network === 'Testnet' && Object.entries(ORACLE).every(([k,v]) => (state.oracle as Record<string, unknown> | undefined)?.[k] === v)
     && state.mpc_fee === '1' && state.signer_gas_tgas === 230 && state.callback_gas_tgas === 30
     && state.heartbeat_timeout_seconds === 3600 && state.keeper_weight_limit === '5000';
 }

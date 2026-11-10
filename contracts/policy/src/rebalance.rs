@@ -92,7 +92,7 @@ impl Policy {
         require!(self.rebalance.is_none(), "ERR_ROUTE_IMMUTABLE");
         validate_evm(&limits.strategy_margin_address);
         require!(
-            is_test_account(&limits.adapter)
+            self.network.matches_account(&limits.adapter)
                 && limits.adapter != env::current_account_id()
                 && limits.adapter != self.owner
                 && limits.adapter != self.keeper,
@@ -124,7 +124,7 @@ impl Policy {
             limits.original_target_usdc.0
                 <= self
                     .spot_balance
-                    .checked_mul(self.reference_price)
+                    .checked_mul(self.active_price().0)
                     .expect("ERR_OVERFLOW")
                     / BASE,
             "ERR_ORIGINAL_TARGET"
@@ -202,7 +202,7 @@ impl Policy {
         let r = self.rebalance.as_ref().expect("ERR_REBALANCE_CONFIG");
         let l = &r.limits;
         fresh(quote.quoted_at_ms.0, l.quote_age_ms);
-        fresh(self.reference_price_timestamp * 1000, l.quote_age_ms);
+        fresh(self.active_price().1 * 1000, l.quote_age_ms);
         require!(
             quote.deadline_ms.0 > ms
                 && quote.deadline_ms.0 <= quote.quoted_at_ms.0 + l.quote_age_ms,
@@ -229,7 +229,7 @@ impl Policy {
         let gross = quote
             .near_amount
             .0
-            .checked_mul(self.reference_price)
+            .checked_mul(self.active_price().0)
             .expect("ERR_OVERFLOW")
             .div_ceil(BASE);
         let minimum = gross
@@ -442,7 +442,7 @@ impl Policy {
             .expect("ERR_OVERFLOW")
             .div_ceil(route.quote.near_amount.0);
         let max_out = sold
-            .checked_mul(self.reference_price)
+            .checked_mul(self.active_price().0)
             .expect("ERR_OVERFLOW")
             .div_ceil(BASE)
             .checked_mul(2)
@@ -486,12 +486,13 @@ impl Policy {
             "ERR_ROUTE_UNRESOLVED"
         );
     }
-    fn assert_margin_health(&self, short: u128, equity: u128) {
+    pub(crate) fn assert_margin_health(&self, short: u128, equity: u128) {
         let r = self.rebalance.as_ref().expect("ERR_REBALANCE_CONFIG");
         fresh(r.observed_at_ms.0, 30_000);
-        fresh(self.reference_price_timestamp * 1000, 30_000);
+        fresh(self.active_price().1 * 1000, 30_000);
         let upper = self
-            .reference_price
+            .active_price()
+            .0
             .checked_mul(10_000 + u128::from(self.limits.price_band_bps))
             .expect("ERR_OVERFLOW")
             .div_ceil(10_000);
@@ -540,7 +541,8 @@ impl Policy {
                 total <= r.initial_inventory.0
                     && total
                         .checked_mul(
-                            self.reference_price
+                            self.active_price()
+                                .0
                                 .checked_mul(10_000 + u128::from(self.limits.price_band_bps))
                                 .expect("ERR_OVERFLOW")
                                 .div_ceil(10_000)
@@ -560,7 +562,8 @@ impl Policy {
             if r.reentry_required {
                 let size = total.saturating_sub(self.signed_short_size);
                 let upper = self
-                    .reference_price
+                    .active_price()
+                    .0
                     .checked_mul(10_000 + u128::from(self.limits.price_band_bps))
                     .expect("ERR_OVERFLOW")
                     .div_ceil(10_000);

@@ -52,7 +52,7 @@ describe('predeclared re-entry and transparent baselines', () => {
     const second = result.events.filter(e => e.type === 'open')[1]!;
     expect(second.time).toBe(50 * HOUR_MS);
     expect(second.shortNotional).toBeLessThan(0.9 * 2251);
-    expect(second.shortNotional).toBeGreaterThan(2000);
+    expect(second.shortNotional).toBeCloseTo(1856.92, 2); // resized to conservative H >= 20% of upper notional
     expect(result.entries).toBe(2);
     expect(result.entryBlockCounts['leverage-exceeded']).toBeUndefined();
   });

@@ -11,7 +11,7 @@ function input(overrides: Partial<RiskInput> = {}): RiskInput {
 describe('real NEAR maintenance and stress arithmetic', () => {
   it.each([[0, 0], [25, 1.25], [20_000_000, 1_000_000], [20_000_001, 1_000_000.1], [40_000_000, 3_000_000]])('MM(%s) = %s', (n, expected) => expect(maintenanceMargin(n)).toBeCloseTo(expected, 8));
   it('uses venue equity for leverage and reproduces design demo headroom', () => {
-    expect(stressMetrics({ shortNotional: 25, venueEquity: 30 })).toEqual({ leverage: 25 / 30, reserve: 5, stressedMaintenance: 1.875, headroom: 10.625 });
+    expect(stressMetrics({ shortNotional: 25, venueEquity: 30 })).toEqual({ leverage: 25 / 30, reserve: 0.1, stressedMaintenance: 1.875, headroom: 4.65 });
   });
   it('computes maintenance in the stressed tier across $20m', () => {
     expect(stressMetrics({ shortNotional: 20_000_000, venueEquity: 30_000_000 }).stressedMaintenance).toBe(2_000_000);
@@ -74,7 +74,7 @@ describe('entry gates', () => {
     expect(evaluateRisk(x).entryBlocks).toContain('nonpositive-funding');
   });
   it('allows exact stale-age, depth-impact, notional and leverage boundaries', () => {
-    expect(evaluateRisk(input({ observedAt: now - 90_000, depth: { availableNotional: 25, impactBps: 25 }, venueEquity: 25 })).entryBlocks).toEqual([]);
+    expect(evaluateRisk(input({ observedAt: now - 90_000, depth: { availableNotional: 25, impactBps: 25 }, venueEquity: 27.875 })).entryBlocks).toEqual([]);
     expect(evaluateRisk(input({ shortNotional: 10 })).entryBlocks).toEqual([]);
   });
   it('positive trailing24h sum permits isolated negative hours', () => {
@@ -104,10 +104,10 @@ describe('entry gates', () => {
 });
 describe('exits, reconciliation and persistent ADL halt', () => {
   it('H strictly below 10% N proposes full reduce-only unwind', () => {
-    const r = evaluateRisk(input({ intent: 'monitor', venueEquity: 21.874999 }));
+    const r = evaluateRisk(input({ intent: 'monitor', venueEquity: 27.874999 }));
     expect(r.proposals).toContainEqual({ type: 'full-unwind', reduceOnly: true, fraction: 1, reason: 'stress-headroom', requiresSpotApproval: true });
   });
-  it('H exactly 10% N does not force unwind', () => expect(evaluateRisk(input({ intent: 'monitor', venueEquity: 21.875 })).proposals).toEqual([]));
+  it('H exactly 10% N does not force unwind', () => expect(evaluateRisk(input({ intent: 'monitor', venueEquity: 27.875 })).proposals).toEqual([]));
   it.each([0, 1, 5, 6, 7, 24])('%s negative hours use exact six-hour threshold', negatives => {
     const x = input({ intent: 'monitor' });
     for (let i = 0; i < negatives; i++) x.funding[23 - i]!.rate = -0.0001;

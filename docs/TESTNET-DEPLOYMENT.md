@@ -14,10 +14,10 @@ there is no final keyless proof yet. Keeper signature request
 `5ThwVx4mRcfAKBWCqWEcF2kUqMuUsqAL887yVtbqzaP9` emitted a signature but is now
 expired. A fresh keeper request is required; no script can extend its expiry.
 
-The rebuilt default artifact is **588,218 bytes**, SHA-256:
+The rebuilt default artifact is **627,961 bytes**, SHA-256:
 
 ```text
-e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a
+d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1
 ```
 
 It adds bounded reserve-funded MPC signing. It has **not** been deployed. The next
@@ -86,7 +86,7 @@ intended keeper methods, with a sufficient gas allowance and **zero deposit**.
 Provisioning/removing keeper keys is a separate lead-managed operation; the plan
 does not rotate existing keys.
 
-Policy creation funds **9 NEAR**, covering roughly 5.88 NEAR WASM storage,
+Policy creation funds **9 NEAR**, covering roughly 6.28 NEAR WASM storage,
 1.31 NEAR bounded state-growth headroom and 1 NEAR operating reserve, plus initial
 state. Ensure the owner has 9 NEAR plus gas **available now**; the original account's
 funding is already spent. Keeper gas uses its existing funding. Signing subsidy
@@ -167,3 +167,32 @@ response is rejected. Exact input and positive minimum/output bounds are checked
 Captured public results: [quote JSON](evidence/2026-11-10-oneclick-dry-quote.json),
 [testnet preflight](evidence/2026-11-10-testnet-preflight.json),
 [printed plan](evidence/2026-11-10-testnet-plan.txt). Quotes expire and amounts change.
+
+## policy-v2 initializer revision
+
+The new ABI adds **`network`** and **`oracle`**; all previous init arguments remain.
+The exact cancellation-only values printed by `npm run testnet:plan` are:
+
+```json
+{
+  "network": "Testnet",
+  "oracle": {
+    "account_id": null,
+    "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+    "max_age_seconds": 60,
+    "max_confidence_bps": 100,
+    "min_price": "950000",
+    "max_price": "1050000"
+  }
+}
+```
+
+Pyth NEAR is retired; see [official verification and fallback rules](ORACLE.md).
+The range and oracle identity are immutable and apply even to oracle returns.
+Keeper function-call permissions should include `set_keeper_price` when bounded
+fallback is intended; anyone may call `refresh_oracle` when an oracle is configured.
+The `$1` dummy reference and fixed proof range permit cancellation evidence only;
+do not fund this controller. A funded strategy needs a separately reviewed price
+range and public price source. This plan was updated locally, not executed.
+The contract supports selecting the Mainnet domain, but this plan, recipient probe,
+relay and deployment evidence remain testnet-specific. Mainnet operation is unverified.

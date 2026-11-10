@@ -19,7 +19,7 @@ export type ReplayPlan = ReturnType<typeof prepareLocalReplay>;
 export function replayRisk(data: MarketDataset, plan: ReplayPlan, hourIndex: number, quantity: number, cash: number) {
   const bar = plan.bars[hourIndex]!;
   const venueEquity = cash + quantity * (plan.anchor.perp.close - bar.perp.close);
-  const risk = evaluateRisk({ intent: 'monitor', shortNotional: quantity * bar.perp.close, venueEquity,
+  const risk = evaluateRisk({ intent: 'monitor', shortNotional: quantity * bar.perp.close, venueEquity, shortQuantityNear: quantity, referencePriceUsd: bar.perp.close,
     now: bar.end, observedAt: bar.end, maxDataAgeMs: HOUR_MS, unresolvedOrders: 0, reconciled: true,
     depth: { availableNotional: quantity * bar.perp.close, impactBps: 5 },
     funding: data.bars.filter(b => b.end <= bar.end && b.end > bar.end - 24 * HOUR_MS).map(b => ({ time: b.end, rate: b.fundingRate })),

@@ -2,7 +2,7 @@ import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, nearMarketIndex, testnetMeta, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
 import { shellQuote } from './proof-plan.js';
-import { committedWasm, KEEPER, LIMITS, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, PROBE_ADDRESS, publicCli, publicKey, SIGNING_LIMITS, testnetAccount, WASM } from './testnet-common.js';
+import { committedWasm, KEEPER, LIMITS, ORACLE, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, PROBE_ADDRESS, publicCli, publicKey, SIGNING_LIMITS, testnetAccount, WASM } from './testnet-common.js';
 
 export function initialization(assetIndex: number, decimals: number, ownerEvm: string) {
   z.number().int().nonnegative().parse(assetIndex);
@@ -10,7 +10,7 @@ export function initialization(assetIndex: number, decimals: number, ownerEvm: s
   z.string().regex(/^0x[0-9a-fA-F]{40}$/).refine(a => !/^0x0{40}$/.test(a)).parse(ownerEvm);
   return { owner: OWNER, keeper: KEEPER, asset_index: assetIndex, size_decimals: decimals, derivation_path: PATH,
     evm_recipient: ownerEvm.toLowerCase(), signer_account: TESTNET_SIGNER, wnear_account: 'wrap.testnet',
-    limits: LIMITS, heartbeat_timeout_seconds: 3600, reference_price: '1000000', signing_limits: SIGNING_LIMITS };
+    network: 'Testnet', oracle: ORACLE, limits: LIMITS, heartbeat_timeout_seconds: 3600, reference_price: '1000000', signing_limits: SIGNING_LIMITS };
 }
 const suffix = 'network-config testnet sign-with-keychain send';
 export function callCommand(method: string, args: unknown, caller: string, gas = '30 Tgas', deposit = '0 NEAR', policy = POLICY) {
@@ -22,7 +22,7 @@ export function deploymentSteps(init: ReturnType<typeof initialization>, sha256:
   const pk = policyKey ? shellQuote(publicKey(policyKey)) : '"${POLICY_PUBLIC_KEY:?Set POLICY_PUBLIC_KEY to the public key already provisioned in the policy account keychain}"';
   if (keeperKey) publicKey(keeperKey);
   return [
-    { expect: 'Policy account created with 9 testnet NEAR (storage + 128 KiB growth + 1 NEAR operating reserve) and one full-access public key. WASM storage alone costs about 5.88 NEAR.',
+    { expect: 'Policy account created with 9 testnet NEAR (storage + 128 KiB growth + 1 NEAR operating reserve) and one full-access public key. WASM storage alone costs about 6.28 NEAR.',
       command: `near account create-account fund-myself ${policy} '9 NEAR' use-manually-provided-public-key ${pk} sign-as ${OWNER} ${suffix}` },
     { expect: 'Reuse the existing keeper account. Inspect its public account summary; do not recreate it. Zero-deposit signing supports a function-call key restricted to the new policy.',
       command: `near account view-account-summary ${KEEPER} network-config testnet now` },
@@ -53,7 +53,7 @@ export async function testnetPlan(argv: string[]) {
   console.log('TESTNET ONLY. Prints commands; never signs, sends NEAR transactions, or accesses keys. Run from repository root.');
   console.log('Public-key placeholders require owner-managed keychain entries for EACH subaccount. Set POLICY_PUBLIC_KEY to the fresh policy public key only; reuse the existing keeper; this tool does not generate/import keys.');
   console.log('Recipient override: npm run testnet:plan -- --owner-evm=0x... (REPLACE with your fixed owner withdrawal address).');
-  console.log(`Testnet-only default ${PROBE_ADDRESS} is the proven owner-derived probe address, used solely as a recognizable no-funds withdrawal placeholder. Never fund that probe address. Mainnet is unsupported.`);
+  console.log(`Testnet-only default ${PROBE_ADDRESS} is the proven owner-derived probe address, used solely as a recognizable no-funds withdrawal placeholder. Never fund that probe address. The contract has an immutable network enum; this plan and tooling support only testnet. Pyth NEAR is retired: oracle account is null; keeper/owner fallback stays in the immutable $0.95–$1.05 proof range. Never fund this dummy-price policy.`);
   console.log(`Policy-derived strategy address: ${derived.address}; path ${PATH}; NEAR testnet asset ${index}, szDecimals ${decimals}.`);
   console.log(`WASM verified: ${artifact.sha256} (${artifact.bytes} bytes); funding 9 NEAR to the fresh policy; reuse existing keeper funding. Ensure the owner has 9 NEAR plus gas available (prior deployment funding is already spent). Limits: 1 NEAR maximum short, $10/order, $20/rolling day, 60s cooldown, 1% open band. No spot means no opens.`);
   console.log('Run init immediately after deployment: the uninitialized contract is public. If init/config preflight fails, retain the temporary key and stop; never remove it or fund the strategy.');

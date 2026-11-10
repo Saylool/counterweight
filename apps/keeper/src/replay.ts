@@ -6,12 +6,13 @@ import type { MarketDataset, MarketHour } from './market.js';
 import { COSTS } from './costs.js';
 export { COSTS } from './costs.js';
 import { simulateRebalance, survivedMoves } from './rebalance.js';
-import { RebalanceRuleSchema } from '@counterweight/domain';
+import { RebalanceRuleSchema, policyDecision, policyUpperNotional } from '@counterweight/domain';
 
 type Funding = Zod.infer<typeof FundingObservationSchema>;
 const ConfigSchema = z.object({ shortUsd: z.number().finite().min(10).max(1e9), marginUsd: z.number().finite().positive().max(1e10),
   operatingUsd: z.number().finite().nonnegative().max(1e10), execution: z.enum(['taker', 'maker-entry']).default('taker'),
   policy: z.enum(['original', 'reentry', 'always-hedged', 'spot-holder', 'hedged-rebalance']).default('original'),
+  policyLimits: z.object({ perOrderUsd: z.number().positive(), perDayUsd: z.number().positive(), maxShortNear: z.number().positive(), cooldownSeconds: z.number().nonnegative(), perSaleNear: z.number().positive(), dailySaleNear: z.number().positive() }).strict().optional(),
   carryRule: CarryRuleSchema.optional(), rebalanceRule: RebalanceRuleSchema.optional(),
   forceInitial: z.boolean().default(false), reenter: z.boolean().default(true), szDecimals: z.number().int().min(0).max(8).default(1),
   preExistingEntry: z.object({ spotPrice: z.number().finite().positive(), perpPrice: z.number().finite().positive() }).strict().optional() }).strict();
@@ -46,8 +47,8 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
   const venueCash = () => marginCapital + perpPnl + fundingPnl - costs.perpFees - costs.perpSlippage;
   let minMarkedVenueEquity: number | null = null;
   let history: Funding[] = bars.filter(b => b.end <= start).slice(-24).map(b => ({ time: b.end, rate: b.fundingRate }));
-  function risk(n: number, e: number, now: number, intent: 'enter' | 'monitor') {
-    return evaluateRisk({ shortNotional: n, venueEquity: e, now, observedAt: now, maxDataAgeMs: 90_000,
+  function risk(n: number, e: number, now: number, intent: 'enter' | 'monitor', quantity: number, price: number) {
+    return evaluateRisk({ shortNotional: n, venueEquity: e, now, shortQuantityNear: quantity, referencePriceUsd: price, observedAt: now, maxDataAgeMs: 90_000,
       intent, unresolvedOrders: 0, reconciled: true, depth: { availableNotional: n, impactBps: 5 },
       funding: history, state: { entryHalted: false }, adl: false, unexpectedReductionQuantity: 0 });
   }
@@ -87,18 +88,20 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
       const perpPrice = !entered && config.forceInitial ? config.preExistingEntry?.perpPrice ?? bar.perp.open : bar.perp.open;
       const entryPerpRate = (config.execution === 'taker' ? COSTS.perpTaker : COSTS.perpMaker) + COSTS.perpSlippage;
       const collateralCap = config.carryRule && config.policy === 'reentry'
-        ? Math.max(0, config.carryRule.entryLeverageCap * venueCash() / (1 + config.carryRule.entryLeverageCap * entryPerpRate)) : Infinity;
+        ? Math.max(0, Math.min(config.carryRule.entryLeverageCap * venueCash() / (1 + config.carryRule.entryLeverageCap * entryPerpRate), (venueCash() - 0.1) / (1.01 * (1 + config.carryRule.entryHeadroomFraction) + entryPerpRate))) : Infinity;
       const quantity = Math.floor(Math.min(config.shortUsd / (hedged ? perpPrice : spotPrice),
         Math.max(0, config.shortUsd + spotPnl) / spotPrice, collateralCap / perpPrice) * unit) / unit;
       const n = quantity * perpPrice;
       const entryPerpCost = n * entryPerpRate;
-      const decision = risk(n, venueCash() - entryPerpCost, bar.start, 'enter');
+      const decision = risk(n, venueCash() - entryPerpCost, bar.start, 'enter', quantity, perpPrice);
       const blocks: string[] = passive ? [] : [...decision.entryBlocks];
+      if (!passive && !replayOpenAllowed(config, quantity, perpPrice, venueCash() - entryPerpCost, bar.start, events)) blocks.push('contract-caps-or-health');
+      if (!passive && totalCosts() - costs.perpFees - costs.perpSlippage + quantity * spotPrice * 0.003001 * 2.5 + 0.08 > config.operatingUsd) blocks.push('operating-budget');
       if (config.policy === 'reentry') {
         const rule = config.carryRule!;
         if (!carrySignal(history, bar.start, rule).positiveConfirmed) blocks.push('positive-confirmation');
         if (lastExit !== null && bar.start - lastExit < rule.cooldownHours * HOUR_MS) blocks.push('cooldown');
-        if (decision.metrics.headroom < rule.entryHeadroomFraction * n) blocks.push('entry-headroom-hysteresis');
+        if (Math.round(decision.metrics.headroom * 1e6) < Math.ceil(rule.entryHeadroomFraction * policyUpperNotional(quantity,perpPrice) * 1e6)) blocks.push('entry-headroom-hysteresis');
       }
       entryAttempts++;
       for (const block of blocks) {
@@ -134,7 +137,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
       if (hedged) {
         const adverseEquity = venueCash() - Math.max(0, fundingPnl - fundingBefore) + position.quantity * (position.perpEntry - bar.perp.high);
         minMarkedVenueEquity = Math.min(minMarkedVenueEquity ?? Infinity, adverseEquity);
-        const adverse = stressMetrics({ shortNotional: position.quantity * bar.perp.high, venueEquity: adverseEquity });
+        const adverse = stressMetrics({ shortNotional: position.quantity * bar.perp.high, venueEquity: adverseEquity, shortQuantityNear: position.quantity, referencePriceUsd: bar.perp.high });
         minIntrabarHeadroom = Math.min(minIntrabarHeadroom ?? Infinity, adverse.headroom);
         // Maintenance before the additional hypothetical +50% shock.
         const breach = adverseEquity <= maintenanceMargin(position.quantity * bar.perp.high);
@@ -147,7 +150,7 @@ export function simulate(bars: MarketHour[], start: number, end: number, input: 
     history = [...history, { time: bar.end, rate: bar.fundingRate }].slice(-24);
     if (position && hedged) {
       const n = position.quantity * bar.perp.close;
-      const decision = risk(n, venueCash() + position.quantity * (position.perpEntry - bar.perp.close), bar.end, 'monitor');
+      const decision = risk(n, venueCash() + position.quantity * (position.perpEntry - bar.perp.close), bar.end, 'monitor', position.quantity, bar.perp.close);
       minHeadroom = Math.min(minHeadroom ?? Infinity, decision.metrics.headroom);
       const exit = passive ? undefined : decision.proposals.find(p => p.type === 'full-unwind' || (p.type === 'exit-proposal' &&
         (config.policy !== 'reentry' || (bar.end - position!.enteredAt >= config.carryRule!.minimumHoldHours * HOUR_MS &&
@@ -204,4 +207,18 @@ export function syntheticGap(anchor: MarketHour): MarketHour[] {
   // Keep a post-gap hour so the close-time unwind proposal executes at the next open.
   return [0, 1, 2].map(i => ({ start: anchor.start + i * HOUR_MS, end: anchor.start + (i + 1) * HOUR_MS,
     spot: flat(anchor.spot.open * (i === 0 ? 1 : 1.5)), perp: flat(anchor.perp.open * (i === 0 ? 1 : 1.5)), fundingRate: 0 }));
+}
+
+/** Research defaults scale caps with portfolio size; pass policyLimits for deployment caps. */
+export function replayOpenAllowed(config: ReplayConfig, quantity: number, price: number, equity: number, time: number, events: LedgerEvent[]) {
+  const micro = (v: number) => String(Math.max(0, Math.floor(v * 1e6)));
+  const near = (v: number) => String(BigInt(Math.round(v * 1e6)) * 10n ** 18n);
+  const limits = config.policyLimits;
+  const opens = events.filter(e => e.type === 'open');
+  const used = opens.filter(e => time - e.time < 86400000).reduce((s, e) => s + Math.ceil(e.quantity * e.perpPrice * 1.01 * 1e6), 0);
+  return policyDecision({ action: 'open', size: near(quantity), short: '0', spot: near(quantity), price: String(Math.round(price * 1e6)), equity: micro(equity), reserve: '100000',
+    maxShort: near(limits?.maxShortNear ?? quantity), perOrder: micro(limits?.perOrderUsd ?? config.shortUsd * 1.01),
+    perDay: micro(limits?.perDayUsd ?? config.shortUsd * 2.02), used: String(used),
+    elapsed: opens.length ? (time - opens.at(-1)!.time) / 1000 : 86400, cooldown: limits?.cooldownSeconds ?? 60,
+    band: 100, minHeadroom: 1000, withdrawable: '0', withdrawalCap: '0', withdrawalDayCap: '0', withdrawalUsed: '0' });
 }

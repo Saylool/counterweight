@@ -1,46 +1,46 @@
 {
   "schemaVersion": 1,
   "status": "passed",
-  "startedAt": "2026-11-10T10:25:39.456Z",
+  "startedAt": "2026-11-10T12:09:58.500Z",
   "offlineGuardActive": true,
-  "policySha256": "e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a",
-  "mockSha256": "971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886",
+  "policySha256": "d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1",
+  "mockSha256": "69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f",
   "transcript": [
     "COUNTERWEIGHT | LOCAL SANDBOX | MOCK MPC / MOCK FILLS | no wallet or testnet account",
     "OFFLINE GUARD active | Node connections restricted to loopback",
     "FIXTURES SHA-256 verified | worst 24h +32.499065% / 4297 windows",
     "WINDOW 2026-09-17T05:00:00.000Z -> 2026-09-18T05:00:00.000Z",
-    "POLICY SHA-256 e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a verified before deploy",
-    "MOCK MPC SHA-256 971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886 verified before deploy",
+    "POLICY SHA-256 d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1 verified before deploy",
+    "MOCK MPC SHA-256 69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f verified before deploy",
     "SETUP local accounts + mock spot 9.3 NEAR | policy access keys: 0",
     "BOUNDARY policy operating reserve pays MPC fee; keeper attaches zero; spot disposal awaits owner approval",
     "SETUP keeper bounded short SIGNED (mock); pre-existing hedge / simulated margin $30.00",
-    "OWNER FROZEN nonce=7000002 balance=99999363864553534900000000 yocto",
+    "OWNER FROZEN nonce=7000002 balance=99999348632746344600000000 yocto",
     "HOUR (UTC)        NEAR       H USD     KEEPER ACTION          CONTRACT RESULT",
-    "09-17 06:00 UTC  $2.6597    10.878   monitor                no transaction",
-    "09-17 07:00 UTC  $2.6987    10.307   monitor                no transaction",
-    "09-17 08:00 UTC  $2.7248     9.925   monitor                no transaction",
-    "09-17 09:00 UTC  $2.7520     9.527   monitor                no transaction",
-    "09-17 10:00 UTC  $2.8062     8.733   monitor                no transaction",
-    "09-17 11:00 UTC  $2.8098     8.681   monitor                no transaction",
-    "09-17 12:00 UTC  $2.8739     7.742   monitor                no transaction",
-    "09-17 13:00 UTC  $2.8713     7.781   monitor                no transaction",
-    "09-17 14:00 UTC  $2.8750     7.727   monitor                no transaction",
-    "09-17 15:00 UTC  $2.8173     8.573   monitor                no transaction",
-    "09-17 16:00 UTC  $2.8816     7.631   monitor                no transaction",
-    "09-17 17:00 UTC  $2.9751     6.262   monitor                no transaction",
-    "09-17 18:00 UTC  $3.0480     5.195   monitor                no transaction",
-    "09-17 19:00 UTC  $2.9900     6.045   monitor                no transaction",
-    "09-17 20:00 UTC  $3.0520     5.138   monitor                no transaction",
-    "09-17 21:00 UTC  $3.0128     5.712   monitor                no transaction",
-    "09-17 22:00 UTC  $3.0243     5.544   monitor                no transaction",
-    "09-17 23:00 UTC  $3.1435     3.798   monitor                no transaction",
-    "09-18 00:00 UTC  $3.1476     3.739   monitor                no transaction",
-    "09-18 01:00 UTC  $3.1596     3.564   monitor                no transaction",
-    "09-18 02:00 UTC  $3.2299     2.535   reduce-only close      SIGNED mock + event",
-    "09-18 03:00 UTC  $3.3684    19.778   spot approval pending  no transaction",
-    "09-18 04:00 UTC  $3.5048    19.778   spot approval pending  no transaction",
-    "09-18 05:00 UTC  $3.5417    19.778   spot approval pending  no transaction",
+    "09-17 06:00 UTC  $2.6597     5.018   monitor                no transaction",
+    "09-17 07:00 UTC  $2.6987     4.289   monitor                no transaction",
+    "09-17 08:00 UTC  $2.7248     3.802   monitor                no transaction",
+    "09-17 09:00 UTC  $2.7520     3.293   monitor                no transaction",
+    "09-17 10:00 UTC  $2.8062     2.281   reduce-only close      SIGNED mock + event",
+    "09-17 11:00 UTC  $2.8098    28.614   spot approval pending  no transaction",
+    "09-17 12:00 UTC  $2.8739    28.614   spot approval pending  no transaction",
+    "09-17 13:00 UTC  $2.8713    28.614   spot approval pending  no transaction",
+    "09-17 14:00 UTC  $2.8750    28.614   spot approval pending  no transaction",
+    "09-17 15:00 UTC  $2.8173    28.614   spot approval pending  no transaction",
+    "09-17 16:00 UTC  $2.8816    28.614   spot approval pending  no transaction",
+    "09-17 17:00 UTC  $2.9751    28.614   spot approval pending  no transaction",
+    "09-17 18:00 UTC  $3.0480    28.614   spot approval pending  no transaction",
+    "09-17 19:00 UTC  $2.9900    28.614   spot approval pending  no transaction",
+    "09-17 20:00 UTC  $3.0520    28.614   spot approval pending  no transaction",
+    "09-17 21:00 UTC  $3.0128    28.614   spot approval pending  no transaction",
+    "09-17 22:00 UTC  $3.0243    28.614   spot approval pending  no transaction",
+    "09-17 23:00 UTC  $3.1435    28.614   spot approval pending  no transaction",
+    "09-18 00:00 UTC  $3.1476    28.614   spot approval pending  no transaction",
+    "09-18 01:00 UTC  $3.1596    28.614   spot approval pending  no transaction",
+    "09-18 02:00 UTC  $3.2299    28.614   spot approval pending  no transaction",
+    "09-18 03:00 UTC  $3.3684    28.614   spot approval pending  no transaction",
+    "09-18 04:00 UTC  $3.5048    28.614   spot approval pending  no transaction",
+    "09-18 05:00 UTC  $3.5417    28.614   spot approval pending  no transaction",
     "PASS owner nonce + balance unchanged; keeper reduce-only close signed; spot sale still owner-approved",
     "ROGUE increase beyond caps    REJECT ERR_EXCEEDS_SPOT_HEDGE",
     "ROGUE non-reduce close        REJECT ERR_OPEN_PRICE_OVERRIDE",
@@ -55,7 +55,7 @@
     "WAIT sandbox fast-forward 1/20 | 600s to deadline",
     "WAIT sandbox deadline reached",
     "DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused",
-    "OWNER AFTER nonce=7000002 balance=99999363864553534900000000 yocto (unchanged)",
+    "OWNER AFTER nonce=7000002 balance=99999348632746344600000000 yocto (unchanged)",
     "PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed",
     "OWNER RESUMED | autonomous owner-free phase ended; mock rebalance completion begins",
     "WAIT sandbox fast-forward 1/20 | 60s to deadline",
@@ -67,61 +67,61 @@
     "REPORTS reports/demo-local.md + reports/demo-local.json (timeline, logs, receipts, assertions)"
   ],
   "diagnostics": [
-    "Receipt: 7U1DjRjpYeU9QWp67GanZvpxzyuceB21wZz97DvmedM3",
+    "Receipt: 9FEifvU4PCxnT6PhY83n3WN29EzUSh1a352XAm264CFE",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}",
-    "Receipt: 5e9cgZ8TEiFvPPLgSs1tYrh6yjyexsCJPYL23oQBBcmo",
+    "Receipt: yGmibqfE1evs5TgJZUnsPeYXA3cX4BrS36tBiywDujS",
     "\tLog [mock-mpc.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}",
-    "Receipts: 88sdgfTgriTuSeNZPRW3mDiuhAMyFXBaabPdFh8ZgWUV, 6zX5fyavMHSBMuNHTjmeDgxz8Ny3WPdrNFyKu49nsfaf, 3S6HmSWFKbiWbbhJWFEXxHDDFaodqXSpvxyyiryTA8vs",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306363340,\"expiresAfter\":1794306423340},\"digest\":\"9e5d5d415f2572559711e7844fd8a0a39dc89027a8dbe50ce49e88dde44b1f8f\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: Huc8kNRGRbU8E3fyN8Yf2XnKtkJKMBeBVtVmvr8aQQnB",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794306363340\",\"expiresAfter\":\"1794306423340\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: E4HZRWotVrtANHMKbAX6FB2BLXevPa4z7dBPJ7aTcuTZ",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794306366\"}]}",
-    "Receipts: CidLNNaeSBqsvHciVYuACShAdsw7znczLUSDSuvHEUi9, 5tZbtRmnjAWPaTYxeMgNMKGvwtCypDGdNdnrs3p2fBu, 44SSA83nBpcx7yqPKxQrHuU353wVhHdFJo6WAiyJo684",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"4.8449\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306368178,\"expiresAfter\":1794306428178},\"digest\":\"6105eac667a051ec3d0c180598bb25e80f4bac4087700973f3104520d3c7c748\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: DaaLQknt3Yr61G1VXCKXrKBccZ9uejT8nZW1K7tZMNCn",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794306368178\",\"expiresAfter\":\"1794306428178\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: GeD4LTucwTcCXwtSEcKFuoVREyn73AZPZBGW2UmiXeJC",
+    "Receipts: ECD4UqmdvB1PAGmH4Dd2vHWZTMfYExFcDFi3R7hNkduS, BGGDYVr9MNVTzZMwNPji79X3ypURPJGC2UBn5RFXXwhu, Hhn1b4XuFTAPqBvGkNaNwQx9R8uZx4ipUcukrk2kR7w5",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312622367,\"expiresAfter\":1794312682367},\"digest\":\"322a0f63c469772fee77f180a9a28f785ffbcf0b006a5711292d83d11cde352c\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: BKmGhLVfFEHdVWFv9ahHaiFAcFXdhkiyX21ymZGCXtsP",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794312622367\",\"expiresAfter\":\"1794312682367\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: DH2iYdeE55PtGgpBiQUvW8gcFuNnDumredephWNreNA6",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794312625\"}]}",
+    "Receipts: HyuHrbz9bCdFtxifdtBKHmEYuJycS5ayvpACSpMzXK56, FvwrvWsiD8gR7vh9XEsmvoV3z1YG6MdKV2J7rjV9g8Ks, 2VPsjzM9qeobmj7FJnwW9Yf6XRK1kbaDJyPgs5uHHpw6",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312627215,\"expiresAfter\":1794312687215},\"digest\":\"43b5a81b00c67bc5f270a8b2a5b40a34831bb443192b386792b5ed14c0cbfbfc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: n1tS2EYQ28oXivxkHcJcLYgi93JKKhzGRZQGCkfk86a",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794312627215\",\"expiresAfter\":\"1794312687215\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: Awv8vcV26kNhGUrhudQBJ43pG9ZRhvEwggEk6wqSg6k1",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_EXCEEDS_SPOT_HEDGE\"}}}}",
-    "Receipt: 5txUStBvFmcGB29rsTZQdWaUjrFg7bTsHP5DVcA6ub2Y",
+    "Receipt: 87eRv57y2R8vdoM5WKwwgsqB8MZjTx3XXBGpoVKFqxfx",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_OPEN_PRICE_OVERRIDE\"}}}}",
-    "Receipt: HJqQ9sa5mGyP6H6CKMMxLL1fDyKSpN24ZX2WrixSuTqJ",
+    "Receipt: GNMoMMrDYrawzPCpBXB66KzQ2PaDWkUbQQ9is1SGZ4zE",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_OWNER\"}}}}",
-    "Receipt: DGuf1XHviMeKQEPJn12TdsizC7kPkDfrtJ79FsLDAwrU",
+    "Receipt: CFJDzAvCQrZz6keUzmZsKsmSbtTxJE3G3GxgeEoBqSyw",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"MethodResolveError\":\"MethodNotFound\"}}}}",
-    "Receipt: ZTSRBByQYpXb2RHPxqGoxNZXch2gJk1ycDVSbXZZ2TZ",
+    "Receipt: CbX2adKaQFBDdXqByQ55L3YLQCzTYer46Su5w4qAjjMh",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Method on_signature is private\"}}}}",
-    "Receipt: GuyndoEwqJqkn8c66PGUq9DUL3bLpastC28zKGAD5aDH",
+    "Receipt: ABVRQUJuJXd5kAVncF9npeLMtoyWaRLaMji127r81nK1",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_STALE_PRICE\"}}}}",
-    "Receipt: 3aUFjPEvJ5HDdG5ZqPPQSUTWJXSuUN1cV84jrry4kxDT",
+    "Receipt: 6HybSX8Ykjho3cD9n8cX3mN19EJnoELwcwByugaR5Fxp",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_KEEPER\"}}}}",
-    "Receipt: 8nE39HcW2pFkR1Dn1sbA1TycAqPN8op8iMYQyfrokyHo",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794307679\"}]}",
-    "Receipt: DaLYZCXvT4DNnro67Ly8UMehB1NWvaGrhPg7PWWswc3o",
+    "Receipt: F57yq9vGSiZLru3YeQ6Yvk7cxbJWtNKZ5CJcWgX1K8jn",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794313938\"}]}",
+    "Receipt: DY3gpFvpigA1B28kB1RUXW9Q3XxdkVNXvWfjgaTT93er",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_HEARTBEAT_ACTIVE\"}}}}",
-    "Receipts: 3JMJ6Ku924dJJh7kqqCz87k3XUUb59RQrTz947dtBsgk, Hc845cHHSLo2Pvghc5jvDQKgFK3jNqYXBxJ7KRBPyxCG, HzPTH9vqA9JfdvmshWgkVBiKTZYiZF3zifJ5r37qApzd",
+    "Receipts: Ab6X7EzzP2QfMEir6eyrcS33UqJfazo57Yake97g8HJL, 9VCSxyyHiBX1P6ERqmTyZYibMm1h87X7x4kiDmwqYAUE, HBsjFGQZD4Mf6rwzU2iPJWo2wxDmWW8gxn7k9KyyfQ2d",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"5.3126\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794308978860,\"expiresAfter\":1794309038860},\"digest\":\"091f3dd1f4b7670074a589483e2760accc7e0aa6db3076b90366760e6dc5855a\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: 8257EZzTQQhq7yP4yE9NoxrN26ri69FVYouuuGVg5JPR",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794308978860\",\"expiresAfter\":\"1794309038860\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: gxi18ekJzFGGGpBhTyMNJv1gWbhxJnowSPN2DTq25Bf",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794315237923,\"expiresAfter\":1794315297923},\"digest\":\"bf17849b50ac0074f2ede84f96e1b4d6073535ed0fc4fb6ace3ce250e9ef2cce\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: Fh6wytZp368Q6w946JGfc56TKoEsT9U9iXmZpxWQ79KX",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794315237923\",\"expiresAfter\":\"1794315297923\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: EMLZ9XcAvCergMPZg5PVtmcDgt9Cpceg959AbDRcsZqD",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}",
-    "Receipt: 517HtrJFcXPgECpcuEnpC5gtSvzzhMrgWumUYv59xk9B",
+    "Receipt: HErGdP4PHTdSfT1wQEFCCcvBRhC8VAdUtkbzNBtWnQz1",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
-    "Receipt: AiyRUXqs3DqAZ2RELaHigiJTc1B7rf7abfoRB3KgjEce",
+    "Receipt: AyPpBq61ud9RyBKdTtUBua3XBRo2H4pBGdTM1R2xzTFN",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}",
-    "Receipt: 4inntQVT8qJc8hrjstUVUsXqFjh4pTP7DNrEQtrUnvdd",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"24778410\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794310279937\",\"source\":\"owner_finality_attestation\"}]}",
-    "Receipt: AsKPfCpQqmuEKguTpFEng4ZEcXgpSEv2GeQBu27sn4o6",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794310281761\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
-    "Receipt: Fz37foYqZJ1ucup4KRLAECKuPQGj1ebwBSmude9pTc6W",
+    "Receipt: HDtWuBC5zsPETR3HjCTthQfmCTX61DZCjHjXNuMEwobA",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794316539052\",\"source\":\"owner_finality_attestation\"}]}",
+    "Receipt: Fn2g8mx2UgiqBp6KCitoaaCpbyHSrsZssMFrvDfa26hN",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794316540870\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
+    "Receipt: EpQPRhjkiUrP9ES7baV6EbDT3gU5zesz6uHaQXUJLjqU",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
-    "Receipts: 2r1vMLC66fSo6k9guSnGrrpis9rSJN3MhfiWoUtihK2F, BXLEqwe5BrmAFbYvdjwnDHMSo4HxXMnEtU2kFUXpRgSx, 3PKtWeHt9i6F5Wzatp5EXaBsfJae2ZYBcmQSWj8treeX",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794310285401\",\"deadline_ms\":\"1794310315401\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794313888441\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
-    "Receipt: 4gDHLaaA4g9zoq9E7PzGcdbjRhsAggU8joaZJaaqkecx",
+    "Receipts: 7DbmsvLmFo3dWd3yuE1ZxwdjA7LhDjtUpQN8ZqUBvZSC, 3PMUBvwMYaVhGJZhT9QqbonzxjuVmFeWtVdK7iKtDZxc, 39jrBBH6oLrs74kgN7sHWpCX66u47DAwcP1in4pJNY6x",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794316544520\",\"deadline_ms\":\"1794316574520\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794320147559\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+    "Receipt: ELaCo6zkf6QuPDUbjd8dTk57ebuBN8DWUgtkewQWqBG1",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}",
-    "Receipt: 5qmPBnjFV1jgnKxaQY3Ri41fmameZT4FkeMyveDu926P",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794310288441\",\"source\":\"owner_finality_attestation\"}]}"
+    "Receipt: DQm93r2NrA79JiAAvuoJMC4KdmKZz8Va1JQrnJS8KqKp",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794316547559\",\"source\":\"owner_finality_attestation\"}]}"
   ],
   "mocked": [
     "MPC signature-shaped response (not cryptographic)",
@@ -183,11 +183,20 @@
           "price_band_bps": 100,
           "price_max_age_seconds": 120
         },
+        "network": "Testnet",
         "heartbeat_timeout_seconds": 600,
         "reference_price": "2673000",
-        "signing_limits": null
+        "signing_limits": null,
+        "oracle": {
+          "account_id": null,
+          "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+          "max_age_seconds": 120,
+          "max_confidence_bps": 100,
+          "min_price": "1336500",
+          "max_price": "5346000"
+        }
       },
-      "transactionHash": "BXsnsNoYaqgLtXG2LJa6mjS9J7nCbCuWYUEgm7UnsdtK",
+      "transactionHash": "51rFrREkyJzNJuiJcq1GXQwZ1rfhZpK1AEAT8q8bwqMT",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}"
@@ -200,7 +209,7 @@
       "args": {
         "amount": "9300000000000000000000000"
       },
-      "transactionHash": "ExeaZRAVY7w5j4pCvzX8p4meWCbWgftuUGM7jGv88Zjo",
+      "transactionHash": "6pfUWSckQmCU1CjaiLXy8qACD6dHskMR1vGuCYcTVCkL",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}"
@@ -218,11 +227,11 @@
           "reference_price": null
         }
       },
-      "transactionHash": "5dH9gCBiAB9mFY3jDUr4PJhSqhMpHEmrkKKvpXvDBb1x",
+      "transactionHash": "3givysvvJCAsBY9neaJKCXERsRUUULAMY36iA45Cp87K",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306363340,\"expiresAfter\":1794306423340},\"digest\":\"9e5d5d415f2572559711e7844fd8a0a39dc89027a8dbe50ce49e88dde44b1f8f\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794306363340\",\"expiresAfter\":\"1794306423340\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312622367,\"expiresAfter\":1794312682367},\"digest\":\"322a0f63c469772fee77f180a9a28f785ffbcf0b006a5711292d83d11cde352c\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794312622367\",\"expiresAfter\":\"1794312682367\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -230,10 +239,10 @@
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "DNCqKqq4pQKaYuesnezr8UNfUHup4nViD4cUk3ktVM7A",
+      "transactionHash": "D1kqCizPfBGy9k5EQZyBp2czMmnr4ziav64AnB3v36m3",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794306366\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794312625\"}]}"
       ],
       "errors": []
     },
@@ -245,14 +254,14 @@
           "asset_index": 74,
           "size": "9300000000000000000000000",
           "reduce_only": true,
-          "reference_price": "3229900"
+          "reference_price": "2806200"
         }
       },
-      "transactionHash": "5xmXzr4mE2brCQLJbKgTgFPtTkGXAUhhB2vAudvrxVyC",
+      "transactionHash": "CNAjwc4fjGa1HQNbbdNQp2Vya2dG4FrEaH81GUkB28cc",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"4.8449\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794306368178,\"expiresAfter\":1794306428178},\"digest\":\"6105eac667a051ec3d0c180598bb25e80f4bac4087700973f3104520d3c7c748\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794306368178\",\"expiresAfter\":\"1794306428178\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794312627215,\"expiresAfter\":1794312687215},\"digest\":\"43b5a81b00c67bc5f270a8b2a5b40a34831bb443192b386792b5ed14c0cbfbfc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794312627215\",\"expiresAfter\":\"1794312687215\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -267,7 +276,7 @@
           "reference_price": null
         }
       },
-      "transactionHash": "2RJ2qoJB1HXCHhL3jaauikod5SwjBuhD3LjyFFoinb8C",
+      "transactionHash": "HYSXHYFBWBMJpuDh8YvmTPtVXfbHZxxaAGekJjgTZL8a",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -285,7 +294,7 @@
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "5Awm5TH4P7MFiFkMNZfhrpcSD9nSaJEqHu6kL6jUN6mV",
+      "transactionHash": "DxQvQM9d6F7LfRcBAknNgHVqo8UaQysx3nzxUAiEYg4u",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -299,7 +308,7 @@
         "recipient": "0x2222222222222222222222222222222222222222",
         "amount": "1000000"
       },
-      "transactionHash": "92aMcQbYDMegUJmUT4BBnhPdNWM5APsmiPm41DHHXYR3",
+      "transactionHash": "Ex9cwx2j1PPZ1B7MKhfibm5two9ZwCGvbPMksDeP17t5",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -312,7 +321,7 @@
       "args": {
         "agentAddress": "0x2222222222222222222222222222222222222222"
       },
-      "transactionHash": "BhMco5RwUDTL28RmY9R3uLhB49K8e6Ucv52oAKX3cVuj",
+      "transactionHash": "CDqagJu6EMGZYrcS1M6cNFeUd5ZsLwbBgfguj5ypBTeN",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -324,9 +333,9 @@
       "method": "on_signature",
       "args": {
         "operation_id": "2",
-        "nonce": 1794306368178
+        "nonce": 1794312627215
       },
-      "transactionHash": "Cxwvv6oxRQm8zxgrmfh9D6NTaTHuhHS5TKoVjYRpfQrt",
+      "transactionHash": "Be48jFVC4fJRHQQeoHHJWmHKGZuZWpHCRAoc34eCjfVf",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -344,7 +353,7 @@
           "reference_price": null
         }
       },
-      "transactionHash": "EvwPVJ8fbD1yHAMAfKJ9o9QsCD6QumynrFt6WxZyNLHk",
+      "transactionHash": "6pWmF27umwWpEypkisMzwL3Rg83Ln18iSJrx19raaBqW",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -362,7 +371,7 @@
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "2jsfCqeZyzZFmVayLD8aaJc6SMoS277W3m6o7tUGLu6k",
+      "transactionHash": "Gc9rqgWeKyMTLEtDeothmzTV7qZcaAt6izpQETBKcjkb",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -373,10 +382,10 @@
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "FrWXmnFvFJDsVxN8k5Avaf4ctsKViDDM4SeVtDhbPTSX",
+      "transactionHash": "9Kos7Hy5TAM4bvPDEYaKskHmFcL2NF62rL9HQgLDXk48",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794307679\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794313938\"}]}"
       ],
       "errors": []
     },
@@ -386,7 +395,7 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "4J4TjzukiZbrzwAddUjdxVs6DMyAG9Qnw3CuPaQVLUZ1",
+      "transactionHash": "CgkDX5VK3ZYGZo8YHAPEsW6aJmpQVSxveWLSyyZ1Pg32",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -399,12 +408,12 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "6sBx5uG86LDKeK1cUyW45h2bkUAyHEmiS9eiBzdoAM9b",
+      "transactionHash": "CcYzfxMfpVkDjSg4RcR15AmgPYFDkaKLmtTGcdva4nDs",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"5.3126\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794308978860,\"expiresAfter\":1794309038860},\"digest\":\"091f3dd1f4b7670074a589483e2760accc7e0aa6db3076b90366760e6dc5855a\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794308978860\",\"expiresAfter\":\"1794309038860\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794315237923,\"expiresAfter\":1794315297923},\"digest\":\"bf17849b50ac0074f2ede84f96e1b4d6073535ed0fc4fb6ace3ce250e9ef2cce\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794315237923\",\"expiresAfter\":\"1794315297923\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -414,7 +423,7 @@
       "args": {
         "paused": false
       },
-      "transactionHash": "Ha9KTN4hCy4FUtX1ZRpdXBWyE2dy5HvQhDwDreAyd9hr",
+      "transactionHash": "8Z8hgMHPqk1K7iNtQ41JiM4HCuSAt94iKJC2gWyNa6rE",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}"
@@ -427,7 +436,7 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "Dq8oronAZHVC2TLpDs42CKpbYeRFe2jChN5FKng7Zbgj",
+      "transactionHash": "5iPUEokKrpNNFkNdWDoCdQ4jpnQk8nh3Aceyb8oQCHPj",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
@@ -460,7 +469,7 @@
           "original_target_usdc": "32937810"
         }
       },
-      "transactionHash": "6N1a9LCpwdpUjytpzaQ8qs57TKmVzg9PvttxvGjdUCiC",
+      "transactionHash": "D9WwXnwN9LzPcTRFMWdwHNXyJvSiHYmgqQVpQ1QBGczv",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}"
@@ -471,14 +480,14 @@
       "actor": "owner.testnet",
       "method": "observe_margin",
       "args": {
-        "equity_usdc": "24778410",
+        "equity_usdc": "28714402",
         "withdrawable_usdc": "0",
-        "observed_at_ms": "1794310279937"
+        "observed_at_ms": "1794316539052"
       },
-      "transactionHash": "HSMMD3x5szQWZfzF4J688xhswyCYpVDynGMRZa1wXonx",
+      "transactionHash": "8NVkxN2D6qnPKBo1Xw9jVBB5qz52mtdqdHYsLCXycm6y",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"24778410\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794310279937\",\"source\":\"owner_finality_attestation\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794316539052\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     },
@@ -487,12 +496,12 @@
       "method": "settle_position",
       "args": {
         "short_size": "0",
-        "observed_at_ms": "1794310281761"
+        "observed_at_ms": "1794316540870"
       },
-      "transactionHash": "4tGyyMNTYYLKqzxaL7kTWpbLoDRYyaxpXQsDLApTxNpj",
+      "transactionHash": "7Cs7kvofZhBtrTYqqdhWYx8gMJhNe1N5xacEpG63h5Dc",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794310281761\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794316540870\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
       ],
       "errors": []
     },
@@ -502,7 +511,7 @@
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "HXpRSQ3BYCSHQx8hRwTqJ8aGg6PW1yvuKqy6oZFft8ji",
+      "transactionHash": "65kyx8v1R6Nxj22c6VgxLVxZvnXWj2Gd7vZGndNt4wVe",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
@@ -519,14 +528,14 @@
           "min_usdc": "32558432",
           "fee_usdc": "50000",
           "impact_bps": 100,
-          "quoted_at_ms": "1794310285401",
-          "deadline_ms": "1794310315401"
+          "quoted_at_ms": "1794316544520",
+          "deadline_ms": "1794316574520"
         }
       },
-      "transactionHash": "3evWRpQTkfDgsGnAgETqZfa2ABQhSFcZorJoPieyaX3w",
+      "transactionHash": "EbNmTDqRCUE85vmP4CjHMB9fNAEEwq8BEJTB3pRA98bZ",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794310285401\",\"deadline_ms\":\"1794310315401\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794313888441\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794316544520\",\"deadline_ms\":\"1794316574520\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794320147559\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}"
       ],
       "errors": []
@@ -539,21 +548,21 @@
         "refunded_near": "0",
         "credited_usdc": "32558432",
         "receipt_id": "demo-local-mock-finalized-sale-1",
-        "finalized_at_ms": "1794310288441"
+        "finalized_at_ms": "1794316547559"
       },
-      "transactionHash": "BNycP3XzN4G6dnpELZQCh1zTZmAvPBgSFMBZDpDjutjX",
+      "transactionHash": "CwWLkKbWhiXCz8SEDeq4gRYntTLwp9JxCui3DgrdTbe3",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794310288441\",\"source\":\"owner_finality_attestation\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794316547559\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     }
   ],
   "ownerBefore": {
-    "balanceYocto": "99999363864553534900000000",
+    "balanceYocto": "99999348632746344600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
+        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
         "nonce": 7000002
       }
     ]
@@ -563,7 +572,7 @@
       "hour": 1,
       "time": 1789624800000,
       "nearPrice": 2.6597,
-      "headroomUsd": 10.877638973124999,
+      "headroomUsd": 5.017821,
       "venueEquityUsd": 30.100384723125,
       "proposals": [],
       "action": "monitor",
@@ -574,7 +583,7 @@
       "hour": 2,
       "time": 1789628400000,
       "nearPrice": 2.6987,
-      "headroomUsd": 10.306695721374998,
+      "headroomUsd": 4.289103,
       "venueEquityUsd": 29.737993971375,
       "proposals": [],
       "action": "monitor",
@@ -585,7 +594,7 @@
       "hour": 3,
       "time": 1789632000000,
       "nearPrice": 2.7248,
-      "headroomUsd": 9.924709683624997,
+      "headroomUsd": 3.80153,
       "venueEquityUsd": 29.495577683625,
       "proposals": [],
       "action": "monitor",
@@ -596,7 +605,7 @@
       "hour": 4,
       "time": 1789635600000,
       "nearPrice": 2.752,
-      "headroomUsd": 9.526614360250006,
+      "headroomUsd": 3.293398,
       "venueEquityUsd": 29.242934360250008,
       "proposals": [],
       "action": "monitor",
@@ -607,184 +616,8 @@
       "hour": 5,
       "time": 1789639200000,
       "nearPrice": 2.8062,
-      "headroomUsd": 8.733039861625006,
+      "headroomUsd": 2.280557,
       "venueEquityUsd": 28.739194361625007,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 6,
-      "time": 1789642800000,
-      "nearPrice": 2.8098,
-      "headroomUsd": 8.681029404153165,
-      "venueEquityUsd": 28.706434904153166,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 7,
-      "time": 1789646400000,
-      "nearPrice": 2.8739,
-      "headroomUsd": 7.742451305028167,
-      "venueEquityUsd": 28.110631555028167,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 8,
-      "time": 1789650000000,
-      "nearPrice": 2.8713,
-      "headroomUsd": 7.780994479057197,
-      "venueEquityUsd": 28.1352712290572,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 9,
-      "time": 1789653600000,
-      "nearPrice": 2.875,
-      "headroomUsd": 7.7271325990571995,
-      "venueEquityUsd": 28.1011950990572,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 10,
-      "time": 1789657200000,
-      "nearPrice": 2.8173,
-      "headroomUsd": 8.572627509682198,
-      "venueEquityUsd": 28.638139259682198,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 11,
-      "time": 1789660800000,
-      "nearPrice": 2.8816,
-      "headroomUsd": 7.631273819668433,
-      "venueEquityUsd": 28.040629819668435,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 12,
-      "time": 1789664400000,
-      "nearPrice": 2.9751,
-      "headroomUsd": 6.262067474293438,
-      "venueEquityUsd": 27.171414724293438,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 13,
-      "time": 1789668000000,
-      "nearPrice": 3.048,
-      "headroomUsd": 5.195138822653364,
-      "venueEquityUsd": 26.494318822653366,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 14,
-      "time": 1789671600000,
-      "nearPrice": 2.99,
-      "headroomUsd": 6.0454282084274755,
-      "venueEquityUsd": 27.03445320842748,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 15,
-      "time": 1789675200000,
-      "nearPrice": 3.052,
-      "headroomUsd": 5.137630679677478,
-      "venueEquityUsd": 26.45820067967748,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 16,
-      "time": 1789678800000,
-      "nearPrice": 3.0128,
-      "headroomUsd": 5.71217377463698,
-      "venueEquityUsd": 26.82312177463698,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 17,
-      "time": 1789682400000,
-      "nearPrice": 3.0243,
-      "headroomUsd": 5.544077867261974,
-      "venueEquityUsd": 26.716522117261977,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 18,
-      "time": 1789686000000,
-      "nearPrice": 3.1435,
-      "headroomUsd": 3.798447418886976,
-      "venueEquityUsd": 25.60831366888698,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 19,
-      "time": 1789689600000,
-      "nearPrice": 3.1476,
-      "headroomUsd": 3.7394374455415402,
-      "venueEquityUsd": 25.571228445541543,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 20,
-      "time": 1789693200000,
-      "nearPrice": 3.1596,
-      "headroomUsd": 3.5644076604668378,
-      "venueEquityUsd": 25.46036866046684,
-      "proposals": [],
-      "action": "monitor",
-      "result": "no transaction",
-      "simulatedShortQuantityAfter": 9.3
-    },
-    {
-      "hour": 21,
-      "time": 1789696800000,
-      "nearPrice": 3.2299,
-      "headroomUsd": 2.5350557488418373,
-      "venueEquityUsd": 24.80694599884184,
       "proposals": [
         {
           "type": "full-unwind",
@@ -799,11 +632,187 @@
       "simulatedShortQuantityAfter": 0
     },
     {
+      "hour": 6,
+      "time": 1789642800000,
+      "nearPrice": 2.8098,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 7,
+      "time": 1789646400000,
+      "nearPrice": 2.8739,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 8,
+      "time": 1789650000000,
+      "nearPrice": 2.8713,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 9,
+      "time": 1789653600000,
+      "nearPrice": 2.875,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 10,
+      "time": 1789657200000,
+      "nearPrice": 2.8173,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 11,
+      "time": 1789660800000,
+      "nearPrice": 2.8816,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 12,
+      "time": 1789664400000,
+      "nearPrice": 2.9751,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 13,
+      "time": 1789668000000,
+      "nearPrice": 3.048,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 14,
+      "time": 1789671600000,
+      "nearPrice": 2.99,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 15,
+      "time": 1789675200000,
+      "nearPrice": 3.052,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 16,
+      "time": 1789678800000,
+      "nearPrice": 3.0128,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 17,
+      "time": 1789682400000,
+      "nearPrice": 3.0243,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 18,
+      "time": 1789686000000,
+      "nearPrice": 3.1435,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 19,
+      "time": 1789689600000,
+      "nearPrice": 3.1476,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 20,
+      "time": 1789693200000,
+      "nearPrice": 3.1596,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
+      "hour": 21,
+      "time": 1789696800000,
+      "nearPrice": 3.2299,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
+      "proposals": [],
+      "action": "spot approval pending",
+      "result": "no transaction",
+      "simulatedShortQuantityAfter": 0
+    },
+    {
       "hour": 22,
       "time": 1789700400000,
       "nearPrice": 3.3684,
-      "headroomUsd": 19.77840983234184,
-      "venueEquityUsd": 24.77840983234184,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
       "proposals": [],
       "action": "spot approval pending",
       "result": "no transaction",
@@ -813,8 +822,8 @@
       "hour": 23,
       "time": 1789704000000,
       "nearPrice": 3.5048,
-      "headroomUsd": 19.77840983234184,
-      "venueEquityUsd": 24.77840983234184,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
       "proposals": [],
       "action": "spot approval pending",
       "result": "no transaction",
@@ -824,8 +833,8 @@
       "hour": 24,
       "time": 1789707600000,
       "nearPrice": 3.5417,
-      "headroomUsd": 19.77840983234184,
-      "venueEquityUsd": 24.77840983234184,
+      "headroomUsd": 28.614401,
+      "venueEquityUsd": 28.71440158462501,
       "proposals": [],
       "action": "spot approval pending",
       "result": "no transaction",
@@ -851,10 +860,10 @@
     }
   ],
   "ownerAfterReplay": {
-    "balanceYocto": "99999363864553534900000000",
+    "balanceYocto": "99999348632746344600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
+        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
         "nonce": 7000002
       }
     ]
@@ -904,15 +913,26 @@
     }
   ],
   "ownerAfter": {
-    "balanceYocto": "99999363864553534900000000",
+    "balanceYocto": "99999348632746344600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
+        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
         "nonce": 7000002
       }
     ]
   },
   "autonomousFinalState": {
+    "network": "Testnet",
+    "oracle": {
+      "account_id": null,
+      "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+      "max_age_seconds": 120,
+      "max_confidence_bps": 100,
+      "min_price": "1336500",
+      "max_price": "5346000"
+    },
+    "oracle_price": "0",
+    "oracle_timestamp": "0",
     "owner": "owner.testnet",
     "keeper": "keeper.testnet",
     "coin": "NEAR",
@@ -938,11 +958,11 @@
     "operation_id": "3",
     "pending": null,
     "paused": true,
-    "last_keeper_heartbeat": "1794307679",
+    "last_keeper_heartbeat": "1794313938",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "2673000",
-    "reference_price_timestamp": "1794306357",
-    "last_nonce": "1794308978860",
+    "reference_price_timestamp": "1794312616",
+    "last_nonce": "1794315237923",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -953,8 +973,8 @@
     },
     "outstanding": [
       {
-        "nonce": 1794308978860,
-        "expires_after": 1794309038860,
+        "nonce": 1794315237923,
+        "expires_after": 1794315297923,
         "keeper": false,
         "discarded": false,
         "invalidation_requested": false,
@@ -965,7 +985,7 @@
     ],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794306423340",
+    "last_open_expiry": "1794312682367",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -987,6 +1007,17 @@
     "finalSpotAndShortZero": true
   },
   "finalState": {
+    "network": "Testnet",
+    "oracle": {
+      "account_id": null,
+      "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+      "max_age_seconds": 120,
+      "max_confidence_bps": 100,
+      "min_price": "1336500",
+      "max_price": "5346000"
+    },
+    "oracle_price": "0",
+    "oracle_timestamp": "0",
     "owner": "owner.testnet",
     "keeper": "keeper.testnet",
     "coin": "NEAR",
@@ -1012,11 +1043,11 @@
     "operation_id": "3",
     "pending": null,
     "paused": false,
-    "last_keeper_heartbeat": "1794307679",
+    "last_keeper_heartbeat": "1794313938",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "3541700",
-    "reference_price_timestamp": "1794310286",
-    "last_nonce": "1794308978860",
+    "reference_price_timestamp": "1794316545",
+    "last_nonce": "1794315237923",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -1028,7 +1059,7 @@
     "outstanding": [],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794306423340",
+    "last_open_expiry": "1794312682367",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -1067,9 +1098,9 @@
       "initial_inventory": "9300000000000000000000000",
       "sold_inventory": "0",
       "reduced_inventory": "0",
-      "usable_margin": "24778410",
+      "usable_margin": "28714402",
       "withdrawable": "0",
-      "observed_at_ms": "1794310279937",
+      "observed_at_ms": "1794316539052",
       "next_route_id": "1",
       "route": {
         "id": "1",
@@ -1079,16 +1110,16 @@
           "min_usdc": "32558432",
           "fee_usdc": "50000",
           "impact_bps": 100,
-          "quoted_at_ms": "1794310285401",
-          "deadline_ms": "1794310315401"
+          "quoted_at_ms": "1794316544520",
+          "deadline_ms": "1794316574520"
         },
         "dispatched_near": "9300000000000000000000000",
         "phase": "AwaitingReceipt",
-        "completion_deadline_ms": "1794313888441"
+        "completion_deadline_ms": "1794320147559"
       },
       "sales": [
         [
-          1794310288441,
+          1794316547559,
           9.3e+24
         ]
       ],
@@ -1159,14 +1190,14 @@
       "initial_inventory": "9300000000000000000000000",
       "sold_inventory": "9300000000000000000000000",
       "reduced_inventory": "0",
-      "usable_margin": "57336842",
+      "usable_margin": "61272834",
       "withdrawable": "0",
-      "observed_at_ms": "1794310279937",
+      "observed_at_ms": "1794316539052",
       "next_route_id": "1",
       "route": null,
       "sales": [
         [
-          1794310288441,
+          1794316547559,
           9.3e+24
         ]
       ],
@@ -1175,13 +1206,13 @@
     "creditedUsdc": "32558432"
   },
   "ownerAfterRebalance": {
-    "balanceYocto": "99696340952312476299999999",
+    "balanceYocto": "99696275665960328999999999",
     "accessKeys": [
       {
-        "publicKey": "ed25519:789xb9SbMv4wscYiV9Rc2tC3ubDh3avipC7jc72NGyjs",
+        "publicKey": "ed25519:HaG9s6pVQfhXDBS6akaVwY7TsPL7Svq5zsDCE5QbEaSB",
         "nonce": 7000010
       }
     ]
   },
-  "finishedAt": "2026-11-10T10:27:03.291Z"
+  "finishedAt": "2026-11-10T12:11:22.417Z"
 }

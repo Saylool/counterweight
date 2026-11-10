@@ -32,6 +32,7 @@ while offset < len(data):
         _, cursor = read_u32(data, cursor)
 
 required = {
+    "refresh_oracle", "on_oracle_price", "set_keeper_price",
     "new", "get_state", "set_config", "set_reference_price", "set_paused",
     "heartbeat", "ft_on_transfer", "request_order_signature", "deleverage",
     "request_evm_withdrawal", "withdraw_spot", "on_signature",

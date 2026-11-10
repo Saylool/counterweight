@@ -1,3 +1,4 @@
+import { policyUpperNotional } from './policy.js';
 import { z } from 'zod';
 
 // Bounds also keep intermediate dollar arithmetic finite. USD/USDC parity is a replay assumption.
@@ -16,16 +17,21 @@ export function maintenanceMargin(notional: unknown): number {
   const n = z.number().finite().min(0).max(1e16).parse(notional);
   return Math.min(n, 20_000_000) * 0.05 + Math.max(0, n - 20_000_000) * 0.1;
 }
-export const ExposureSchema = z.object({ shortNotional: money, venueEquity: equity }).strict();
+export const ExposureSchema = z.object({ shortNotional: money, venueEquity: equity, shortQuantityNear: money.optional(), referencePriceUsd: money.positive().optional(), feeReserveUsd: money.default(0.1), priceBandBps: z.number().int().min(0).max(1000).default(100) }).strict();
 export function stressMetrics(input: unknown) {
-  const { shortNotional: n, venueEquity: e } = ExposureSchema.parse(input);
-  const reserve = Math.max(5, 0.1 * n);
+  const { shortNotional: n, venueEquity: e, shortQuantityNear, referencePriceUsd, feeReserveUsd, priceBandBps } = ExposureSchema.parse(input);
+  if ((shortQuantityNear === undefined) !== (referencePriceUsd === undefined)) throw new Error('Quantity and reference price must be supplied together');
+  if (shortQuantityNear !== undefined && referencePriceUsd !== undefined && Math.abs(n - shortQuantityNear * referencePriceUsd) > Math.max(1e-6, n * Number.EPSILON * 2)) throw new Error('Notional must match quantity and price');
+  const reserve = feeReserveUsd; // Same configured USDC fee reserve as the contract demo.
+  const upperNotional = shortQuantityNear !== undefined && referencePriceUsd !== undefined
+    ? policyUpperNotional(shortQuantityNear, referencePriceUsd, priceBandBps)
+    : policyUpperNotional(n, 1, priceBandBps);
   const stressedMaintenance = maintenanceMargin(1.5 * n);
   const ratio = e > 0 ? n / e : n === 0 && e === 0 ? 0 : null;
   return {
     // null represents undefined/infinite leverage; JSON-safe, never masks an insolvent account.
     leverage: ratio !== null && Number.isFinite(ratio) ? ratio : null,
-    reserve, stressedMaintenance, headroom: e - 0.5 * n - stressedMaintenance - reserve,
+    reserve, stressedMaintenance, headroom: Number(BigInt(Math.floor(e * 1e6)) - BigInt(Math.round(upperNotional * 1e6)) - BigInt(Math.ceil(reserve * 1e6))) / 1e6,
   };
 }
 export const FundingObservationSchema = z.object({ time, rate: z.number().finite().min(-1).max(1) }).strict();
@@ -78,7 +84,7 @@ export const RiskInputSchema = ExposureSchema.extend({
   state: z.object({ entryHalted: z.boolean() }).strict(),
   adl: z.boolean(), unexpectedReductionQuantity: money,
 }).strict();
-export type RiskInput = z.infer<typeof RiskInputSchema>;
+export type RiskInput = z.input<typeof RiskInputSchema>;
 export type EntryBlock = 'stale-data' | 'future-data' | 'unresolved-orders' | 'unreconciled' | 'funding-incomplete' |
   'nonpositive-funding' | 'stress-failed' | 'depth-failed' | 'leverage-exceeded' | 'entry-halted' | 'minimum-order';
 export type ActionProposal =
@@ -92,7 +98,7 @@ export type ActionProposal =
 /** Soft keeper policy only. No clock, network, wallet, signatures, mutation, or execution. */
 export function evaluateRisk(input: unknown) {
   const x = RiskInputSchema.parse(input);
-  const metrics = stressMetrics({ shortNotional: x.shortNotional, venueEquity: x.venueEquity });
+  const metrics = stressMetrics({ shortNotional: x.shortNotional, venueEquity: x.venueEquity, ...(x.shortQuantityNear === undefined ? {} : { shortQuantityNear: x.shortQuantityNear }), ...(x.referencePriceUsd === undefined ? {} : { referencePriceUsd: x.referencePriceUsd }), feeReserveUsd: x.feeReserveUsd, priceBandBps: x.priceBandBps });
   const funding = fundingStats(x.funding, x.now);
   const entryBlocks: EntryBlock[] = [];
   const proposals: ActionProposal[] = [];
@@ -110,13 +116,13 @@ export function evaluateRisk(input: unknown) {
     if (entryBlocks.includes(reason)) proposals.push({ type: 'reconcile', reason });
   if (!funding.complete24h) entryBlocks.push('funding-incomplete');
   else if (funding.trailing24hRate! <= 0) entryBlocks.push('nonpositive-funding');
-  if (metrics.headroom <= 0) entryBlocks.push('stress-failed');
+  if (Math.round(metrics.headroom * 1e6) < Math.ceil(Math.round((x.venueEquity - metrics.reserve - metrics.headroom) * 1e6) / 10)) entryBlocks.push('stress-failed');
   if (x.depth.availableNotional < x.shortNotional || x.depth.impactBps > 25) entryBlocks.push('depth-failed');
   if (metrics.leverage === null || metrics.leverage > 1 || x.venueEquity <= 0) entryBlocks.push('leverage-exceeded');
   if (x.shortNotional < 10) entryBlocks.push('minimum-order');
   if (x.intent === 'monitor' && x.shortNotional > 0) {
     // Emergency de-risking remains proposed even when ordinary entry is blocked.
-    if (metrics.headroom < 0.1 * x.shortNotional)
+    if (Math.round(metrics.headroom * 1e6) < Math.ceil(Math.round((x.venueEquity - metrics.reserve - metrics.headroom) * 1e6) / 10))
       proposals.push({ type: 'full-unwind', reduceOnly: true, fraction: 1, reason: 'stress-headroom', requiresSpotApproval: true });
     else if (funding.consecutiveNegativeHours >= 6)
       proposals.push({ type: 'exit-proposal', reduceOnly: true, fraction: 1, reason: 'six-negative-hours', requiresSpotApproval: true });
@@ -133,3 +139,5 @@ export const RebalanceRuleSchema = z.object({
   latencyHours: z.literal(1).default(1),
 }).strict().refine(r => r.lower < r.target && r.target < r.upper, 'Require lower < target < upper');
 export type RebalanceRule = z.input<typeof RebalanceRuleSchema>;
+
+export * from './policy.js';

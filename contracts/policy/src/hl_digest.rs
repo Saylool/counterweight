@@ -6,7 +6,7 @@ use near_sdk::env::keccak256_array as keccak;
 pub const IMPLEMENTATION: &str = "HYPERLIQUID_MSGPACK_EIP712_V1";
 type Result<T> = std::result::Result<T, &'static str>;
 
-pub fn digest(payload: &SigningPayload) -> Result<[u8; 32]> {
+pub fn digest(payload: &SigningPayload, mainnet: bool) -> Result<[u8; 32]> {
     if let HlAction::Withdraw {
         hyperliquid_chain,
         signature_chain_id,
@@ -15,21 +15,21 @@ pub fn digest(payload: &SigningPayload) -> Result<[u8; 32]> {
         time,
     } = &payload.action
     {
-        if hyperliquid_chain != "Testnet"
+        if hyperliquid_chain != if mainnet { "Mainnet" } else { "Testnet" }
             || signature_chain_id != "0x66eee"
             || *time != payload.nonce
             || payload.expires_after.is_some()
         {
             return Err("ERR_WITHDRAW_DOMAIN");
         }
-        withdraw_digest(destination, amount, *time, false)
+        withdraw_digest(destination, amount, *time, mainnet)
     } else {
         l1_digest(
             &payload.action,
             payload.nonce,
             None,
             payload.expires_after,
-            false,
+            mainnet,
         )
     }
 }

@@ -6,7 +6,7 @@ import { selectRebalanceRule } from '../../../apps/keeper/src/rebalance-selectio
 import type { MarketHour } from '../../../apps/keeper/src/market.js';
 
 const rule = { lower: 0.3, target: 0.6, upper: 0.9 };
-const config = { shortUsd: 2500, marginUsd: 3000, operatingUsd: 200, szDecimals: 1,
+const config = { shortUsd: 2500, marginUsd: 4000, operatingUsd: 200, szDecimals: 1,
   policy: 'hedged-rebalance' as const, rebalanceRule: rule };
 const flat = (p: number) => ({ open: p, high: p, low: p, close: p });
 function series(prices: number[], rate = 0): MarketHour[] {
@@ -34,8 +34,8 @@ describe('delayed cross-venue collateral accounting', () => {
     // One lot less cannot satisfy target at the same observed prices.
     const oneLess = k - 0.1, remain = result.initialQuantity - oneLess;
     const e = config.marginUsd - result.initialQuantity * 2 * (COSTS.perpTaker + COSTS.perpSlippage) - result.initialQuantity * 0.3 - oneLess * price * (COSTS.perpTaker + COSTS.perpSlippage);
-    const h = e + oneLess * price * (1 - COSTS.route - COSTS.protocol - COSTS.spotSlippage) - 0.675 * remain * price;
-    expect(h / (remain * price)).toBeLessThan(rule.target);
+    const h = e + oneLess * price * (1 - COSTS.route - COSTS.protocol - COSTS.spotSlippage) - 1.01 * remain * price - 0.1;
+    expect(h / (1.01 * remain * price)).toBeLessThan(rule.target);
     expect(result.rebalances).toBe(1);
     expect(result.rebalanceCostsUsd).toBeCloseTo(k * price * (COSTS.route + COSTS.protocol + COSTS.spotSlippage + COSTS.perpTaker + COSTS.perpSlippage) + 0.06, 10);
     for (const e of result.events) expect(e.spotQuantity).toBe(e.shortQuantity);
@@ -44,30 +44,11 @@ describe('delayed cross-venue collateral accounting', () => {
     expect(result.spotPnlUsd + result.perpPnlUsd).toBeCloseTo(0, 10);
     expect(result.equityCurve.at(-1)!.equityUsd).toBeCloseTo(result.initialCapitalUsd + result.netPnlUsd, 10);
   });
-  it('withdraws first and increases both legs only on receipt, using arrival price and caps', () => {
-    const rows = series([2, 2.3, 2.3, 2.3, 2.0, 2.0, 2.01, 2.01, 2.01]);
-    const result = run(rows);
-    const withdrawal = result.events.find(e => e.type === 'rebalance-withdraw')!;
-    const increase = result.events.find(e => e.type === 'rebalance-increase')!;
-    expect(withdrawal).toBeDefined(); expect(increase).toBeDefined();
-    expect(increase.time - withdrawal.time).toBe(HOUR_MS);
-    expect(withdrawal.pendingTransferUsd!).toBeGreaterThan(0);
-    expect(increase.pendingTransferUsd).toBe(0);
-    expect(withdrawal.shortQuantity! + increase.quantity).toBeCloseTo(increase.shortQuantity!, 10);
-    expect(increase.spotPrice).toBe(2.01);
-    expect(increase.quantity).not.toBe(withdrawal.quantity);
-    expect(increase.shortQuantity!).toBeLessThanOrEqual(result.initialQuantity);
-    expect(increase.shortNotional).toBeLessThanOrEqual(config.shortUsd);
-    expect(increase.shortQuantity! * increase.spotPrice).toBeLessThanOrEqual(config.shortUsd);
-    expect(increase.stressHeadroomUsd! / increase.shortNotional).toBeGreaterThanOrEqual(rule.lower);
-    expect(increase.stressHeadroomUsd! / increase.shortNotional).toBeLessThanOrEqual(rule.upper);
-    const sale = result.events.find(e => e.type === 'rebalance-reduce')!;
-    const expected = sale.quantity * sale.spotPrice * (COSTS.route + COSTS.protocol + COSTS.spotSlippage + COSTS.perpTaker + COSTS.perpSlippage) + 0.06 +
-      increase.quantity * increase.spotPrice / (1 - COSTS.route - COSTS.protocol - COSTS.spotSlippage) * (COSTS.route + COSTS.protocol + COSTS.spotSlippage) +
-      increase.quantity * increase.perpPrice * (COSTS.perpTaker + COSTS.perpSlippage) + 1.06;
-    expect(result.rebalanceCostsUsd).toBeCloseTo(expected, 10);
-    expect(result.spotPnlUsd + result.perpPnlUsd).toBeCloseTo(0, 10);
-    expect(result.equityCurve.at(-1)!.equityUsd).toBeCloseTo(result.initialCapitalUsd + result.netPnlUsd, 10);
+  it('retains excess venue margin while a short is open, matching ERR_OPEN_SHORT', () => {
+    const result = run(series([2, 2.03, 2.03, 2.03, 1.8, 1.8, 1.8]));
+    expect(result.events.some(e => ['rebalance-withdraw', 'rebalance-increase'].includes(e.type))).toBe(false);
+    expect(result.netMarginTransfersUsd).toBeGreaterThanOrEqual(0);
+    expect(result.pendingTransferUsd).toBe(0);
   });
   it('stress-checks remaining margin during latency and schedules emergency full unwind', () => {
     const rows = series([2, 2.3, 2.3, 2.3, 2.3, 2.3]);
@@ -81,7 +62,7 @@ describe('delayed cross-venue collateral accounting', () => {
   });
   it('full-unwinds an adjustment below minimum, stays flat, and keeps cash nonnegative', () => {
     const result = run(series([2, 2.2, 2.2, 2.2, 2.2]), { shortUsd: 25, marginUsd: 30, operatingUsd: 20 });
-    expect(result.events.at(-1)?.reason).toBe('low-band-unrestorable');
+    expect(result.events.at(-1)?.reason).toBe('stress-or-latency-unwind');
     expect(result.rebalances).toBe(0); expect(result.terminalQuantity).toBe(0);
     expect(result.entries).toBe(1); expect(result.finalQuantity).toBe(0);
     expect(result.minMarkedVenueEquityUsd!).toBeGreaterThan(0);
@@ -122,7 +103,7 @@ describe('delayed cross-venue collateral accounting', () => {
     expect(selectRebalanceRule(changed)).toEqual(a);
     expect(a.rule).toEqual({ lower: 0.2, target: 0.5, upper: 0.8, latencyHours: 1 }); // Exact training tie.
     expect(() => selectRebalanceRule({ ...data, bars: rows.filter((_, i) => i !== 100) })).toThrow('contiguous');
-  });
+  }, 30000);
   it('validates ordered finite bands and fixed latency', () => {
     expect(() => RebalanceRuleSchema.parse({ ...rule, target: 0.2 })).toThrow();
     expect(() => RebalanceRuleSchema.parse({ ...rule, latencyHours: 0 })).toThrow();

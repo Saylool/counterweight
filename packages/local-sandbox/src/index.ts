@@ -7,8 +7,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker, type NearAccount, type TransactionResult } from 'near-workspaces';
 
-export const POLICY_SHA256 = 'e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a';
-export const MOCK_SHA256 = '971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886';
+export const POLICY_SHA256 = 'd85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1';
+export const MOCK_SHA256 = '69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f';
 export const BASE = 10n ** 24n;
 export const GAS = 300n * 10n ** 12n;
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -93,7 +93,8 @@ export class LocalSandbox {
         signer_account: mock.accountId, wnear_account: mock.accountId,
         limits: { max_short_size: quantity, per_order_notional_cap: '30000000', per_day_notional_cap: '30000000',
           cooldown_seconds: 60, price_band_bps: 100, price_max_age_seconds: 120 },
-        heartbeat_timeout_seconds: 600, reference_price: priceMicro, signing_limits: null,
+        network: "Testnet", heartbeat_timeout_seconds: 600, reference_price: priceMicro, signing_limits: null,
+        oracle: { account_id: null, feed_id: "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750", max_age_seconds: 120, max_confidence_bps: 100, min_price: String(BigInt(priceMicro) / 2n), max_price: String(BigInt(priceMicro) * 2n) },
       });
       // Remove policy access keys before mock funding, using only public-key views.
       // Keeper local keys stay library-managed; zero-deposit signing uses the policy reserve.

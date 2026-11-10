@@ -51,6 +51,8 @@ fn policy() -> Policy {
         600,
         U128(5_000_000),
         None,
+        oracle_config(),
+        Network::Testnet,
     );
     at(TOKEN, 1000);
     p.ft_on_transfer(account(OWNER), U128(100 * BASE), String::new());
@@ -859,6 +861,7 @@ fn missing_withdraw_callback_expires_locally_without_reusing_its_nonce() {
 fn public_can_preempt_keeper_but_uses_separate_bounded_capacity() {
     let mut p = policy();
     at(KEEPER, 1600);
+    p.set_keeper_price(U128(5_000_000), U64(1600));
     p.request_order_signature(order(BASE, false));
     at("stranger.testnet", 1601);
     p.deleverage(U128(5_000_000));
@@ -903,3 +906,17 @@ fn prepare_margin(p: &mut Policy) {
         U64(env::block_timestamp_ms()),
     );
 }
+
+mod cross_layer;
+
+fn oracle_config() -> OracleConfig {
+    OracleConfig {
+        account_id: None,
+        feed_id: "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750".into(),
+        max_age_seconds: 300,
+        max_confidence_bps: 100,
+        min_price: U128(4_000_000),
+        max_price: U128(7_000_000),
+    }
+}
+mod oracle;

@@ -10,7 +10,8 @@ export interface OrderWire {
 }
 export type L1Action = { type: 'order'; orders: OrderWire[]; grouping: 'na' | 'normalTpsl' | 'positionTpsl' }
   | { type: 'cancel'; cancels: { a: number; o: number }[] }
-  | { type: 'cancelByCloid'; cancels: { asset: number; cloid: Hex }[] };
+  | { type: 'cancelByCloid'; cancels: { asset: number; cloid: Hex }[] }
+  | { type: 'noop' };
 export type UserAction = { type: 'approveAgent'; agentAddress: Hex; agentName: string; nonce: number }
   | { type: 'withdraw3' | 'usdSend'; destination: string; amount: string; time: number };
 export interface L1Input { scheme: 'l1'; network: Network; action: L1Action; nonce: number; vaultAddress?: Hex; expiresAfter?: number }
@@ -29,6 +30,7 @@ const decimal = z.string().regex(/^(0|[1-9]\d*)(\.\d{0,7}[1-9])?$/);
 const positiveDecimal = decimal.refine(value => value !== '0', 'Amount or size must be positive');
 const cloid = z.string().regex(/^0x[0-9a-f]{32}$/);
 const l1Schema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('noop') }).strict(),
   z.object({ type: z.literal('order'), orders: z.array(z.object({ a: uint, b: z.boolean(), p: decimal, s: positiveDecimal, r: z.boolean(), t: z.union([
     z.object({ limit: z.object({ tif: z.enum(['Alo', 'Ioc', 'Gtc']) }).strict() }).strict(),
     z.object({ trigger: z.object({ isMarket: z.boolean(), triggerPx: decimal, tpsl: z.enum(['tp', 'sl']) }).strict() }).strict(),
@@ -56,6 +58,7 @@ function u64(value: number): Hex { uint.parse(value); return toHex(BigInt(value)
 /** Rebuild SDK struct order recursively; absent optional fields must never become MessagePack nil. */
 function canonicalAction(action: L1Action): L1Action {
   const parsed = l1Schema.parse(action);
+  if (parsed.type === 'noop') return { type: 'noop' };
   if (parsed.type === 'order') return { type: parsed.type, orders: parsed.orders.map(order => ({
     a: order.a, b: order.b, p: order.p, s: order.s, r: order.r,
     t: 'limit' in order.t ? { limit: { tif: order.t.limit.tif } } : { trigger: {

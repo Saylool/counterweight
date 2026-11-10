@@ -60,6 +60,18 @@ impl MockSigner {
             Gas::from_tgas(25),
         )
     }
+    pub fn get_price_no_older_than(&self, price_id: String, age: u64) -> Value {
+        assert_eq!(
+            price_id,
+            "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750"
+        );
+        assert!(age <= 300);
+        if self.mode < 9 {
+            return Value::Null;
+        }
+        json!({"price":"500000000", "conf": if self.mode == 11 {"10000000"} else {"100000"}, "expo":-8,
+            "publish_time": (env::block_timestamp_ms() / 1000) as i64 - if self.mode == 10 {600} else {0}})
+    }
     pub fn set_mode(&mut self, mode: u8) {
         self.mode = mode;
     }

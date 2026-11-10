@@ -1,3 +1,5 @@
+> **Superseded pre-implementation drafts:** Parts A and C below are historical proposals, not implemented behavior or evidence. Current behavior is defined by the contract, README, and DESIGN-NOTES. No mainnet operation, liquidation prevention or continuous hard leverage guarantee has been demonstrated. Part B also predates the oracle/bounded-price revision.
+
 # Counterweight design (agreed 2026-11-09)
 
 Testnet only (decision 2026-11-09: no real funds). NEAR testnet + Hyperliquid testnet; NEAR Intents 1Click only as
@@ -108,7 +110,7 @@ Counterweight would be the one where *the venue's only signer is a contract enfo
 
 ---
 
-# Part A — architecture
+# Part A — SUPERSEDED pre-implementation architecture draft
 
 **Decision: build Counterweight as an individual NEAR carry account: wNEAR spot held by a NEAR contract, matched by a USDC-margined Hyperliquid NEAR short. Use Chain Signatures for every external authorization, with no agent wallet in v1.**
 
@@ -311,7 +313,7 @@ The supplied competitor review already rules out “no competitors.” Counterwe
 
 ---
 
-# Part C — product, demo and README plan
+# Part C — SUPERSEDED pre-implementation product/demo draft
 
 # Counterweight — Product Spec & Jury-Winning Pitch Playbook
 
@@ -322,16 +324,16 @@ The supplied competitor review already rules out “no competitors.” Counterwe
 ## 1. Positioning & Naming
 
 ### One-Sentence Positioning
-**Counterweight is a self-custodial cross-chain hedge controller on NEAR that funds via NEAR Intents 1Click and uses Chain Signatures (`v1.signer`) to hold a keyless, contract-capped `≤1x` Hyperliquid perp short against your spot asset—eliminating custodian risk, squeeze liquidations, and APY marketing theater.**
+**Counterweight is a self-custodial cross-chain hedge controller on NEAR that funds via NEAR Intents 1Click and uses Chain Signatures (`v1.signer`) to hold a keyless, quantity-capped Hyperliquid perp short against your spot asset—an intended design, with custody, liquidation and execution risks remaining.**
 
 ### Why Counterweight Is NOT "A Small Ethena" and NOT "ZeroDelta"
 Pre-jury feedback ([finalistler.md](file:///Users/samet/Desktop/nearhacheton/.claude/worktrees/near-hackathon-rules-22faa2/ekip/finalistler.md)) and live competitor reconnaissance ([out-d1-rakipsizlik.md](file:///Users/samet/Desktop/nearhacheton/.claude/worktrees/near-hackathon-rules-22faa2/ekip/out-d1-rakipsizlik.md)) expose two traps: looking like an under-scaled [Ethena](https://docs.ethena.fi/) clone to VCs, or tying on narrative with [ZeroDelta](https://github.com/g4stein/zerodelta) during AI screening (`Q-017`). We win by separating on four verifiable facts:
 
 | Dimension | [Ethena](https://docs.ethena.fi/) / [Liminal](https://docs.liminal.money/getting-started/products) | [ZeroDelta](https://github.com/g4stein/zerodelta) / [OptionZero](https://github.com/fepvenancio/optionsZero) / [Lemon](https://lemonmarkets.finance/docs) | **Counterweight (Our Edge)** |
 | :--- | :--- | :--- | :--- |
-| **1. Real Funds** | Institutional / pooled production capital, opaque to individual asset customizability. | **Unfunded or mocked:** ZeroDelta's README admits fills/funds movement are absent and TEE is simulated; OptionZero uses `MockPerpAdapter`; Lemon showed zero active vaults (**UNVERIFIED** traction). | **Live mainnet execution:** Real (tiny-dollar, `Q-007`) 1Click deposit + live `v1.signer`-derived EVM fills verifiable on NearBlocks and Hyperliquid Explorer. |
+| **1. Real Funds** | Institutional / pooled production capital, opaque to individual asset customizability. | **Unfunded or mocked:** ZeroDelta's README admits fills/funds movement are absent and TEE is simulated; OptionZero uses `MockPerpAdapter`; Lemon showed zero active vaults (**UNVERIFIED** traction). | **Unimplemented proposal:** mainnet transfers and venue fills were proposed; only dry quotes and testnet signature recovery were recorded. |
 | **2. Custody Model** | **Custodial / pooled:** Ethena relies on off-exchange CEX custodians (Copper/Ceffu) and issues a pooled synthetic dollar; Liminal uses managed agent accounts/xTokens. | Testnet guard stubs or server-held agent wallets with no proven mainnet principal-operator separation. | **Per-user contract custody:** Your personal NEAR contract state owns a keyless `v1.signer` EVM address. Withdrawals require your NEAR signature while shorts are `0`; an optional Hyperliquid `approveAgent` trading key (**UNVERIFIED** exact EIP-712 byte layout—verify against HL docs) can rebalance/close only, never withdraw. |
-| **3. Stress Proof** | Managed discretionary risk desks behind closed doors. | Paper architecture; vulnerable to the 10–15s cross-chain MPC/bridge latency squeeze flaw flagged in [finalistler.md](file:///Users/samet/Desktop/nearhacheton/.claude/worktrees/near-hackathon-rules-22faa2/ekip/finalistler.md#L29-L34). | **Hard `≤1.0x` leverage + keyless replay:** Because `short_notional ≤ perp_USDC_margin` is enforced in-contract, initial liquidation distance is ~85–95% (exact maintenance margin tier queried per asset from HL `meta`, **UNVERIFIED** statically). A +35% candle with 15s settlement lag never triggers emergency rescue. |
+| **3. Stress Proof** | Managed discretionary risk desks behind closed doors. | Paper architecture; vulnerable to the 10–15s cross-chain MPC/bridge latency squeeze flaw flagged in [finalistler.md](file:///Users/samet/Desktop/nearhacheton/.claude/worktrees/near-hackathon-rules-22faa2/ekip/finalistler.md#L29-L34). | **Unimplemented proposal:** continuous leverage and liquidation-distance guarantees are not enforced. The contract bounds authorizations and checks owner-attested margin on configured rebalancing paths; venue exposure remains external. |
 | **4. Honest Net Returns** | Headline gross yield marketing; fee and negative-funding drag abstracted into protocol reserves. | Simulated/projected APY with no live fee reconciliation or negative-funding stress window. | **Full carry decomposition:** Reports realized + 180d historical net carry = `funding + optional LST yield − HL fees − 1Click spread (0.2% w/o JWT, Q-006) − gas`, highlighting worst 21-day negative-funding drawdowns and deterministic auto-unwind rules. |
 
 ### Three Name Options
@@ -406,7 +408,7 @@ Structured for **Claude Code / Codex (`Q-017`)** first (deterministic CLI verifi
 2. **`## Quickstart: Verify Everything ("Do X — See Y", Keyless First)`**
    * **Step 1 — Deterministic Engine & Contract Invariants (Offline, 0 keys, ~20s):**
      * **Do:** `npm ci && npm test`
-     * **See:** All Vitest + contract tests pass (`max_leverage <= 1.0x`, `ERR_NOT_CONTRACT_OWNER` on rogue withdrawal, `REFUNDED`/`FAILED` 1Click state transitions, auto-unwind trigger).
+     * **See:** All Vitest + contract tests pass (soft leverage checks, `ERR_NOT_CONTRACT_OWNER` on rogue withdrawal, `REFUNDED`/`FAILED` 1Click state transitions, auto-unwind trigger).
    * **Step 2 — Keyless Historical Stress Replay (Offline fixtures, 0 keys, ~15s):**
      * **Do:** `npm run replay -- --scenario squeeze-35pct && npm run replay -- --scenario neg-funding-21d`
      * **See:** Deterministic table + `artifacts/replay-report.json`: during a `+35%` candle with simulated `15s` MPC/Intents lag, max `|net_delta|` stays within band and minimum margin buffer stays `>50%` (`0` liquidations); during a 21-day negative-funding flip, cumulative bleed crosses floor and triggers clean unwind.
@@ -497,7 +499,7 @@ Structured for **Claude Code / Codex (`Q-017`)** first (deterministic CLI verifi
 * **AI Screeners — Claude Code & Codex (`Q-017`):** *"Does this repo actually execute what the README claims without hidden keys or `MockPerpAdapter` stubs?"*
   * **Answer:** Run `npm test && npm run replay && npm run verify:live` with zero secrets to verify every risk invariant offline and confirm our `v1.signer`-derived EVM address and real fills directly against public NEAR and Hyperliquid APIs.
 * **1. Illia Polosukhin (NEAR):** *"What protects the position during the 10–15 seconds it takes for NEAR Intents and `v1.signer` to settle during a violent market move?"*
-  * **Answer:** The NEAR contract hard-caps short leverage at `≤1.0x`, keeping liquidation ~85–95% away so cross-chain rebalancing is an asynchronous drift reset rather than a 10-second survival race.
+  * **Answer:** The contract caps signed quantity; it cannot enforce continuous external leverage or a liquidation distance. Delayed recovery can fail.
 * **2. Mert Mumtaz (Helius):** *"Hyperliquid positions are completely public on-chain—are you claiming this is private?"*
   * **Answer:** Zero privacy theater: positions on Hyperliquid are public and our README states that plainly; our guarantee is keyless contract custody and deterministic risk execution, not fake unlinkability.
 * **3. Eddy Lazzarin (a16z crypto):** *"If the off-chain rebalancing keeper is compromised, what is the maximum damage it can inflict on user funds?"*

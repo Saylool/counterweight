@@ -15,6 +15,8 @@ export const PROBE_ADDRESS = '0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a';
 export const WASM = 'contracts/policy/artifacts/counterweight_policy.wasm';
 export const LIMITS = { max_short_size: '1000000000000000000000000', per_order_notional_cap: '10000000',
   per_day_notional_cap: '20000000', cooldown_seconds: 60, price_band_bps: 100, price_max_age_seconds: 60 };
+export const ORACLE = { account_id: null, feed_id: 'c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750',
+  max_age_seconds: 60, max_confidence_bps: 100, min_price: '950000', max_price: '1050000' };
 export const SIGNING_LIMITS = { keeper_per_block: 2, keeper_per_window: 8, keeper_outstanding: 8,
   owner_per_window: 16, window_ms: 60000, max_nonce_ahead_ms: 1000 };
 

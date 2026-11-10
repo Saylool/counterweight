@@ -11,7 +11,7 @@ The policy is the default-feature committed `contracts/policy/artifacts/counterw
 checked against its published SHA-256 and a pinned digest before deployment.
 `artifacts/mock-mpc.wasm.base64` encodes a copy of the existing
 `contracts/policy/tests/mock-signer/src/lib.rs` build. Its SHA-256 is
-`971c4b82a7b2b3a5c34e8693dcf21f448b1457fb4e80a5f64e161f9508c51886`.
+`69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f`.
 The hash is checked on decoded Wasm bytes before deployment. Text encoding keeps
 the fixture distributable under the repository's `*.wasm` ignore rule.
 It fabricates signature-shaped public data and mock token receipts. It does not

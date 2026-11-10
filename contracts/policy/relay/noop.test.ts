@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { actionHash, getSigningDigest, assembleRequest } from './signing.ts';
+import { actionHash, getSigningDigest, assembleRequest } from '../../../packages/hyperliquid/src/signing.ts';
 import { mpcToHyperliquidSignature } from '../../../packages/hyperliquid/src/chainsig.ts';
 const read = (path: string) => JSON.parse(readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8'));
 const vectors = read('../fixtures/hyperliquid-signing-vectors.json').vectors;

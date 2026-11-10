@@ -1,3 +1,5 @@
+> Current working-tree validation after the blind reviews is recorded in [contract TEST_RESULTS](../contracts/policy/TEST_RESULTS.md). The timings and deployment reads below are historical. The current revision used no git commands, real keys or testnet sends. The release-file overlay warning is obsolete.
+
 # Release reproduction — 2026-11-10
 
 Final measured run: **2026-11-10T11:03:47.967116+00:00** through **2026-11-10T11:06:34.601275+00:00**. OS: **macOS-26.6.2-arm64-arm-64bit-Mach-O**; architecture **arm64**; Node **v26.9.0**; npm **12.1.0**; shell `/bin/zsh`. Clone: `/tmp/counterweight-judge.XzCFO9/counterweight`. This is a fresh local clone and an empty per-clone npm cache on the existing machine, not a second physical machine or a clean OS image. Linux and the minimum supported Node version were not independently tested.
@@ -6,23 +8,7 @@ Final measured run: **2026-11-10T11:03:47.967116+00:00** through **2026-11-10T11
 
 The user permits only read-only git status/diff and cloning this local repository. No commit, staging, reset, checkout, fetch, push or remote clone was performed. No real private key, wallet/keychain credential or testnet signing command was used. The demo manages disposable localhost accounts through near-workspaces.
 
-A bare clone of the existing commit initially failed `npm ci`: the root lockfile omitted the web workspace (`EUSAGE`, missing `@counterweight/web`). The root lockfile is now fixed. The first default-cache attempt also failed with `EPERM` outside the writable sandbox. The README now sets an isolated cache under the clone. These preliminary probes were not separately timed. A preliminary full run also exposed two TypeScript annotation issues; both were corrected before the final run below.
-
-Because commits are prohibited, a local clone cannot contain the uncommitted release fixes. After cloning, the following **named release files only** were copied from the working tree; no dependencies, caches, generated builds, private credentials, or runtime output were copied. This qualifies the result as **fresh clone plus explicit release-file overlay**, not a bare committed-HEAD pass. The source must be committed by the owner before an unmodified clone can reproduce this release. Overlay files:
-
-- `README.md`
-- `package-lock.json`
-- `apps/web/README.md`
-- `apps/web/src/App.tsx`
-- `apps/web/src/components.tsx`
-- `apps/web/src/components.test.tsx`
-- `scripts/readme-claims.test.ts`
-- `docs/CLAIMS.md`
-- `docs/DEMO-SCRIPT.md`
-- `docs/REPRODUCE.md`
-- `docs/evidence/2026-11-10-source-history.json`
-
-The full verification used final executable source, tests, lockfile and README. This record itself was filled in after the run; at overlay time it contained a placeholder. README, lockfile and executable source/test hashes were checked unchanged after verification. The claims index received a trailing-whitespace cleanup afterward. Existing committed WASM and fixtures came from the clone.
+The release-overlay discussion in the earlier record is obsolete: those release files were subsequently included before the blind reviews. The historical timings below describe that earlier run, not the current working tree. This revision is validated directly in the current directory; no git commands, clone, real keys or testnet sends were used. See the updated contract TEST_RESULTS for current checks. An unmodified fresh-clone pass for this uncommitted revision has not been claimed.
 
 ## Exact quickstart and timings
 

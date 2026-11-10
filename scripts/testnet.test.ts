@@ -71,7 +71,7 @@ describe('auditable deployment command builder', () => {
   });
   it('verifies artifact bytes against the committed SHA-256 manifest and converts to NEAR base58', async () => {
     const result = await committedWasm();
-    expect(result.sha256).toBe('e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a');
+    expect(result.sha256).toBe('d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1');
     expect(Buffer.from(base58.decode(result.codeHash)).toString('hex')).toBe(result.sha256);
   });
 });
@@ -141,7 +141,7 @@ describe('public receipt parsing and custody', () => {
   it('flags mutable config drift instead of treating any valid view as matching the plan', () => {
     const init = initialization(54, 1, PROBE_ADDRESS);
     const state = policyStateSchema.parse({ ...init, coin: 'NEAR', near_recipient: OWNER, spot_balance: '0', signed_short_size: '0',
-      paused: false, pending: null, signing_limits: SIGNING_LIMITS, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000' });
+      paused: false, pending: null, signing_limits: SIGNING_LIMITS, network: 'Testnet', oracle: initialization(54,1,PROBE_ADDRESS).oracle, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000' });
     expect(planConfigMatches(state)).toBe(true);
     expect(planConfigMatches({ ...state, limits: { ...state.limits, per_day_notional_cap: '999999999' } })).toBe(false);
     expect(planConfigMatches({ ...state, mpc_fee: '1000' })).toBe(false);
@@ -178,4 +178,14 @@ describe('public receipt parsing and custody', () => {
     fetcher.mockResolvedValue(new Response(JSON.stringify({ error: { cause: { name: 'UNKNOWN_ACCOUNT' }, data: 'untrusted' } })));
     await expect(rpc('query', {}, fetcher)).rejects.toThrow('NEAR RPC UNKNOWN_ACCOUNT');
   });
+});
+
+it('ties the published keeper debit ceiling to the actual policy-v2 limits', () => {
+  const init = initialization(54,1,PROBE_ADDRESS);
+  const upperPrice = (BigInt(init.oracle.max_price) * BigInt(10000 + init.limits.price_band_bps) + 9999n) / 10000n;
+  // At these configured values the buy price already satisfies the venue tick.
+  expect(upperPrice).toBe(1060500n);
+  const notional = (BigInt(init.limits.max_short_size) * upperPrice + 10n ** 24n - 1n) / 10n ** 24n;
+  const debit = (notional * 1000450n + 999999n) / 1000000n;
+  expect(debit * 1000n).toBe(1060978000n);
 });

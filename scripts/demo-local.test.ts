@@ -25,7 +25,7 @@ describe('local demo real squeeze and build provenance', () => {
     expect(plan.selection.start).toBe(Date.parse('2026-09-17T05:00:00Z'));
     expect(plan.bars).toHaveLength(24); expect(plan.quantityBase).toBe('9300000000000000000000000');
   });
-  it('triggers the real risk engine at hour 21 after headroom falls below 10% of short notional', () => {
+  it('triggers the real risk engine at hour 5 after headroom falls below 10% of short notional', () => {
     const plan = prepareLocalReplay(data);
     let cash = plan.initialMargin - plan.quantity * plan.anchor.perp.close * 0.00095;
     const decisions = plan.bars.map((bar, i) => {
@@ -33,8 +33,8 @@ describe('local demo real squeeze and build provenance', () => {
       return replayRisk(data, plan, i, plan.quantity, cash);
     });
     const firstClose = decisions.findIndex(d => d.risk.proposals.some(p => p.type === 'full-unwind'));
-    expect(firstClose).toBe(20);
-    expect(decisions[firstClose]!.risk.metrics.headroom).toBeCloseTo(2.535, 2);
+    expect(firstClose).toBe(4);
+    expect(decisions[firstClose]!.risk.metrics.headroom).toBeLessThan(0.1 * plan.quantity * plan.bars[firstClose]!.perp.close * 1.01);
     expect(decisions[firstClose]!.risk.proposals).toContainEqual({ type: 'full-unwind', reduceOnly: true,
       fraction: 1, reason: 'stress-headroom', requiresSpotApproval: true });
     expect(decisions[0]!.risk.metrics.headroom).toBeGreaterThan(decisions[firstClose]!.risk.metrics.headroom);

@@ -1,4 +1,4 @@
-# Counterweight policy contract — testnet only
+# Counterweight policy contract — testnet prototype
 
 Implements DESIGN Part B custody tiers and the owner-approved rebalancing revision
 in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). The previous artifact was deployed on testnet by the team lead; this updated
@@ -53,23 +53,22 @@ interoperability fixtures and have no controller signing entry point.
 ## Authority, prices, and accounting
 
 Initialization fixes owner, market/precision, signer, wNEAR, derivation path and
-EVM withdrawal recipient. Production accepts testnet account names only;
+EVM withdrawal recipient, network and oracle/range config. The immutable network selects Testnet/Mainnet account guards and EIP-712 source/domain; mainnet operation is unverified;
 `.test.near` is enabled solely by test-utils. Verify NEAR metadata before funding:
 read-only venue metadata on 2026-11-10 Istanbul time reported testnet index 54,
 mainnet index 74, `szDecimals=1` ([captured metadata](fixtures/near-market-meta.json)). Historical index 4 / precision 2 tests are mocks.
 
 Only owner deposits through the configured token with empty `msg` increase spot.
 Keeper opens are fixed-market sell IOC, bounded by held spot, reserved short,
-per-order and rolling-24h notional, cooldown, and fresh owner price. Opens cannot
+per-order and rolling-24h notional, cooldown, and fresh oracle/bounded fallback price. Opens cannot
 supply prices. Signing counts reservations, not fills. Failed malformed/missing
 callbacks retain exposure; a **definite failed signer receipt** releases its
 opening exposure, while keeping turnover/cooldown/nonce charges.
 
-Keeper reductions require `order.reference_price`; owner
+Keeper reductions use the fresh oracle when available; otherwise they require bounded `order.reference_price`; owner
 `emergency_reduce(size, price)` and public `deleverage(price)` also take micro-USD
-marks bounded to $0.00001–$1,000,000. These buy IOC orders apply a 50% band and
-`r=true`, independently of owner price freshness. There is no local exposure-size
-ceiling on reductions. Public recovery requests at least the configured maximum
+fallback marks within immutable init bounds. These buy IOC orders apply the configured band and
+`r=true`, independently of owner price freshness. Reduction size is capped at max(reserved exposure, configured maximum short). Public recovery requests at least the configured maximum
 short size, permitting residual recovery after an understated settlement.
 Prices floor for sells and ceil for buys to the official five-significant-digit
 and `6 - szDecimals` tick rules; integer prices follow the venue exception.
@@ -117,11 +116,7 @@ owner must relay each noop and attest consumption; unpause waits for confirmed
 consumption or expiry. Withdrawals require zero reserved short, configured margin
 limits/observations, and resolution of earlier withdrawals before retry.
 
-The policy-scoped relay is [relay/signing.ts](relay/signing.ts). The unchanged
-repository-wide codec outside this task's write scope does not accept noop;
-policy invalidation consumers must use the scoped module. `noop.test.ts` compares
-SDK vectors and assembles a real unit-host pause request with the public MPC fixture.
-It constructs wire bytes only; it never relays to a network.
+The shared codec is [packages/hyperliquid/src/signing.ts](../../packages/hyperliquid/src/signing.ts), including canonical noop support. The duplicate relay codec is removed. `relay/noop.test.ts` compares SDK vectors and assembles a real unit-host pause request with the public MPC fixture; it constructs wire bytes only and never relays to a network.
 
 Before funding a strategy, require zero access keys at finality:
 `python3 tools/check_custody_keys.py --rpc <RPC> --account <POLICY>`.
@@ -149,7 +144,7 @@ refunds and proportional minimum output, then credit only finalized margin.
 Receipt hashes reject duplicates across route IDs; history is bounded to 1,024.
 
 Margin withdrawals check zero short, fresh finalized equity and venue withdrawal
-availability, fee reserve, residual equity, leverage <=1, per-action/rolling USDC
+availability, fee reserve, residual equity, owner-attested margin health, per-action/rolling USDC
 limits and minimum H (>=10%). The full withdrawal immediately leaves usable
 margin. A final fixed-recipient receipt checks net+fee against the original amount
 and fee cap. Re-entry then requires actual authenticated wNEAR deposits, fresh
@@ -196,6 +191,6 @@ Names omit `tests::`; `audit::` and `rebalance::` identify the new test modules.
 
 Full ECDSA point validation/recovery/address binding remains a relayer check;
 contract callbacks enforce schema, low/nonzero s, scheme and recovery-ID bounds.
-Owner price/position/equity/finality attestations remain trusted. Test passing
+Bounded fallback price and owner position/equity/finality attestations remain trusted. Optional oracle reads validate timestamp, confidence and bounds. Test passing
 proves local accounting/receipts and serialization, not live venue fills, bridge
 finality, MPC fee availability, or an account's actual key removal.

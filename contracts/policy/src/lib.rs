@@ -6,12 +6,37 @@ use near_sdk::{
 };
 
 pub mod hl_digest;
+pub mod oracle;
 pub mod rebalance;
+use oracle::*;
 use rebalance::*;
 const BASE: u128 = 10u128.pow(24); // wNEAR yocto base units
 const DAY: u64 = 86_400;
 
 const LIFETIME_MS: u64 = 60_000;
+
+/// Immutable signature domain and NEAR account-network selection; not a deployment claim.
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug, PartialEq)]
+pub enum Network {
+    Testnet,
+    Mainnet,
+}
+impl Network {
+    fn mainnet(&self) -> bool {
+        matches!(self, Self::Mainnet)
+    }
+    fn matches_account(&self, id: &AccountId) -> bool {
+        if self.mainnet() {
+            !is_test_account(id) && !id.as_str().ends_with(".test.near")
+        } else {
+            is_test_account(id)
+        }
+    }
+    fn chain(&self) -> &str {
+        if self.mainnet() { "Mainnet" } else { "Testnet" }
+    }
+}
 
 /// Separate owner emergency capacity is never charged to a keeper/public caller.
 #[near(serializers = [borsh, json])]
@@ -68,7 +93,7 @@ pub struct OrderParams {
     pub asset_index: u32,
     pub size: U128,
     pub reduce_only: bool,
-    /// Required for reductions: untrusted current USD micro-price, bounded absolutely.
+    /// Fallback micro-price for reductions; ignored when the public oracle is fresh.
     pub reference_price: Option<U128>,
 }
 
@@ -185,6 +210,10 @@ pub struct PendingOperation {
 
 #[near(serializers = [json])]
 pub struct StateView {
+    pub network: Network,
+    pub oracle: OracleConfig,
+    pub oracle_price: U128,
+    pub oracle_timestamp: U64,
     pub owner: AccountId,
     pub keeper: AccountId,
     pub coin: String,
@@ -224,6 +253,10 @@ pub struct StateView {
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Policy {
+    network: Network,
+    oracle: OracleConfig,
+    oracle_price: u128,
+    oracle_timestamp: u64,
     owner: AccountId,
     keeper: AccountId,
     asset_index: u32,
@@ -278,18 +311,23 @@ impl Policy {
         heartbeat_timeout_seconds: u64,
         reference_price: U128,
         signing_limits: Option<SigningLimits>,
+        oracle: OracleConfig,
+        network: Network,
     ) -> Self {
         require!(
             env::predecessor_account_id() == owner,
             "ERR_CALLER_NOT_OWNER"
         );
-        // A local sandbox account also ends in .testnet. No mainnet initializer.
+        // Local sandbox accounts may use Testnet; domains are selected once at init.
         require!(
-            is_test_account(&env::current_account_id()),
+            network.matches_account(&env::current_account_id()),
             "ERR_TESTNET_ONLY"
         );
-        require!(is_test_account(&signer_account), "ERR_TESTNET_SIGNER");
-        require!(is_test_account(&wnear_account), "ERR_TESTNET_WNEAR");
+        require!(
+            network.matches_account(&signer_account),
+            "ERR_TESTNET_SIGNER"
+        );
+        require!(network.matches_account(&wnear_account), "ERR_TESTNET_WNEAR");
         require!(
             keeper != env::current_account_id()
                 && owner != env::current_account_id()
@@ -307,6 +345,10 @@ impl Policy {
             heartbeat_timeout_seconds > 0 && reference_price.0 > 0,
             "ERR_CONFIG"
         );
+        oracle.validate(reference_price.0);
+        if let Some(id) = &oracle.account_id {
+            require!(network.matches_account(id), "ERR_ORACLE_NETWORK");
+        }
         let signing_limits = signing_limits.unwrap_or_default();
         validate_signing_limits(&signing_limits);
         event(
@@ -314,6 +356,10 @@ impl Policy {
             near_sdk::serde_json::json!({"owner": owner, "keeper": keeper, "asset_index": asset_index, "size_decimals": size_decimals, "evm_recipient": evm_recipient, "signer_account": signer_account, "wnear_account": wnear_account, "limits": limits, "heartbeat_timeout_seconds": heartbeat_timeout_seconds, "signing_limits": signing_limits}),
         );
         Self {
+            network,
+            oracle,
+            oracle_price: 0,
+            oracle_timestamp: 0,
             rebalance: None,
             turnover: vec![],
             keeper_weight_used: 0,
@@ -407,6 +453,10 @@ impl Policy {
 
     pub fn get_state(&self) -> StateView {
         StateView {
+            network: self.network.clone(),
+            oracle: self.oracle.clone(),
+            oracle_price: U128(self.oracle_price),
+            oracle_timestamp: U64(self.oracle_timestamp),
             owner: self.owner.clone(),
             keeper: self.keeper.clone(),
             coin: "NEAR".into(),
@@ -480,7 +530,8 @@ impl Policy {
     /// An owner-approved observation, not an oracle. Keeper cannot choose its own band.
     pub fn set_reference_price(&mut self, price: U128) {
         self.assert_owner();
-        require!(price.0 > 0, "ERR_PRICE");
+        self.assert_price_bounds(price.0);
+        require!(!self.oracle_fresh(), "ERR_ORACLE_PRIMARY");
         self.reference_price = price.0;
         self.reference_price_timestamp = now();
         event(
@@ -555,7 +606,8 @@ impl Policy {
             nonce: a.nonce,
             expires_after: Some(a.expires_after.min(env::block_timestamp_ms() + LIFETIME_MS)),
         };
-        let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
+        let digest = hl_digest::digest(&payload, self.network.mainnet())
+            .unwrap_or_else(|e| env::panic_str(e));
         self.outstanding[index].invalidation_requested = true;
         self.start_signing(payload, digest, OperationKind::Invalidation, 0)
     }
@@ -659,7 +711,8 @@ impl Policy {
                     .expect("ERR_NONCE_OVERFLOW"),
             ),
         };
-        let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
+        let digest = hl_digest::digest(&payload, self.network.mainnet())
+            .unwrap_or_else(|e| env::panic_str(e));
         self.start_signing(payload, digest, OperationKind::Cancel, 0)
     }
 
@@ -764,7 +817,7 @@ impl Policy {
         let nonce = self.next_nonce();
         let payload = SigningPayload {
             action: HlAction::Withdraw {
-                hyperliquid_chain: "Testnet".into(),
+                hyperliquid_chain: self.network.chain().into(),
                 signature_chain_id: "0x66eee".into(),
                 destination: self.evm_recipient.clone(),
                 amount: decimal(amount.0, 6),
@@ -773,7 +826,8 @@ impl Policy {
             nonce,
             expires_after: None,
         };
-        let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
+        let digest = hl_digest::digest(&payload, self.network.mainnet())
+            .unwrap_or_else(|e| env::panic_str(e));
         self.start_signing(payload, digest, OperationKind::EvmWithdrawal, amount.0)
     }
 
@@ -1105,29 +1159,39 @@ impl Policy {
             "ERR_SIZE"
         );
         let band = u128::from(self.limits.price_band_bps);
+        let (mark, marked_at) = self.active_price();
         let price = if order.reduce_only {
-            let mark = order.reference_price.expect("ERR_REDUCE_PRICE").0;
-            // No dependency on the owner's stale mark. 50% IOC buy band, absolute
-            // input range 0.00001..1,000,000 USD. Venue r=true prevents exposure growth.
-            require!((10..=1_000_000_000_000).contains(&mark), "ERR_REDUCE_PRICE");
-            mark.checked_mul(15_000)
+            let mark = if self.oracle_fresh() {
+                mark
+            } else {
+                let hint = order.reference_price.expect("ERR_REDUCE_PRICE").0;
+                self.assert_price_bounds(hint);
+                hint
+            };
+            mark.checked_mul(10_000 + band)
                 .expect("ERR_OVERFLOW")
                 .div_ceil(10_000)
         } else {
             require!(order.reference_price.is_none(), "ERR_OPEN_PRICE_OVERRIDE");
-            self.reference_price
-                .checked_mul(10_000 - band)
-                .expect("ERR_OVERFLOW")
-                / 10_000
+            mark.checked_mul(10_000 - band).expect("ERR_OVERFLOW") / 10_000
         };
         let price = quantize_price(price, self.size_decimals, order.reduce_only);
         require!(price > 0, "ERR_PRICE");
+        if order.reduce_only {
+            require!(
+                order.size.0 <= self.signed_short_size.max(self.limits.max_short_size.0),
+                "ERR_MAX_REDUCE"
+            );
+        }
         let mut notional = 0;
         if !order.reduce_only {
             require!(!self.paused, "ERR_PAUSED");
             require!(
-                now().saturating_sub(self.reference_price_timestamp)
-                    <= self.limits.price_max_age_seconds,
+                now().saturating_sub(marked_at)
+                    <= self
+                        .limits
+                        .price_max_age_seconds
+                        .min(self.oracle.max_age_seconds),
                 "ERR_STALE_PRICE"
             );
             let total = add(self.signed_short_size, order.size.0);
@@ -1135,8 +1199,7 @@ impl Policy {
             require!(total <= self.spot_balance, "ERR_EXCEEDS_SPOT_HEDGE");
             require!(total <= self.limits.max_short_size.0, "ERR_MAX_SHORT");
             // Charge at the upper band: a sell can execute ABOVE its lower limit.
-            let upper = self
-                .reference_price
+            let upper = mark
                 .checked_mul(10_000 + band)
                 .expect("ERR_OVERFLOW")
                 .div_ceil(10_000);
@@ -1195,7 +1258,8 @@ impl Policy {
                     .expect("ERR_NONCE_OVERFLOW"),
             ),
         };
-        let digest = hl_digest::digest(&payload).unwrap_or_else(|e| env::panic_str(e));
+        let digest = hl_digest::digest(&payload, self.network.mainnet())
+            .unwrap_or_else(|e| env::panic_str(e));
         if !order.reduce_only {
             self.signed_short_size = add(self.signed_short_size, order.size.0);
             self.lifetime_opened = add(self.lifetime_opened, order.size.0);

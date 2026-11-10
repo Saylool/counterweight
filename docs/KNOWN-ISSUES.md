@@ -18,7 +18,7 @@ The previous deployment `policy.counterweight-samet.testnet` still runs
 `698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289` and still
 requires an attached fee. Its full-access policy key is intentionally retained
 until final code freeze. This fix is **not deployed**. The next default artifact is
-`e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a`;
+`d85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1`;
 use a fresh account such as `policy-v2.counterweight-samet.testnet`.
 Deleting all keys freezes that account's code irreversibly under this ABI.
 
@@ -58,3 +58,35 @@ mock route, owner-attests the fill with `settle_position`, approves the exact sp
 sale, and reconciles its mock finalized receipt. The timeline ends with zero spot,
 zero reserved short and credited margin. MPC, token transfers, route execution and
 venue receipts are simulated; there is no live adapter or live fill proof.
+
+## 4. Blind-review alignment and oracle availability (2026-11-10)
+
+Replay reports before this revision used a different headroom formula and invalid
+open-short withdrawals; those reports are superseded. Regenerated reports use
+contract upper-band notional and micro-unit rounding, fee reserve and minimum
+headroom, quantity/notional/cooldown/sale caps. Research sizes have explicit scaled
+caps, rather than claiming to run unchanged under policy-v2's tiny limits. The
+cross-layer TS test invokes real Rust contract methods on identical scenarios.
+Margin withdrawal still requires zero reserved short; reverse rebalancing is disabled
+in replay. Settlement, equity and route finality remain owner-attested.
+
+Pyth officially retired NEAR support on 2026-08-26. The init plan has no oracle account,
+and uses the immutable bounded keeper fallback described in [ORACLE](ORACLE.md).
+The optional Pyth-compatible reader is tested against a local mock only, not a
+maintained public NEAR deployment. Stale/absent/uncertain feeds never refresh the
+oracle cache. Fresh oracle readings take precedence; owner fallback cannot override
+them. Fixed fallback bounds cannot ratchet; motion outside them fails closed and
+can prevent fills. The dummy $0.95–$1.05 proof configuration must not be funded.
+
+Keeper/public reductions now have configured price bands and bounded quantities.
+README authority tiers publishes the conservative $1,060.978 lifetime direct buy-debit
+ceiling at the current plan's limits, with fee and owner-replenishment assumptions;
+this is not a total portfolio-loss or liquidation guarantee. Subsidized MPC costs
+have a separate worst-case 10 NEAR lifetime ceiling at the per-request fee maximum.
+
+Network is now an immutable `Testnet` / `Mainnet` init enum, binding both account
+checks and signing domains. Mainnet deployment/operation is untested and not claimed.
+The shared Hyperliquid package now handles noop; the duplicate relay codec is removed.
+The new state layout requires a fresh controller: there is no migration/upgrade ABI.
+No deployment, key removal, funded venue lifecycle, or testnet send was performed
+in this revision. Existing dated on-chain evidence still describes the old artifact.
