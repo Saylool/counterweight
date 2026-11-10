@@ -43,7 +43,7 @@ function setup(fullAccess: boolean, receiptFullAccess = fullAccess, expiryOffset
       keys: (block ? receiptFullAccess : fullAccess) ? [{ public_key: 'public-only', access_key: { permission: 'FullAccess' } }] : [] } });
     if (params.request_type === 'view_account') return json({ result: { block_hash: block, code_hash: (await committedWasm()).codeHash } });
     if (params.request_type === 'call_function') return json({ result: { block_hash: block, result: [...Buffer.from(JSON.stringify({
-      ...initialization(0, 1, PROBE_ADDRESS), coin: 'NEAR', near_recipient: OWNER, spot_balance: '0', signed_short_size: '0', paused: false,
+      ...initialization(0, 1, PROBE_ADDRESS, '3.6348'), coin: 'NEAR', near_recipient: OWNER, spot_balance: '0', signed_short_size: '0', paused: false,
       pending: null, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000',
     }))] } });
     throw new Error('Unexpected request');

@@ -1,5 +1,7 @@
 # Reproducible policy testnet deployment
 
+The funded policy-v2 run now uses [FUNDED-LIFECYCLE](FUNDED-LIFECYCLE.md). The owner recipient is mandatory, and v2 verification requires its saved plan. Historical cancellation evidence below remains separate from funded execution.
+
 Run from the repository root. TypeScript tools never invoke `near`, read wallets,
 access the keychain, generate keys, sign, or submit NEAR transactions. The team
 lead runs the printed near-cli-rs commands. The relay sends only the validated
@@ -67,14 +69,13 @@ receipt, expiry, digest or recovery checks. Rehearsal is not final custody evide
 ## Prepare and review the fresh-account plan
 
 ```sh
-npm run testnet:plan
-# Choose another fresh policy and the actual fixed owner withdrawal recipient:
-npm run testnet:plan -- --policy=policy-v2.counterweight-samet.testnet --owner-evm=0x...
+npm run derive -- --account=policy-v2.counterweight-samet.testnet
+npm run testnet:plan -- --owner-evm="$OWNER_EVM" --policy-public-key="$POLICY_PUBLIC_KEY"
 ```
 
-Replace `0x...` with a complete nonzero owner address. The testnet-only default
-`0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a` is the proven owner-predecessor
-probe address, a recognizable **no-funds withdrawal placeholder**. Never fund it.
+Set `OWNER_EVM` to the owner's complete nonzero wallet address. There is no default recipient.
+`0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a` is the historical owner-predecessor
+probe address. Never fund it.
 The strategy signer derives independently from the policy predecessor/path.
 Mainnet is unsupported.
 
@@ -88,7 +89,7 @@ does not rotate existing keys.
 
 Policy creation funds **9 NEAR**, covering roughly 6.28 NEAR WASM storage,
 1.31 NEAR bounded state-growth headroom and 1 NEAR operating reserve, plus initial
-state. Ensure the owner has 9 NEAR plus gas **available now**; the original account's
+state. The funded run also wraps 5 NEAR: ensure the owner has 14 NEAR plus gas/storage **available now**; the original account's
 funding is already spent. Keeper gas uses its existing funding. Signing subsidy
 is capped at 0.01 NEAR/request and cannot spend storage/growth funds. The owner
 sweep retains that floor plus 1 NEAR. Refill with a normal native transfer when
@@ -101,17 +102,16 @@ keeper, market, path, signer and recipients before deleting keys or funding a
 strategy. The code hash must match committed SHA-256 bytes encoded as base58.
 
 The plan reads live testnet metadata and requires a unique active NEAR market
-with precision 0–6. Baseline limits: 1 NEAR maximum short, $10/order, $20/rolling
-day, 60s cooldown, 1% open band, 60s price age, default signing budgets. The dummy
-$1 initial reference price is suitable only for this cancellation proof. No spot
-is deposited, so opens are impossible. Review prices/budgets before funded use.
+with precision 0–6 and fetches the live TESTNET mark. Funded limits: 5 NEAR maximum short, $20/order, $40/rolling
+day, 60s cooldown, 1% open band, 60s price age, default signing budgets. Reference is the live mark rounded to micro-USD;
+immutable bounds are 80–120% of that mark. The full procedure deposits 5 wNEAR and verifies actual custody before final key deletion.
 
 ## Final keyless verification and proof
 
 ```sh
-npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --before-key-removal=true --owner-evm=0x...
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --before-key-removal=true --owner-evm="$OWNER_EVM" --plan=docs/evidence/policy-v2-plan.json
 # Lead separately runs the plan's irreversible key-deletion command after code freeze.
-npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --owner-evm=0x...
+npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet --owner-evm="$OWNER_EVM" --plan=docs/evidence/policy-v2-plan.json
 npm run prove:contract:live -- --policy=policy-v2.counterweight-samet.testnet --keeper=keeper.counterweight-samet.testnet
 ```
 
@@ -171,7 +171,7 @@ Captured public results: [quote JSON](evidence/2026-11-10-oneclick-dry-quote.jso
 ## policy-v2 initializer revision
 
 The new ABI adds **`network`** and **`oracle`**; all previous init arguments remain.
-The exact cancellation-only values printed by `npm run testnet:plan` are:
+Historical cancellation-only initializer values (superseded for funded v2 by the live mark and bounds saved in `policy-v2-plan.json`):
 
 ```json
 {
@@ -191,8 +191,7 @@ Pyth NEAR is retired; see [official verification and fallback rules](ORACLE.md).
 The range and oracle identity are immutable and apply even to oracle returns.
 Keeper function-call permissions should include `set_keeper_price` when bounded
 fallback is intended; anyone may call `refresh_oracle` when an oracle is configured.
-The `$1` dummy reference and fixed proof range permit cancellation evidence only;
-do not fund this controller. A funded strategy needs a separately reviewed price
-range and public price source. This plan was updated locally, not executed.
+The historical `$1` reference and fixed proof range permit cancellation evidence only;
+do not fund a controller with those values. The current funded planner uses the public TESTNET mark and absolute bounds described above. No funded plan has been executed by these scripts.
 The contract supports selecting the Mainnet domain, but this plan, recipient probe,
 relay and deployment evidence remain testnet-specific. Mainnet operation is unverified.

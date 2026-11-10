@@ -7,6 +7,8 @@ import { deploymentSteps, initialization } from './testnet-plan.js';
 import { checkKeys, planConfigMatches, policyStateSchema, verifyTestnet } from './testnet-verify.js';
 import { committedWasm, DEPLOYED_SHA256, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, POLICY, PROBE_ADDRESS, publicKey, rpc, SIGNING_LIMITS, txHash } from './testnet-common.js';
 import { deriveEvmAddress } from '../packages/hyperliquid/src/index.js';
+import { orderPrice } from './lifecycle-config.js';
+import { LIMITS, ORACLE } from './testnet-common.js';
 
 const publicSignature: unknown = JSON.parse(readFileSync(new URL('../fixtures/nearblocks-mpc-response.json', import.meta.url), 'utf8')).signatureResponse;
 const hash = base58.encode(new Uint8Array(32).fill(7));
@@ -29,39 +31,40 @@ function fixture() {
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 describe('auditable deployment command builder', () => {
   it('builds the real initializer ABI with immutable testnet identities and bounded limits', () => {
-    expect(initialization(54, 1, PROBE_ADDRESS)).toMatchObject({ owner: OWNER, keeper: KEEPER, asset_index: 54,
+    expect(initialization(54, 1, PROBE_ADDRESS, '3.6348')).toMatchObject({ owner: OWNER, keeper: KEEPER, asset_index: 54,
       size_decimals: 1, derivation_path: PATH, evm_recipient: PROBE_ADDRESS, signer_account: 'v1.signer-prod.testnet',
-      wnear_account: 'wrap.testnet', limits: { max_short_size: '1000000000000000000000000', per_order_notional_cap: '10000000' } });
+      wnear_account: 'wrap.testnet', limits: { max_short_size: '5000000000000000000000000', per_order_notional_cap: '20000000' } });
   });
-  it('orders create/deploy/init/preflight/delete/keyless verify/contract cancel with keychain-only signing', () => {
-    const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS), 'a'.repeat(64), pk, pk);
-    expect(steps).toHaveLength(9);
+  it('orders create/deploy/init/preflight/spot/delete/keyless verify/funded lifecycle with keychain-only signing', () => {
+    const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS, '3.6348'), 'a'.repeat(64), pk, pk);
+    expect(steps).toHaveLength(19);
     expect(steps[0]!.command).toContain(`fund-myself ${NEXT_POLICY} '9 NEAR' use-manually-provided-public-key '${pk}'`);
     expect(steps[1]!.command).toBe(`near account view-account-summary ${KEEPER} network-config testnet now`);
     expect(steps[2]!.command).toMatch(/^test .*shasum.* && near contract deploy/);
-    expect(steps[3]!.command).toContain(`new json-args '${JSON.stringify(initialization(54, 1, PROBE_ADDRESS))}'`);
+    expect(steps[3]!.command).toContain(`new json-args '${JSON.stringify(initialization(54, 1, PROBE_ADDRESS, '3.6348'))}'`);
     expect(steps[3]!.command).toContain(`sign-as ${OWNER}`);
     expect(steps[4]!.command).toContain('--before-key-removal=true');
-    expect(steps[5]!.command).toContain(`delete-keys ${NEXT_POLICY} public-keys '${pk}'`);
-    expect(steps[5]!.expect).toContain('IRREVERSIBLE');
-    expect(steps[7]!.command).toContain(`prove:contract:live -- --policy=${NEXT_POLICY} --keeper=${KEEPER}`);
-    expect(steps[8]!.command).toContain(`${NEXT_POLICY} request_cancel_signature json-args '{"order_id":"0"}' prepaid-gas '300 Tgas' attached-deposit '0 NEAR' sign-as ${KEEPER}`);
+    expect(steps[11]!.command).toContain(`delete-keys ${NEXT_POLICY} public-keys '${pk}'`);
+    expect(steps[11]!.expect).toContain('IRREVERSIBLE');
+    expect(steps[13]!.command).toBe('npm run lifecycle -- --step=open');
+    expect(steps[8]!.command).toContain('ft_transfer_call');
+    expect(steps[8]!.command).toContain('\"msg\":\"\"');
     for (const step of steps.filter(s => s.command.includes('near ') && !s.command.includes('view-account-summary'))) {
       expect(step.command).toContain('network-config testnet sign-with-keychain send');
       expect(step.command).not.toMatch(/sign-with-(?:plaintext|access-key|legacy)|autogenerate|v1.signer-prod.testnet sign /);
     }
   });
   it('leaves public key placeholders that fail closed when unset', () => {
-    const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS), 'a'.repeat(64));
+    const steps = deploymentSteps(initialization(54, 1, PROBE_ADDRESS, '3.6348'), 'a'.repeat(64));
     expect(steps[0]!.command).toContain('${POLICY_PUBLIC_KEY:?');
     expect(steps[1]!.command).toContain('view-account-summary');
   });
   it.each(['0x...', `0x${'0'.repeat(40)}`, `${PROBE_ADDRESS}'; echo bad`])('rejects invalid owner recipients %s', evm => {
-    expect(() => initialization(54, 1, evm)).toThrow();
+    expect(() => initialization(54, 1, evm, '3.6348')).toThrow();
   });
   it('rejects invalid metadata, shell injection and ambiguous CLI arguments', () => {
-    expect(() => initialization(-1, 1, PROBE_ADDRESS)).toThrow();
-    expect(() => initialization(54, 7, PROBE_ADDRESS)).toThrow();
+    expect(() => initialization(-1, 1, PROBE_ADDRESS, '3.6348')).toThrow();
+    expect(() => initialization(54, 7, PROBE_ADDRESS, '3.6348')).toThrow();
     expect(() => publicKey('ed25519:$(echo bad)')).toThrow();
     expect(() => txHash('bad')).toThrow();
     expect(txHash(hash)).toBe(hash);
@@ -139,12 +142,14 @@ describe('public receipt parsing and custody', () => {
     expect(checkKeys({ ...full, keys: [{ public_key: pk, access_key: { permission: { FunctionCall: {} } } }] }, true).ok).toBe(false);
   });
   it('flags mutable config drift instead of treating any valid view as matching the plan', () => {
-    const init = initialization(54, 1, PROBE_ADDRESS);
+    const init = initialization(54, 1, PROBE_ADDRESS, '3.6348');
     const state = policyStateSchema.parse({ ...init, coin: 'NEAR', near_recipient: OWNER, spot_balance: '0', signed_short_size: '0',
-      paused: false, pending: null, signing_limits: SIGNING_LIMITS, network: 'Testnet', oracle: initialization(54,1,PROBE_ADDRESS).oracle, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000' });
-    expect(planConfigMatches(state)).toBe(true);
-    expect(planConfigMatches({ ...state, limits: { ...state.limits, per_day_notional_cap: '999999999' } })).toBe(false);
-    expect(planConfigMatches({ ...state, mpc_fee: '1000' })).toBe(false);
+      paused: false, pending: null, signing_limits: SIGNING_LIMITS, network: 'Testnet', oracle: initialization(54,1,PROBE_ADDRESS, '3.6348').oracle, mpc_fee: '1', signer_gas_tgas: 230, callback_gas_tgas: 30, keeper_weight_limit: '5000' });
+    expect(planConfigMatches(state, init)).toBe(true);
+    expect(planConfigMatches({ ...state, limits: { ...state.limits, per_day_notional_cap: '999999999' } }, init)).toBe(false);
+    expect(planConfigMatches({ ...state, mpc_fee: '1000' }, init)).toBe(false);
+    expect(planConfigMatches({ ...state, oracle: { ...init.oracle, min_price: '950000' } }, init)).toBe(false);
+    expect(planConfigMatches({ ...state, limits: LIMITS, oracle: ORACLE })).toBe(true);
     expect(() => policyStateSchema.parse({ ...state, near_recipient: 'attacker.testnet' })).toThrow();
   });
   it('never claims keyless custody for an absent policy, even if RPC would return an empty key list', async () => {
@@ -180,12 +185,12 @@ describe('public receipt parsing and custody', () => {
   });
 });
 
-it('ties the published keeper debit ceiling to the actual policy-v2 limits', () => {
-  const init = initialization(54,1,PROBE_ADDRESS);
-  const upperPrice = (BigInt(init.oracle.max_price) * BigInt(10000 + init.limits.price_band_bps) + 9999n) / 10000n;
-  // At these configured values the buy price already satisfies the venue tick.
-  expect(upperPrice).toBe(1060500n);
+it('bounds the funded keeper debit at the immutable maximum mark', () => {
+  const init = initialization(54,1,PROBE_ADDRESS, '3.6348');
+  const upperPrice = orderPrice(BigInt(init.oracle.max_price), init.size_decimals, true, init.limits.price_band_bps);
+  // Reductions round upward to the venue tick, including at the immutable maximum.
+  expect(upperPrice).toBe(4405400n);
   const notional = (BigInt(init.limits.max_short_size) * upperPrice + 10n ** 24n - 1n) / 10n ** 24n;
   const debit = (notional * 1000450n + 999999n) / 1000000n;
-  expect(debit * 1000n).toBe(1060978000n);
+  expect(debit * 1000n).toBe(22036913000n);
 });

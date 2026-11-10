@@ -1,5 +1,7 @@
 # Day 1: signing boundary (testnet only)
 
+For the current funded policy-v2 run, use [FUNDED-LIFECYCLE](FUNDED-LIFECYCLE.md). The historical owner-probe evidence below is not a funded lifecycle claim.
+
 Checked 2026-11-10. `docs/DESIGN.md` Part B governs the production architecture. These owner-probe scripts test compatibility; policy deployment, public verification and the contract-event proof are documented in [TESTNET-DEPLOYMENT](TESTNET-DEPLOYMENT.md). `approveAgent` and `usdSend` codecs are interoperability utilities, not controller permissions.
 
 ## What is proved so far
