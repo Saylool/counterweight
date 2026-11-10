@@ -11,9 +11,9 @@
     "apps/*"
   ],
   "scripts": {
-    "test": "vitest run",
-    "build": "tsc -b",
-    "typecheck": "tsc --noEmit",
+    "test": "vitest run && npm run web:test",
+    "build": "tsc -b && npm run web:build",
+    "typecheck": "tsc --noEmit && npm --prefix apps/web run typecheck",
     "prove:signing": "tsx scripts/prove-signing.ts",
     "prove:submit": "tsx scripts/prove-submit.ts",
     "testnet:plan": "tsx scripts/testnet-plan.ts",
@@ -27,7 +27,10 @@
     "demo:install": "node scripts/install-local-sandbox.mjs",
     "demo:local": "node --require ./scripts/demo-offline-guard.cjs --import tsx scripts/demo-local.ts",
     "test:demo": "npm run demo:local",
-    "keeper:dry": "tsx apps/keeper/src/dry.ts"
+    "keeper:dry": "tsx apps/keeper/src/dry.ts",
+    "web": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:test": "npm --prefix apps/web test"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",

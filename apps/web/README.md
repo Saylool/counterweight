@@ -1,0 +1,33 @@
+# Counterweight web
+
+Read-only React + Vite + TypeScript frontend. No wallet SDK, private keys, signing, exchange actions, or transactions. Public POST requests are limited to NEAR `query` and Hyperliquid `/info` market reads.
+
+From the repository root:
+
+```sh
+# Install the isolated frontend dependencies without changing the root lockfile.
+npm ci --prefix apps/web --workspaces=false --ignore-scripts
+npm run web
+```
+
+Open http://localhost:5173. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
+
+```sh
+# Deploy under a subdirectory (include the trailing slash):
+WEB_BASE_PATH=/counterweight/ npm run web:build
+```
+
+The default base is `./`, suitable for a static directory. Optional build-time environment settings (also supported in `apps/web/.env.local`):
+
+- `VITE_POLICY_ACCOUNT`: defaults to `policy.counterweight-samet.testnet`; the panel can inspect another named testnet account.
+- `VITE_NEAR_RPC`: defaults to `https://rpc.testnet.near.org`; use a public CORS-enabled NEAR testnet RPC.
+- `VITE_REPO_URL`: source repository link; until configured the footer shows a placeholder.
+- `WEB_BASE_PATH`: Vite asset base, defaults to `./`.
+
+`npm test` includes the existing suite and frontend Vitest tests. `npm run typecheck` and `npm run build` include frontend checks; `npm run web:test` runs only frontend tests.
+
+The build validates reports, copies dated evidence and original report downloads, and hashes the committed WASM against its manifest. Smaller presentation JSON is generated from those sources; no performance numbers are hard-coded. The return curve retains extrema per 12-hour bucket. Price and H charts show **recorded strategy events**, because the report does not contain hourly price/H series. Min H in the table is the report's intrabar proxy; chart H is the close-time event value. Periods restart independently and are not additive.
+
+NEAR account, access-key list, state and public MPC derived key are pinned to one finalized block. Access keys and code mismatches are shown independently; an unknown account cannot appear as a zero-key proof. Address derivation comes from the configured signer's public view; it is not a live signature/fill proof. Hyperliquid market data is mainnet and labeled separately from the testnet contract. The isolated short liquidation distance is a maintenance-model proxy, not a venue liquidation quote. Live data refreshes on request; the entry gate checks order-book freshness at render time.
+
+Screenshot candidates: hero/architecture, finalized contract verification, replay period comparison, and local keeper/rogue timeline. CSS follows system dark/light preference and reduced-motion preference. Public API failures preserve the rest of the page and offer a retry. Original JSON downloads are loaded only on demand.
