@@ -1,0 +1,34 @@
+TESTNET ONLY. Prints commands; never signs, sends NEAR transactions, or accesses keys. Run from repository root.
+Public-key placeholders require owner-managed keychain entries for EACH subaccount. Set POLICY_PUBLIC_KEY and KEEPER_PUBLIC_KEY to their public keys only; this tool does not generate/import keys.
+Recipient override: npm run testnet:plan -- --owner-evm=0x... (REPLACE with your fixed owner withdrawal address).
+Testnet-only default 0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a is the proven owner-derived probe address, used solely as a recognizable no-funds withdrawal placeholder. Never fund that probe address. Mainnet is unsupported.
+Policy-derived strategy address: 0xaa640b1c7b3ac37db14d2705eaeceeb42d91eb0c; path counterweight-1; NEAR testnet asset 54, szDecimals 1.
+WASM verified: 698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289 (587853 bytes); total account funding 7.2 of owner's 10 NEAR, plus gas. Limits: 1 NEAR maximum short, $10/order, $20/rolling day, 60s cooldown, 1% open band. No spot means no opens.
+Run init immediately after deployment: the uninitialized contract is public. If init/config preflight fails, retain the temporary key and stop; never remove it or fund the strategy.
+
+1. Expect: Policy account created with 7 testnet NEAR and one full-access public key. WASM storage alone costs about 5.88 NEAR.
+near account create-account fund-myself policy.counterweight-samet.testnet '7 NEAR' use-manually-provided-public-key "${POLICY_PUBLIC_KEY:?Set POLICY_PUBLIC_KEY to the public key already provisioned in the policy account keychain}" sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+2. Expect: Keeper account created with 0.2 testnet NEAR; its own full-access key pays the MPC deposit. Policy authority is checked by caller.
+near account create-account fund-myself keeper.counterweight-samet.testnet '0.2 NEAR' use-manually-provided-public-key "${KEEPER_PUBLIC_KEY:?Set KEEPER_PUBLIC_KEY to the public key already provisioned in the keeper account keychain}" sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+3. Expect: SHA-256 must equal 698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289; deploy runs only if the check passes.
+test "$(shasum -a 256 contracts/policy/artifacts/counterweight_policy.wasm | cut -d ' ' -f 1)" = '698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289' && near contract deploy policy.counterweight-samet.testnet use-file contracts/policy/artifacts/counterweight_policy.wasm without-init-call network-config testnet sign-with-keychain send
+
+4. Expect: Owner initializes fixed recipients, testnet market/path and limits. Reference price is a dummy $1: no spot is deposited; this proof only cancels order 0.
+near contract call-function as-transaction policy.counterweight-samet.testnet new json-args '{"owner":"counterweight-samet.testnet","keeper":"keeper.counterweight-samet.testnet","asset_index":54,"size_decimals":1,"derivation_path":"counterweight-1","evm_recipient":"0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a","signer_account":"v1.signer-prod.testnet","wnear_account":"wrap.testnet","limits":{"max_short_size":"1000000000000000000000000","per_order_notional_cap":"10000000","per_day_notional_cap":"20000000","cooldown_seconds":60,"price_band_bps":100,"price_max_age_seconds":60},"heartbeat_timeout_seconds":3600,"reference_price":"1000000","signing_limits":{"keeper_per_block":2,"keeper_per_window":8,"keeper_outstanding":8,"owner_per_window":16,"window_ms":60000,"max_nonce_ahead_ms":1000}}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+5. Expect: Before deletion: code/config/derivation PASS, exactly one full-access policy key. Review every field; do not fund a strategy yet.
+npm run testnet:verify -- --before-key-removal=true --owner-evm=0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a
+
+6. Expect: FINAL DEPLOYMENT STEP — IRREVERSIBLE: deletes the policy account key. No redeploy, account deletion or key restoration path remains. Owner/keeper contract methods remain callable. Delete ALL keys if the preflight finds any extras.
+near account delete-keys policy.counterweight-samet.testnet public-keys "${POLICY_PUBLIC_KEY:?Set POLICY_PUBLIC_KEY to the public key already provisioned in the policy account keychain}" network-config testnet sign-with-keychain send
+
+7. Expect: After deletion: empty finalized access-key list, matching code/config and contract-derived address. Stop on any FAIL.
+npm run testnet:verify -- --owner-evm=0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a
+
+8. Expect: Keeper requests a signature THROUGH policy; request + signature events, final callback true. Immediately run prove:contract with this tx hash (expiry is only 60 seconds).
+near contract call-function as-transaction policy.counterweight-samet.testnet request_cancel_signature json-args '{"order_id":"0"}' prepaid-gas '300 Tgas' attached-deposit '1 yoctoNEAR' sign-as keeper.counterweight-samet.testnet network-config testnet sign-with-keychain send
+
+9. Expect: Locally recovered and server-recovered addresses match the policy predecessor; evidence saved under docs/evidence/. No fill or funding claim.
+npm run prove:contract -- --tx=TX_HASH_FROM_KEEPER_CALL

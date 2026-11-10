@@ -14,7 +14,7 @@ try {
     console.log(`Book ${new Date(m.observedAt).toISOString()} | ask depth $${m.depth.availableNotional.toFixed(2)} within 25bps`);
   }
   if (result.risk) console.log(`RISK H=$${result.risk.metrics.headroom.toFixed(3)} | leverage=${result.risk.metrics.leverage?.toFixed(3)} | entry blocks=${result.risk.entryBlocks.join(',') || 'none'}`);
-  if (result.rebalanceRoute) console.log(`1CLICK dry:true 10 NEAR -> ${result.rebalanceRoute.outputUsdc.toFixed(6)} HyperCore USDC | min ${result.rebalanceRoute.minOutputUsdc?.toFixed(6) ?? 'unavailable'} | no deposit address`);
+  if (result.rebalanceRoute) console.log(`1CLICK HTTP ${result.rebalanceRoute.httpStatus} dry:true 1 NEAR (INTENTS) -> ${result.rebalanceRoute.outputUsdc.toFixed(6)} HyperCore perps USDC (MAINNET) | min ${result.rebalanceRoute.minOutputUsdc.toFixed(6)} | no deposit address`);
   for (const error of result.errors) console.log(error);
   console.log(`WOULD SEND (proposal only): ${JSON.stringify(result.wouldSend, null, 2)}`);
   console.log(`Status ${result.status} | signing requests 0 | transactions 0`);

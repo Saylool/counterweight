@@ -3,12 +3,12 @@ import { recoverAddress, type Hex } from 'viem';
 import { assembleRequest, getSigningDigest, type HyperliquidSignature, type L1Input } from './signing.js';
 
 export const TESTNET_API = 'https://api.hyperliquid-testnet.xyz';
-export interface TestnetMeta { universe: { name: string; isDelisted?: boolean }[] }
+export interface TestnetMeta { universe: { name: string; isDelisted?: boolean; szDecimals?: number }[] }
 export async function testnetMeta(): Promise<TestnetMeta> {
   const response = await fetch(`${TESTNET_API}/info`, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ type: 'meta' }), signal: AbortSignal.timeout(25_000) });
   if (!response.ok) throw new Error(`Hyperliquid meta HTTP ${response.status}`);
-  return z.object({ universe: z.array(z.object({ name: z.string(), isDelisted: z.boolean().optional() })) }).parse(await response.json()) as TestnetMeta;
+  return z.object({ universe: z.array(z.object({ name: z.string(), isDelisted: z.boolean().optional(), szDecimals: z.number().int().min(0).max(6).optional() })) }).parse(await response.json()) as TestnetMeta;
 }
 export function nearMarketIndex(meta: TestnetMeta): number {
   const matches = meta.universe.flatMap((asset, index) => asset.name === 'NEAR' ? [index] : []);

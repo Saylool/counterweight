@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { keeperDry } from '../apps/keeper/src/dry-run.js';
-import { quoteDryRebalance, HYPERCORE_USDC, WNEAR } from '@counterweight/intents';
+import { quoteDryRebalance, dryRebalanceRequest, HYPERCORE_USDC, WNEAR } from '@counterweight/intents';
 import { readLiveNearMarket, PUBLIC_INFO } from '@counterweight/hyperliquid';
 
 const hour = 3_600_000;
@@ -32,6 +32,13 @@ function transport(options: { marketHttp?: number; quoteHttp?: number; bookAge?:
 }
 
 describe('key-free live keeper dry run', () => {
+  it('builds a mainnet Intents-balance dry quote with 24/8-decimal units and explicit refund/recipient/deadline', () => {
+    const now = Date.parse('2026-11-10T10:00:00Z');
+    expect(dryRebalanceRequest(now)).toEqual({ dry: true, swapType: 'EXACT_INPUT', slippageTolerance: 100,
+      originAsset: WNEAR, destinationAsset: HYPERCORE_USDC, amount: '1000000000000000000000000',
+      depositType: 'INTENTS', refundType: 'INTENTS', refundTo: 'counterweight-dry.near',
+      recipientType: 'DESTINATION_CHAIN', recipient: '0x1111111111111111111111111111111111111111', deadline: '2026-11-10T10:03:00.000Z' });
+  });
   it('resolves NEAR metadata, book depth and settled funding, and returns only a dry proposal', async () => {
     const { fetcher, now } = transport();
     const result = await keeperDry(fetcher, now);

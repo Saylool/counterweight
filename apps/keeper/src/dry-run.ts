@@ -17,10 +17,10 @@ export async function keeperDry(fetcher: typeof globalThis.fetch = globalThis.fe
     state: { entryHalted: false }, adl: false, unexpectedReductionQuantity: 0,
   }) : null;
   return { mode: 'dry-public-only', status: errors.length ? 'degraded' : 'ready',
-    assumptions: 'Illustrative existing $25 short / $30 equity; no wallet balances or position queried. Route previews 10 NEAR spot sale.',
+    assumptions: 'Illustrative existing $25 short / $30 equity; no wallet balances or position queried. Route previews 1 NEAR from Intents to Hyperliquid perps USDC on MAINNET (1Click has no testnet). Dry quote only; no deposit/signature.',
     market: observation, risk, rebalanceRoute: route, errors,
     wouldSend: observation && route && asOf >= observation.observedAt && asOf - observation.observedAt <= 60_000
-      ? { policyProposals: risk!.proposals, rebalance: { action: 'sell-spot-to-margin-proposal', near: 10,
+      ? { policyProposals: risk!.proposals, rebalance: { action: 'sell-spot-to-margin-proposal', near: 1,
         outputUsdc: route.outputUsdc, ownerApprovalRequired: true, dry: true },
         note: 'Only owner-approved spot disposal may use this route; no action submitted.' }
       : { action: 'wait-for-fresh-market-and-quote', reason: 'Incomplete, stale or future public data; no executable proposal.' },

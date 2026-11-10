@@ -4,6 +4,17 @@ export const ONECLICK_API = 'https://1click.chaindefuser.com/v0';
 export const HYPERCORE_USDC = '1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054';
 export const WNEAR = 'nep141:wrap.near';
 const atomicAmount = z.string().regex(/^\d{1,32}$/);
+export const DRY_NEAR_AMOUNT = '1000000000000000000000000'; // 1 NEAR, not a deposit instruction.
+/** NEAR-native wNEAR is quoted from public Intents balances; ORIGIN_CHAIN currently returns HTTP 400. */
+export function dryRebalanceRequest(now: number) {
+  z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 180_000).parse(now);
+  return {
+    dry: true as const, swapType: 'EXACT_INPUT' as const, slippageTolerance: 100, originAsset: WNEAR,
+    destinationAsset: HYPERCORE_USDC, depositType: 'INTENTS' as const, refundType: 'INTENTS' as const, recipientType: 'DESTINATION_CHAIN' as const,
+    amount: DRY_NEAR_AMOUNT, refundTo: 'counterweight-dry.near', recipient: '0x1111111111111111111111111111111111111111',
+    deadline: new Date(now + 180_000).toISOString(),
+  };
+}
 /** No wallet, configurable live flag, or API-key parameter exists in this client. */
 export async function quoteDryRebalance(fetcher: typeof globalThis.fetch = globalThis.fetch, now = Date.now()) {
   const tokensResponse = await fetcher(`${ONECLICK_API}/tokens`, { signal: AbortSignal.timeout(15_000) });
@@ -12,22 +23,21 @@ export async function quoteDryRebalance(fetcher: typeof globalThis.fetch = globa
   if (tokens.filter(t => t.assetId === WNEAR && t.decimals === 24).length !== 1
     || tokens.filter(t => t.assetId === HYPERCORE_USDC && t.decimals === 8).length !== 1)
     throw new Error('1Click NEAR / HyperCore USDC asset metadata changed');
-  const request = {
-    dry: true as const, swapType: 'EXACT_INPUT', slippageTolerance: 100, originAsset: WNEAR,
-    destinationAsset: HYPERCORE_USDC, depositType: 'ORIGIN_CHAIN', refundType: 'ORIGIN_CHAIN', recipientType: 'DESTINATION_CHAIN',
-    amount: '10000000000000000000000000', // Illustrative 10 NEAR; no funds or account queried.
-    refundTo: 'counterweight-dry.near', recipient: '0x1111111111111111111111111111111111111111',
-    deadline: new Date(now + 3_600_000).toISOString(),
-  };
+  const request = dryRebalanceRequest(now);
   const response = await fetcher(`${ONECLICK_API}/quote`, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify(request), signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`1Click dry quote HTTP ${response.status}; quote unavailable (no keys required or loaded)`);
   const result = z.object({ quote: z.object({ amountIn: atomicAmount, amountOut: atomicAmount,
     minAmountOut: atomicAmount, timeEstimate: z.number().finite().nonnegative().optional() }).passthrough() }).passthrough().parse(await response.json());
-  if ('depositAddress' in result || 'depositAddress' in result.quote) throw new Error('Unexpected deposit address in dry quote; refusing');
+  if (hasDepositAddress(result)) throw new Error('Unexpected deposit address in dry quote; refusing');
   const amountOut = BigInt(result.quote.amountOut);
   const minimum = BigInt(result.quote.minAmountOut);
   if (result.quote.amountIn !== request.amount || minimum <= 0n || minimum > amountOut
     || amountOut > 10n ** 23n) throw new Error('Invalid dry quote amounts');
-  return { request, result, outputUsdc: Number(amountOut) / 1e8, minOutputUsdc: Number(minimum) / 1e8 };
+  return { request, result, httpStatus: response.status, routeNetwork: 'mainnet' as const,
+    outputUsdc: Number(amountOut) / 1e8, minOutputUsdc: Number(minimum) / 1e8 };
+}
+function hasDepositAddress(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  return Object.entries(value).some(([key, item]) => key === 'depositAddress' || hasDepositAddress(item));
 }
