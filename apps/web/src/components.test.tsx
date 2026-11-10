@@ -1,9 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import App from "./App";
-import { Architecture, Chart, Notice, ResourceState, Stat } from "./components";
+import { Architecture, Chart, ContractLimit, Notice, ResourceState, Stat } from "./components";
 
 describe("read-only presentation", () => {
+  it("shows NEAR and USDC beside exact raw contract limits without losing small amounts", () => {
+    for (const [name, value, display] of [
+      ["max_short_size", "9300000000000000000000000", "9.3 NEAR"],
+      ["max_short_size", "1", "0.000000000000000000000001 NEAR"],
+      ["per_order_notional_cap", "10000000", "10 USDC"],
+      ["per_day_notional_cap", "20000000", "20 USDC"],
+      ["per_day_notional_cap", "1", "0.000001 USDC"],
+    ]) {
+      const html = renderToStaticMarkup(<ContractLimit name={name!} value={value!} />);
+      expect(html).toContain(display);
+      expect(html).toContain(`(raw: ${value})`);
+    }
+  });
   it("renders the product headline and all navigation sections", () => {
     const html = renderToStaticMarkup(<App />);
     expect(html).toContain("Reduce-only");

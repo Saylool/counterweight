@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import {
   Architecture,
   Chart,
+  ContractLimit,
   Notice,
   ResourceState,
   SectionHead,
@@ -135,12 +136,12 @@ function ContractPanel({ artifact }: { artifact: Artifact }) {
                 {Object.entries(data.state.limits).map(([key, value]) => (
                   <div className="definition-row" key={key}>
                     <dt>{key.replaceAll("_", " ")}</dt>
-                    <dd>{String(value)}</dd>
+                    <dd><ContractLimit name={key} value={String(value)} /></dd>
                   </div>
                 ))}
               </dl>
               <small>
-                Raw contract units: size in 10²⁴ NEAR; notional in 10⁶ USDC;
+                Raw contract units: 10²⁴ raw size units per NEAR; 10⁶ raw notional units per USDC;
                 time in seconds; bands in bps.
               </small>
             </div>

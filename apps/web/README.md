@@ -5,12 +5,13 @@ Read-only React + Vite + TypeScript frontend. No wallet SDK, private keys, signi
 From the repository root:
 
 ```sh
-# Install the isolated frontend dependencies without changing the root lockfile.
-npm ci --prefix apps/web --workspaces=false --ignore-scripts
+# Install all locked workspaces, including the frontend and local sandbox.
+export npm_config_cache="$PWD/.tmp/npm-cache"
+npm ci
 npm run web
 ```
 
-Open http://localhost:5173. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
+Open the local URL Vite prints (normally http://localhost:5173). Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
 
 ```sh
 # Deploy under a subdirectory (include the trailing slash):

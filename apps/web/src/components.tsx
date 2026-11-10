@@ -73,6 +73,25 @@ export function ResourceState({
     );
   return null;
 }
+/** Preserve integer precision when converting contract amounts for display. */
+export function ContractLimit({ name, value }: { name: string; value: string | number }) {
+  const raw = String(value);
+  const decimals = name === "max_short_size" ? 24
+    : name === "per_order_notional_cap" || name === "per_day_notional_cap" ? 6
+    : name === "price_band_bps" ? 2 : null;
+  const unit = name === "max_short_size" ? "NEAR"
+    : name === "per_order_notional_cap" || name === "per_day_notional_cap" ? "USDC"
+    : name === "price_band_bps" ? "%"
+    : name.endsWith("_seconds") ? "seconds" : "";
+  let human = raw;
+  if (decimals !== null && /^\d+$/.test(raw)) {
+    const digits = BigInt(raw).toString().padStart(decimals + 1, "0");
+    const fraction = digits.slice(-decimals).replace(/0+$/, "");
+    human = digits.slice(0, -decimals) + (fraction ? `.${fraction}` : "");
+  }
+  return <><span>{human} {unit}</span> <small>(raw: {raw})</small></>;
+}
+
 export function Stat({
   label,
   value,
