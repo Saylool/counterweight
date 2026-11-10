@@ -3,10 +3,16 @@
 From the repository root, with dependencies installed and Node >=22.19:
 
 ```sh
-npm run keeper:run -- --policy=YOUR_POLICY.testnet --hours=48
+caffeinate -i npm run keeper:run -- --policy=policy-v3.counterweight-samet.testnet --hours=48
 ```
 
-Use the account provisioned by the contract engineer, including a v3 account when deployed. A live run requires an explicit `--policy`; it does not select a contract version or deploy/migrate contracts. The policy must designate `keeper.counterweight-samet.testnet` and the testnet MPC signer, and expose the existing `get_state`, `get_rebalance`, heartbeat, keeper-price and order-signature ABI. Unknown or incompatible public responses block trading and are logged.
+This starts the deployed v3 keeper for 48 hours on macOS and keeps the machine awake. Run after the 49 USDC transfer is publicly verified and the policy key is removed. It monitors and reduces existing shorts; opening is disabled. After spot custody is verified, permit bounded entries with this exact command (stop any existing keeper first):
+
+```sh
+caffeinate -i npm run keeper:run -- --policy=policy-v3.counterweight-samet.testnet --hours=48 --allow-open
+```
+
+A live run requires an explicit `--policy`; it does not deploy/migrate contracts. The policy must designate `keeper.counterweight-samet.testnet` and the testnet MPC signer, and expose `get_state`, `get_rebalance`, heartbeat, keeper-price and order-signature methods. The known v3 account selects v3 exit semantics. Unknown or incompatible public responses block trading and are logged.
 
 The executable `near` must be **near-cli-rs**, configured for testnet with the keeper's account already provisioned in the macOS keychain. The keeper invokes only these transaction methods:
 
@@ -36,7 +42,7 @@ Public RPC reads start at `https://rpc.testnet.near.org`; failures alternate wit
 
 Hyperliquid reads and relays are fixed to **TESTNET**. The keeper locally derives the policy's address from the public MPC root and checks the signer view at the same finalized block. It fetches NEAR mark/current funding, funding history, the order book, derived-account `clearinghouseState`, and open orders. Risk comes from `packages/domain`: H in USDC equals venue equity minus fee reserve minus conservative upper-band notional. The trigger is strictly `H < upper-band-notional × min_headroom_bps / 10000`, rounded up to micro-USDC. Limits on `get_state().limits` take precedence; otherwise configured rebalance limits supply the reserve/threshold; absent both, the shared convention is a $0.10 reserve and 1000 bps. Each record includes the chosen settings and threshold in USDC. This is a model based on public observations, not a liquidation guarantee.
 
-The keeper refreshes stale or changed fallback prices only inside immutable oracle bounds. Observations must be at most 30 seconds old. It respects fresh public-oracle precedence when constructing the expected contract price. It submits an IOC buy with the venue's **reduce-only** flag for a low-headroom short, bounded by actual quantity and contract reduction authorization. Paused/pending state, open orders, unexpected long/other-coin positions, stale data, incompatible metadata, or policy access keys block new orders. It never sells spot, withdraws, settles exposure, changes limits, or calls owner methods.
+The v3 keeper refreshes stale or changed fallback prices across the contract's sanity range ($0.00001–$1,000,000); opening still requires the configured opening bounds. Historical policies retain the immutable-band cache restriction. Observations must be at most 30 seconds old. It respects fresh public-oracle precedence when constructing the expected contract price. It submits an IOC buy with the venue's **reduce-only** flag for a low-headroom short, bounded by actual quantity and contract reduction authorization. V3 exits include `observed_at` in seconds and use a fixed mark +1% cap rounded down to the venue tick, independently of opening bounds and the configured opening price band. V3 can reduce while paused. Pending state, open orders, unexpected long/other-coin positions, stale data, incompatible metadata, or policy access keys block new orders; pauses block opening and historical-policy reductions. It never sells spot, withdraws, settles exposure, changes limits, or calls owner methods.
 
 Opening is off by default. `--allow-open` permits an entry only from a reconciled flat account with zero reserved exposure, after prior authorizations expire and cooldown elapses. Size stays within owned spot, max short, per-order and remaining daily caps; funding history, current positive funding, depth, minimum venue order, equity and headroom checks must pass. Contract checks remain authoritative. Reductions do not release contract reservations; owner settlement remains separate. Restarting without `--allow-open` will not relay an unsent opening signature.
 

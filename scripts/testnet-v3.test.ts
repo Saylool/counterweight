@@ -37,7 +37,7 @@ it('prints fresh v3-only atomic deployment, explicit policy verification and ada
   expect(commands).toContain(V3_POLICY);
   expect(commands).toContain('with-init-call new');
   expect(commands).toContain('configure_margin_withdrawals');
-  expect(commands).not.toMatch(/policy-v2\.|configure_rebalancing|npm run lifecycle/);
+  expect(commands).not.toMatch(/policy-v2\.|configure_rebalancing/);
   expect(commands).toContain(`sign-as ${OWNER}`);
   expect(steps.at(-1)!.command).toContain('testnet:verify');
 });
@@ -59,7 +59,7 @@ it('funds exactly initialized storage + 128 KiB + 1 NEAR + 0.5 NEAR and stays wi
 
 it('funds the venue before optional later spot and accepts recovered 4 or arbitrary positive amounts', () => {
   const steps = freshV3Steps(initialization(54, 1, PROBE_ADDRESS, '3.5'), 'a'.repeat(64));
-  const transfer = steps.findIndex(s => s.command.includes('request_usd_class_transfer'));
+  const transfer = steps.findIndex(s => s.command.includes('--step=to-perp'));
   const deposit = steps.findIndex(s => s.command.includes('ft_transfer_call'));
   expect(transfer).toBeLessThan(deposit);
   expect(steps.map(s => s.command).join('\n')).not.toContain('near_deposit');

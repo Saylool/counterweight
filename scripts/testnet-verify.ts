@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { deriveTestnetAddress, nearMarketIndex, testnetMeta, TESTNET_SIGNER } from '../packages/hyperliquid/src/index.js';
-import { NEXT_POLICY, V3_POLICY, V3_WASM, V2_BASELINE_SHA256, committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
+import { NEXT_POLICY, V3_POLICY, V3_WASM, V2_BASELINE_SHA256, committedWasm, KEEPER, LIMITS, ORACLE, OWNER, parseOptions, PATH, POLICY, policyPlanFile, publicCli, rpc, SIGNING_LIMITS, stateAt, testnetAccount } from './testnet-common.js';
 
 export const policyStateSchema = z.object({ owner: z.literal(OWNER), keeper: z.literal(KEEPER), coin: z.literal('NEAR'),
   signer_account: z.literal(TESTNET_SIGNER), wnear_account: z.literal('wrap.testnet'), near_recipient: z.literal(OWNER),
@@ -33,7 +33,7 @@ export async function verifyTestnet(argv: string[]) {
   if (options['before-key-removal'] !== undefined && options['before-key-removal'] !== 'true') throw new Error('Expected --before-key-removal=true');
   if (options['owner-evm']) z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(options['owner-evm']);
   const policy = testnetAccount(options.policy ?? NEXT_POLICY);
-  const planFile = options.plan ?? (policy === NEXT_POLICY ? 'docs/evidence/policy-v2-plan.json' : undefined);
+  const planFile = options.plan ?? policyPlanFile(policy);
   if (policy !== POLICY && !planFile) throw new Error('Policy verification requires --plan for a custom account');
   const artifact = await committedWasm(policy === V3_POLICY ? V3_WASM : undefined);
   const saved = planFile ? JSON.parse(await readFile(planFile, 'utf8')) : undefined;

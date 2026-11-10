@@ -175,7 +175,7 @@ export class Keeper {
       if (active) { c.decision = 'dry-existing-order-blocked'; return c; }
       if (this.stopped()) { c.decision = 'stopping'; return c; }
       if (!snapshot.keyless) { c.decision = 'blocked-policy-access-keys'; return c; }
-      if (priceNeeded(snapshot.state, o.mark, o.observedAt, this.rt.now())) {
+      if (priceNeeded(snapshot.state, o.mark, o.observedAt, this.rt.now(), this.options.policy)) {
         await this.command(c, 'set_keeper_price', { price: String(Math.round(o.mark * 1e6)), observed_at: String(Math.floor(o.observedAt / 1000)) });
         if (this.options.dry) snapshot = { ...snapshot, state: { ...snapshot.state, reference_price: String(Math.round(o.mark * 1e6)), reference_price_timestamp: String(Math.floor(o.observedAt / 1000)) } };
         else {

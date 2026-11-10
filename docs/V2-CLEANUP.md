@@ -7,6 +7,26 @@ private-key arguments. Review the public snapshot in
 [evidence/v2-cleanup-preflight.json](evidence/v2-cleanup-preflight.json), then
 refresh state, Hyperliquid position and actual wrap.testnet balance before acting.
 
+The command printer/verifier performs public reads only:
+
+```sh
+npm run v2:cleanup -- --step=pause
+npm run v2:cleanup -- --step=expire
+npm run v2:cleanup -- --step=abandon
+npm run v2:cleanup -- --step=withdraw-spot
+npm run v2:cleanup -- --step=status
+```
+
+Run each stage separately and inspect `ready`, `reasons`, `earliestAllowedUtc`
+and `commands`; only the lead executes printed owner calls. `pause` is allowed
+now after flat/idle checks. Later stages require a finalized block strictly after
+the replay horizon; use **2026-11-12 17:31:04 UTC or later**. Each stage verifies
+the preceding state before becoming ready. The first ready `withdraw-spot` run
+saves the owner's token balance in `docs/evidence/v2-cleanup-withdraw-before.json`.
+After the callback, `status` checks empty custody/reservations and reports
+`ownerIncreaseVerified` for exactly 4 wNEAR against that saved balance. A missing
+baseline or intervening owner token movement requires receipt review.
+
 ## Exact state and the review's two errors
 
 The [saved lifecycle recheck](evidence/2026-11-10-release-lifecycle-recheck.json)
@@ -95,4 +115,5 @@ near contract call-function as-transaction policy-v2.counterweight-samet.testnet
 
 Do not deploy v3 over v2, initialize v2 again, delete its account, or reuse the
 v2 address for the new strategy. Historical `testnet:verify` checks the preserved
-v2 artifact; v3 verification must specify the v3 account and plan explicitly.
+v2 artifact; `testnet:verify --policy=policy-v3.counterweight-samet.testnet`
+selects the saved v3 plan and artifact automatically.

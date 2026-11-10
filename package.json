@@ -33,7 +33,8 @@
     "web": "npm --prefix apps/web run dev",
     "web:build": "npm --prefix apps/web run build",
     "web:test": "npm --prefix apps/web test",
-    "keeper:run": "tsx scripts/keeper-run.ts"
+    "keeper:run": "tsx scripts/keeper-run.ts",
+    "v2:cleanup": "tsx scripts/v2-cleanup.ts"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",

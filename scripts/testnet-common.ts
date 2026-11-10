@@ -9,6 +9,10 @@ export const OWNER = 'counterweight-samet.testnet';
 export const POLICY = `policy.${OWNER}`;
 export const V3_POLICY = `policy-v3.${OWNER}`;
 export const NEXT_POLICY = `policy-v2.${OWNER}`;
+export function policyPlanFile(policy: string): string | undefined {
+  return policy === NEXT_POLICY ? 'docs/evidence/policy-v2-plan.json'
+    : policy === V3_POLICY ? 'docs/evidence/policy-v3-plan.json' : undefined;
+}
 // Deployed, initialized v2 baseline; the saved initializer plan remains authoritative after upgrade.
 export const V2_BASELINE_SHA256 = 'd85b2f91a182402fd1089ad6353e174a5b3de7611534cc839e601d78401eabe1';
 export const DEPLOYED_SHA256 = '698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289';

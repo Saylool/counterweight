@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { ceilDiv, evaluateRisk, policyUpperNotional } from '../../../packages/domain/src/index.js';
-import { BASE, decimal, orderPrice, units } from '../../../scripts/lifecycle-config.js';
+import { BASE, decimal, orderPrice, units, v3ExitPrice } from '../../../scripts/lifecycle-config.js';
 import { parseAccount, type ExpectedCall } from '../../../scripts/lifecycle-parsing.js';
+import { NEXT_POLICY, V3_POLICY } from '../../../scripts/testnet-common.js';
 
 export const KEEPER = 'keeper.counterweight-samet.testnet';
 export const uint = z.string().regex(/^\d+$/);
@@ -40,9 +41,10 @@ export function riskSettings(state: PolicyState, rebalance: unknown): RiskSettin
 export function heartbeatDue(state: PolicyState, now: number) {
   return now / 1000 >= Number(state.last_keeper_heartbeat) + state.heartbeat_timeout_seconds / 3;
 }
-export function priceNeeded(state: PolicyState, mark: number, observedAt: number, now: number) {
+export function priceNeeded(state: PolicyState, mark: number, observedAt: number, now: number, policy = NEXT_POLICY) {
   const price = BigInt(Math.round(mark * 1e6));
-  if (price < BigInt(state.oracle.min_price) || price > BigInt(state.oracle.max_price)) throw new Error('Policy mark outside immutable bounds');
+  if (policy === V3_POLICY ? price < 10n || price > 1_000_000_000_000n
+    : price < BigInt(state.oracle.min_price) || price > BigInt(state.oracle.max_price)) throw new Error('Policy mark outside immutable bounds');
   if (observedAt > now || now - observedAt > Math.min(30_000, state.oracle.max_age_seconds * 1000)) throw new Error('Policy stale market');
   return price !== BigInt(state.reference_price) || now / 1000 - Number(state.reference_price_timestamp) >= Math.min(state.limits.price_max_age_seconds, state.oracle.max_age_seconds) / 2;
 }
@@ -63,19 +65,24 @@ export function assess(state: PolicyState, o: Observation, settings: RiskSetting
   return { ...risk, thresholdUsd: Number(ceilDiv(BigInt(Math.round(upper * 1e6)) * BigInt(settings.minHeadroomBps), 10000n)) / 1e6 };
 }
 export function planOrder(policy: string, state: PolicyState, o: Observation, settings: RiskSettings, now: number, allowOpen: boolean): ExpectedCall | null {
-  if (state.paused || state.pending !== null || o.openOrders.length || o.account.otherPositions.length || o.account.signedSize > 0) return null;
+  const v3 = policy === V3_POLICY;
+  if ((!v3 && state.paused) || state.pending !== null || o.openOrders.length || o.account.otherPositions.length || o.account.signedSize > 0) return null;
   if (state.asset_index !== o.assetIndex || state.size_decimals !== o.szDecimals) throw new Error('Policy market metadata mismatch');
   const risk = assess(state, o, settings, now);
   if (now < o.observedAt || now - o.observedAt > 30_000) return null;
   const reduce = o.account.signedSize < 0 && risk.metrics.headroom < risk.thresholdUsd;
   const step = 10n ** BigInt(24 - o.szDecimals);
-  const reference = effectivePrice(state, now);
+  const oracleFresh = BigInt(state.oracle_price) > 0n && Number(state.oracle_timestamp) <= Math.floor(now / 1000)
+    && Math.floor(now / 1000) - Number(state.oracle_timestamp) <= Math.min(state.oracle.max_age_seconds, 60);
+  const reference = v3 && reduce ? (oracleFresh ? BigInt(state.oracle_price) : BigInt(Math.round(o.mark * 1e6))) : effectivePrice(state, now);
+  if (v3 && reduce && (reference < 10n || reference > 1_000_000_000_000n)) throw new Error('Policy exit mark outside sanity bounds');
   let size: bigint;
   if (reduce) {
     size = units(o.account.signedSizeText.slice(1), 24);
     const cap = BigInt(state.signed_short_size) > BigInt(state.limits.max_short_size) ? BigInt(state.signed_short_size) : BigInt(state.limits.max_short_size);
     size = size < cap ? size : cap;
   } else {
+    if (state.paused || reference < BigInt(state.oracle.min_price) || reference > BigInt(state.oracle.max_price)) return null;
     if (!allowOpen || o.account.signedSize !== 0 || BigInt(state.signed_short_size) !== 0n || now <= Number(state.last_open_expiry) ||
       now < Number(state.last_nonce) + state.limits.cooldown_seconds * 1000 || o.funding <= 0) return null;
     // Do not reset daily usage locally: the contract is authoritative (including rolling windows).
@@ -94,8 +101,9 @@ export function planOrder(policy: string, state: PolicyState, o: Observation, se
       size * orderPrice(reference, o.szDecimals, false, state.limits.price_band_bps) < 10_000_000n * BASE) return null;
   }
   const args = { order: { asset_index: o.assetIndex, size: size.toString(), reduce_only: reduce,
-    reference_price: reduce ? String(Math.round(o.mark * 1e6)) : null } };
+    reference_price: reduce ? String(Math.round(o.mark * 1e6)) : null,
+    ...(v3 && reduce ? { observed_at: String(Math.floor(o.observedAt / 1000)) } : {}) } };
   return { method: 'request_order_signature', args, caller: KEEPER, policy, asset: o.assetIndex, reduceOnly: reduce,
-    size: decimal(size, 24), price: decimal(orderPrice(reference, o.szDecimals, reduce, state.limits.price_band_bps), 6),
+    size: decimal(size, 24), price: decimal(v3 && reduce ? v3ExitPrice(reference, o.szDecimals) : orderPrice(reference, o.szDecimals, reduce, state.limits.price_band_bps), 6),
     recipient: state.evm_recipient, amount: '0' };
 }

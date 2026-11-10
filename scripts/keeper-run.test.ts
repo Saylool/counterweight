@@ -113,6 +113,22 @@ describe('unattended keeper policy and timing', () => {
     expect(risk.metrics.headroom).toBe(0.78); expect(risk.thresholdUsd).toBe(1.212);
     expect(planOrder(policy, x.state, o, riskSettings(x.state, null), start, false)).toMatchObject({ reduceOnly: true, size: '4' });
   });
+  it('allows paused v3 exits beyond opening bounds with exact slippage and timestamp, preserving v2 gating', async () => {
+    const x = await setup(), o = await x.keeper.client.observe(address);
+    x.state.paused = true;
+    x.state.limits.price_band_bps = 999;
+    o.mark = 50.123456;
+    const settings = riskSettings(x.state, null);
+    expect(priceNeeded(x.state, o.mark, start, start, policy)).toBe(true);
+    const exit = planOrder(policy, x.state, o, settings, start, false)!;
+    expect(exit).toMatchObject({ reduceOnly: true, price: '50.624', args: { order: { observed_at: String(start / 1000) } } });
+    expect(Number(exit.price)).toBeLessThanOrEqual(o.mark * 1.01);
+    expect(planOrder('policy-v2.counterweight-samet.testnet', x.state, o, settings, start, false)).toBeNull();
+    x.setSize('0'); x.state.signed_short_size = '0'; x.state.paused = false;
+    x.state.reference_price = '50123456';
+    const flat = await x.keeper.client.observe(address);
+    expect(planOrder(policy, x.state, flat, settings, start, true)).toBeNull();
+  });
   it('honors policy-specific reserve/threshold and rebalance settings', async () => {
     const x = await setup();
     expect(riskSettings(x.state, { limits: { min_headroom_bps: 3000, fee_reserve_usdc: '200000' } })).toEqual({ minHeadroomBps: 3000, feeReserve: 0.2 });
@@ -135,10 +151,9 @@ describe('unattended keeper policy and timing', () => {
     x.state.daily_usage = '40000000'; expect(planOrder(policy, x.state, o, settings, start, true)).toBeNull();
     x.state.daily_usage = '0'; o.funding = -0.001; expect(planOrder(policy, x.state, o, settings, start, true)).toBeNull();
   });
-  it.each(['pending', 'paused', 'orders', 'long', 'stale'] as const)('blocks unsafe %s observations', async issue => {
+  it.each(['pending', 'orders', 'long', 'stale'] as const)('blocks unsafe %s observations', async issue => {
     const x = await setup(), o = await x.keeper.client.observe(address);
     if (issue === 'pending') x.state.pending = {};
-    if (issue === 'paused') x.state.paused = true;
     if (issue === 'orders') o.openOrders = [{}];
     if (issue === 'long') o.account.signedSize = 4;
     if (issue === 'stale') o.observedAt -= 31000;

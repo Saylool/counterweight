@@ -48,6 +48,13 @@ export function orderPrice(reference: bigint, sizeDecimals: number, reduceOnly: 
   const step = 10n ** BigInt(Math.min(6, Math.max(sizeDecimals, n.toString().length - 5)));
   return reduceOnly ? (n + step - 1n) / step * step : n / step * step;
 }
+/** V3 fixes the exit cap at mark +1%, always rounding down to the venue tick. */
+export function v3ExitPrice(reference: bigint, sizeDecimals: number) {
+  if (reference < 10n || reference > 1_000_000_000_000n) throw new Error('Policy exit mark outside sanity bounds');
+  const cap = reference * 10100n / 10000n;
+  const tick = 10n ** BigInt(Math.min(6, Math.max(sizeDecimals, cap.toString().length - 5)));
+  return cap / tick * tick;
+}
 
 /** Existing WASM gates withdraw3 behind RebalanceState. Configure only after the final close.
  * The adapter is an uncreated child of the keyless policy; no sale route is executed in this run.
