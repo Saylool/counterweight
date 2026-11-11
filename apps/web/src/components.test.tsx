@@ -22,7 +22,8 @@ describe("read-only presentation", () => {
   it("renders the product headline and all navigation sections", () => {
     const html = renderToStaticMarkup(<App />);
     expect(html).toContain("Funded testnet.");
-    expect(html).toContain("Keyless policy.");
+    expect(html.match(/<h1>(.*?)<\/h1>/)?.[1]?.replace(/<[^>]+>/g, ""))
+      .toBe("Funded testnet.Keyless policy.");
     for (const id of ["lifecycle", "live", "evidence", "market", "results", "demo"])
       expect(html).toContain(`id="${id}"`);
     expect(html).toContain(

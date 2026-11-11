@@ -12,3 +12,6 @@ coverage/
 .tmp/
 
 *.tsbuildinfo
+
+# Reproducible video captures, frames and encoded deliverables
+videos/

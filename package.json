@@ -34,7 +34,13 @@
     "web:build": "npm --prefix apps/web run build",
     "web:test": "npm --prefix apps/web test",
     "keeper:run": "tsx scripts/keeper-run.ts",
-    "v2:cleanup": "tsx scripts/v2-cleanup.ts"
+    "v2:cleanup": "tsx scripts/v2-cleanup.ts",
+    "video": "tsx scripts/video/run.ts",
+    "video:capture": "tsx scripts/video/capture.ts",
+    "video:terminal": "tsx scripts/video/terminal.ts",
+    "video:assemble": "tsx scripts/video/assemble.ts",
+    "video:script": "tsx scripts/video/script.ts",
+    "video:test": "vitest run scripts/video/video.test.ts"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",
@@ -49,6 +55,8 @@
     "@near-js/utils": "1.1.0",
     "@types/node": "^24.0.0",
     "near-workspaces": "5.0.0",
+    "playwright": "^1.65.0",
+    "sharp": "^0.35.5",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"

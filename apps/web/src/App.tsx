@@ -907,7 +907,7 @@ export default function App() {
           <h1>
             Funded testnet.
             <br />
-            <em>Keyless policy.</em>
+            <em>Keyless policy</em>
             <span className="accent-dot">.</span>
           </h1>
           <div className="hero-bottom">
