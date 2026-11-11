@@ -3,90 +3,25 @@
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "source": "production-script.md",
+  "source": "revised-x-script.md (X); production-script.md (archived Judge)",
   "scenes": [
     {
       "id": "A1",
       "cut": "x",
       "number": 1,
-      "title": "Proof Hook",
+      "title": "Automate a hedge",
       "start": 0,
-      "end": 5,
-      "seconds": 5,
-      "visual": "**50/50 Split-Screen:** Left: Web dashboard `funded lifecycle table` zoomed `2x` onto the `Access key removal (0 keys)` and `Keeper IOC short 3.5 NEAR @ 3.5121` rows (`policy-v2.counterweight-samet.testnet`). Right: Hypurrscan explorer page for `0x3e72...5390` zoomed `2x` onto the `49.00 USDC` perp transfer and `-46.96 USDC` withdrawal rows, cropping out the top `Error: RPC HTTP 0` badge. Persistent top-left badge: `RECORDED V2 · HYPERLIQUID TESTNET`.",
-      "voiceover": "Zero access keys on NEAR. Real short and close on Hyperliquid testnet.",
-      "caption": "Zero keys on NEAR. Real Hyperliquid fills.",
-      "kind": "footage",
-      "badge": "RECORDED V2 · HYPERLIQUID TESTNET",
-      "shots": [
-        {
-          "at": 0,
-          "panels": [
-            {
-              "asset": "captures/lifecycle-top.png",
-              "box": [
-                0,
-                0,
-                0.5,
-                1
-              ],
-              "label": "NEAR · KEY REMOVAL → KEEPER SHORT",
-              "camera": [
-                {
-                  "at": 0,
-                  "rect": [
-                    620,
-                    635,
-                    430,
-                    225
-                  ]
-                },
-                {
-                  "at": 4,
-                  "rect": [
-                    620,
-                    700,
-                    430,
-                    225
-                  ]
-                }
-              ]
-            },
-            {
-              "asset": "captures/hl-fills.png",
-              "box": [
-                0.5,
-                0,
-                0.5,
-                1
-              ],
-              "label": "HYPURRSCAN · TRANSACTIONS",
-              "camera": [
-                {
-                  "at": 0,
-                  "rect": [
-                    1140,
-                    294,
-                    430,
-                    220
-                  ]
-                }
-              ],
-              "crop": [
-                76,
-                230,
-                1768,
-                337
-              ]
-            }
-          ]
-        }
-      ],
+      "end": 10,
+      "seconds": 10,
+      "visual": "**Full-Width Problem + 3-Beat Proof Card:** Top headline: `Automate a hedge without giving the keeper unrestricted signing authority.` Below it, 3 large horizontal state cards (`2x` readable on mobile) with green checkmarks: **1. `Policy keys: 0`** (`DGcGa5…sS8eT`) $\\rightarrow$ **2. `Short filled`** (`3.5 NEAR @ 3.5121`, `2ZHrq1…DcFNd`) $\\rightarrow$ **3. `Position flat`** (`Reduce-only close 3.5 NEAR @ 3.5212`, `65WWr7…eL8JW`). Persistent top-left badge: `Recorded Hyperliquid testnet run` (`policy-v2.counterweight-samet.testnet`). Removes the clipped Hypurrscan USDC transfer crop (`Arbitrum` chopped to `m`).",
+      "voiceover": "Automate a hedge without giving the keeper unrestricted signing authority. On Hyperliquid testnet, Counterweight executes a real short and reduce-only close with zero policy keys on NEAR.",
+      "caption": "Automate hedges with zero policy access keys.",
+      "kind": "proof",
+      "badge": "Recorded Hyperliquid testnet run",
+      "shots": [],
       "claims": [
         "keys",
-        "fills",
-        "withdraw",
-        "funding"
+        "fills"
       ]
     },
     {
@@ -94,19 +29,17 @@
       "cut": "x",
       "number": 2,
       "title": "Animated Diagram",
-      "start": 5,
-      "end": 19,
-      "seconds": 14,
-      "visual": "**Full-Screen Animated Architecture Diagram (14 s):** Dark canvas (`#0f172a`). Nodes: `Owner Wallet`, `Keeper Bot`, `NEAR Policy Contract (0 keys)`, `NEAR MPC (v1.signer)`, `Hyperliquid Account (0x3e72...5390)`. Beats 1–3 play in sequence: Owner locks rules and burns the contract key; Keeper sends bounded short request through Policy Contract to `v1.signer` and Hyperliquid; Rogue Keeper withdrawal/leverage spike hits Policy Contract and shatters in red before reaching `v1.signer`.",
-      "voiceover": "Keepers today need hot private keys. Counterweight replaces that key with a keyless NEAR policy contract. The keeper proposes a hedge, the contract enforces strict bounds, and NEAR MPC v1.signer signs the Hyperliquid order.",
+      "start": 10,
+      "end": 23,
+      "seconds": 13,
+      "visual": "**Full-Screen Animated Architecture Diagram:** Dark slate canvas (`#0f172a`). Nodes left-to-right: `Owner Wallet` $\\rightarrow$ `NEAR Policy Contract (0 keys)` $\\rightarrow$ `NEAR MPC (v1.signer)` $\\rightarrow$ `Hyperliquid Account (0x3e72…5390)`, plus `Keeper Bot`. Animated pills route along connector lines *above* boxes (`y: -28px` offset so labels never collide with node titles). Strictly 3-step happy path only: (1) Owner sets caps & deletes key; (2) Keeper proposes bounded hedge; (3) Policy contract verifies bounds and forwards to NEAR MPC to sign for Hyperliquid. Premature red `REVERT: 7/7 BLOCKED` flash removed from `A2` and saved for `A6`.",
+      "voiceover": "Giving a keeper unrestricted signing authority creates risk. Counterweight replaces that authority with a keyless NEAR policy contract. The keeper proposes a hedge, the contract enforces strict bounds, and NEAR Chain Signatures sign the order.",
       "caption": "Owner sets policy. NEAR MPC signs orders.",
       "kind": "diagram",
       "badge": "NEAR CHAIN SIGNATURES · TESTNET",
       "shots": [],
       "claims": [
         "keys",
-        "fills",
-        "deadman",
         "signer"
       ]
     },
@@ -115,69 +48,15 @@
       "cut": "x",
       "number": 3,
       "title": "Happy Path: Funded Lifecycle",
-      "start": 19,
-      "end": 35,
+      "start": 23,
+      "end": 39,
       "seconds": 16,
-      "visual": "**Web Dashboard (`funded lifecycle table`):** Top 82% canvas frame (bottom 18% reserved for caption bar so zero rows clip). Smooth `2x` pan down rows 1–6: Owner deposits `4 wNEAR` (`H4ecuH...`), sends `50 USDC` to spot and transfers `49 USDC` `spot->perp` (`FnEqLs...`, with badge `Funding preceded key removal`), deletes last access key (`DGcGa5...`), then Keeper opens `3.5 NEAR @ 3.5121` (`2ZHrq1...`) and closes reduce-only `3.5 NEAR @ 3.5212` flat (`65WWr7...`).",
-      "voiceover": "In our funded v2 testnet run, the owner deposited four wrapped NEAR, moved forty-nine USDC to perps, and deleted the contract's access key. With zero keys left, the keeper opened a 3.5 NEAR short and closed it reduce-only, flat.",
-      "caption": "Key deleted first. Keeper shorts then closes.",
-      "kind": "footage",
+      "visual": "**4 Enlarged Sequential Evidence Crops (Replaces 21s Static Table Scroll):** Reveal 4 large (`2.2x` zoom) cards sequentially with an amber highlight border synced to VO: **Beat 1 (`23–27 s`):** `Owner funded` (`4 wNEAR` deposit + owner-only `49 USDC` `spot → perp` transfer). **Beat 2 (`27–31 s`):** `Policy access keys: 0` (committed WASM `1bb1cc57…08a7a`, key deleted before keeper trading). **Beat 3 (`31–35 s`):** `3.5 NEAR short filled` (`Keeper IOC short @ 3.5121`, oid `65016476566`). **Beat 4 (`35–39 s`):** `Reduce-only close, position flat` (`3.5 NEAR @ 3.5212`, net perp `0.0 NEAR`). Footer bar (`9 VERIFIED STEPS`) holds unclipped short tx refs (`H4ecuH…Q1vnt ↗`, `FnEqLs…LDmp3 ↗`, `DGcGa5…sS8eT ↗`, `2ZHrq1…DcFNd ↗`, `65WWr7…eL8JW ↗`).",
+      "voiceover": "Four beats prove the lifecycle: owner funded four wrapped NEAR and forty-nine USDC margin; policy access keys dropped to zero; a 3.5 NEAR short filled; and a reduce-only close left the position flat. Funded first, keys deleted before keeper trading.",
+      "caption": "Funded first. Keys deleted before keeper trading.",
+      "kind": "proof",
       "badge": "RECORDED V2 · FUNDING PRECEDED KEY REMOVAL",
-      "shots": [
-        {
-          "at": 0,
-          "panels": [
-            {
-              "asset": "captures/lifecycle-top.png",
-              "box": [
-                0,
-                0,
-                1,
-                1
-              ],
-              "label": "RECORDED FUNDED LIFECYCLE · ROWS 1–6",
-              "camera": [
-                {
-                  "at": 0,
-                  "rect": [
-                    370,
-                    445,
-                    900,
-                    348
-                  ]
-                },
-                {
-                  "at": 5,
-                  "rect": [
-                    370,
-                    540,
-                    900,
-                    348
-                  ]
-                },
-                {
-                  "at": 9,
-                  "rect": [
-                    370,
-                    626,
-                    900,
-                    348
-                  ]
-                },
-                {
-                  "at": 15,
-                  "rect": [
-                    370,
-                    695,
-                    900,
-                    348
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "shots": [],
       "claims": [
         "funding",
         "keys",
@@ -190,14 +69,14 @@
       "cut": "x",
       "number": 4,
       "title": "Explorer Proof & v2/v3 Resolution",
-      "start": 35,
-      "end": 46,
-      "seconds": 11,
-      "visual": "**60/40 Split-Screen:** Left: Hypurrscan `TRANSACTIONS` table zoomed `2.2x` on `0xdf68992e... Withdraw -46.96 USDC` (with badge `Destination arrival unverified`). Right: Web dashboard `live v3 panel` zoomed onto `Access keys: 0`, committed WASM `1bb1cc57…08a7a`, and configured NEAR/USDC caps (with badge `v2 = funded run · v3 = current fix`).",
-      "voiceover": "Hypurrscan records the forty-six point nine-six USDC net withdrawal to a fixed recipient. Our current v3 deployment stays keyless and fixes exits outside the price band.",
-      "caption": "Hypurrscan ledger verified. v3 fixes band exits.",
-      "kind": "footage",
-      "badge": "V2 = FUNDED RUN · V3 = CURRENT FIX",
+      "start": 39,
+      "end": 51,
+      "seconds": 12,
+      "visual": "**Clean 50/50 Split-Screen (Zoomed Out 15% with 16px Padding, No Clipped Sub-Panels):** Hold for full `12 s` on the unclipped split view (skipping the cropped `f015–f016` panels). **Left:** Hypurrscan `TRANSACTIONS` row `0xdf68992e…` showing full `To | Amount | Token | Fee` columns (`47.957074 USDC` gross, **`46.957074 USDC net withdrawal recorded`**, `1 USDC` fee to fixed recipient `0xb1af…f36a`) with badge `Destination arrival unverified`. **Right:** Finalized verifier proof showing `Access keys: 0`, full 64-char SHA-256 `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`, and badge `Funded run = v2 · Separate keyless deployment = v3`. *(Note: `CLAIMS.md` does not list `v3` or the exits-outside-band fix, so that claim is omitted.)*",
+      "voiceover": "Hypurrscan shows a 46.957074 USDC net withdrawal recorded; destination arrival unverified. The funded run shown is v2; v3 is a separate keyless deployment.",
+      "caption": "46.957074 USDC withdrawal recorded. Destination arrival unverified.",
+      "kind": "withdrawal",
+      "badge": "Funded run = v2 · Separate keyless deployment = v3",
       "shots": [
         {
           "at": 0,
@@ -207,96 +86,34 @@
               "box": [
                 0,
                 0,
-                0.6,
+                0.5,
                 1
               ],
-              "label": "DESTINATION ARRIVAL UNVERIFIED",
-              "camera": [
-                {
-                  "at": 0,
-                  "rect": [
-                    240,
-                    286,
-                    520,
-                    330
-                  ]
-                }
-              ],
+              "label": "HYPURRSCAN · TRANSACTIONS",
               "crop": [
                 76,
                 230,
                 1768,
                 337
-              ]
-            },
-            {
-              "asset": "captures/live-v3.png",
-              "box": [
-                0.6,
-                0,
-                0.4,
-                1
               ],
-              "label": "V3 · CURRENT KEYLESS DEPLOYMENT",
               "camera": [
                 {
                   "at": 0,
                   "rect": [
-                    1135,
-                    440,
-                    375,
-                    400
-                  ]
-                },
-                {
-                  "at": 6,
-                  "rect": [
-                    980,
-                    640,
-                    375,
-                    400
+                    76,
+                    230,
+                    1768,
+                    337
                   ]
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "at": 7,
-          "panels": [
-            {
-              "asset": "captures/hl-fills.png",
-              "box": [
-                0,
-                0,
-                0.6,
-                1
-              ],
-              "label": "HYPURRSCAN · NET WITHDRAWAL",
-              "camera": [
-                {
-                  "at": 0,
-                  "rect": [
-                    1080,
-                    288,
-                    520,
-                    330
-                  ]
-                }
-              ],
-              "crop": [
-                76,
-                230,
-                1768,
-                337
               ]
             },
             {
               "asset": "captures/v3-proof.png",
               "box": [
-                0.6,
+                0.5,
                 0,
-                0.4,
+                0.5,
                 1
               ],
               "label": "SEPARATE FINALIZED V3 VERIFIER",
@@ -304,9 +121,9 @@
                 {
                   "at": 0,
                   "rect": [
-                    80,
-                    300,
-                    1000,
+                    60,
+                    40,
+                    1220,
                     690
                   ]
                 }
@@ -326,14 +143,14 @@
       "cut": "x",
       "number": 5,
       "title": "Sandbox: Keeper Close",
-      "start": 46,
-      "end": 57,
-      "seconds": 11,
-      "visual": "**Local Demo Terminal (`keeper`):** Whole-line instant reveal (no character-by-character typing). Start with lines `001–009` visible (`offlineGuardActive`, `policyKeys=0`, `SHA256 1bb1cc57...`). Zoom `2x` onto the `+32.5%` 24h NEAR rally trigger (`H = 2.535`), the keeper `reduce-only close` signature, and `OWNER FROZEN nonce=7000002` with unchanged balance. Persistent badge: `LOCAL SANDBOX · REAL WASM · MOCKED EXTERNALS`.",
-      "voiceover": "In our offline sandbox, real policy WASM runs against mocked externals. During a thirty-two percent rally, the keeper closes reduce-only while the owner wallet stays untouched.",
-      "caption": "Offline WASM sandbox: owner wallet stays untouched.",
+      "start": 51,
+      "end": 63,
+      "seconds": 12,
+      "visual": "**Local Demo Terminal (`keeper`):** Blank `\\|` spacer lines stripped; excerpted lines sorted strictly ascending (`003, 005, 007, 010, 016, 036, 050`). Reconciled to match `CLAIMS.md`: `2x` zoom on worst 24h rally (`+32.499065%` across `4,297` candidates), close entry at **`2026-09-18 02:00 UTC | NEAR $3.2299 | H = 2.535`** (replacing `09-17 / $2.8062 / 2.281`), `SIGNED mock` reduce-only close, and `OWNER FROZEN nonce=7000002` (balance unchanged). Top badge: `LOCAL SIMULATION · REAL WASM · MOCKED SIGNATURES & FILLS`.",
+      "voiceover": "In a local simulation, the real policy WASM authorizes a reduce-only close; signatures and fills are mocked. During a 32.5% NEAR rally, the keeper closes while the owner wallet stays untouched.",
+      "caption": "Local simulation: real WASM, mocked signatures/fills.",
       "kind": "keeper",
-      "badge": "LOCAL SANDBOX · REAL WASM · MOCKED EXTERNALS",
+      "badge": "LOCAL SIMULATION · REAL WASM · MOCKED SIGNATURES & FILLS",
       "shots": [],
       "claims": [
         "rally",
@@ -346,14 +163,14 @@
       "cut": "x",
       "number": 6,
       "title": "Rogue-Keeper Kill-Shot",
-      "start": 57,
-      "end": 69,
+      "start": 63,
+      "end": 75,
       "seconds": 12,
-      "visual": "**Local Demo Terminal (`rogue`):** Whole-line snaps of all 7 red rejection lines (`exceeds max_short_size`, `price override`, `unauthorized withdraw`, `approveAgent`, `replayed callback`, `stale price`, `non-keeper`), locking for 3 full seconds on green summary line `051 | PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed`.",
-      "voiceover": "When a compromised keeper attempts seven attacks — excess leverage, price overrides, rogue withdrawals, agent delegation, or replayed callbacks — the contract rejects all seven and signs dead-man recovery after timeout.",
-      "caption": "PASS 7/7: every rogue keeper attack rejected.",
+      "visual": "**Local Demo Terminal (`rogue`) + 3 Visual Callout Beats:** Blank `\\|` lines removed so all 7 red rejection lines (`037–045`), early dead-man rejection (`046`), and green summary line `051 | PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed` fit with zero bottom-border slicing. Three sequential visual callout badges overlay the right side: **1. `Unauthorized requests blocked`** $\\rightarrow$ **2. `7/7 tested cases`** $\\rightarrow$ **3. `Recovery authorized after timeout (+601s, mocked signature)`**.",
+      "voiceover": "Against a compromised keeper, 7 of 7 tested unauthorized requests rejected; recovery authorized after timeout, where the policy authorizes a mocked recovery signature.",
+      "caption": "7/7 tested rogue requests rejected.",
       "kind": "rogue",
-      "badge": "LOCAL SANDBOX · REAL WASM · MOCKED MPC/FILLS",
+      "badge": "LOCAL SIMULATION · REAL WASM · MOCKED SIGNATURES & FILLS",
       "shots": [],
       "claims": [
         "attacks",
@@ -366,14 +183,14 @@
       "cut": "x",
       "number": 7,
       "title": "End Card",
-      "start": 69,
-      "end": 75,
-      "seconds": 6,
-      "visual": "**Clean Title/End Card:** Large readable repo URL (`gitlab.com/gocworks-group/hip3-smart-money` / public submission URL — no template placeholders), reproduction command `npm ci && npm test && npm run demo:local`, and scope line `Supervised testnet prototype · Owner observations trusted · Intents dry-only`.",
-      "voiceover": "Counterweight: a supervised DeFi testnet prototype built at NEAR HACKATHON. Reproduce everything from the repo.",
-      "caption": "Built at NEAR HACKATHON · DeFi Track",
+      "start": 75,
+      "end": 82,
+      "seconds": 7,
+      "visual": "**Clean End Card (`7 s`):** Duplicate top/middle `BUILT AT NEAR HACKATHON` lines removed. Large centered repo link **`https://github.com/Saylool/counterweight`**, reproduction command `npm ci && npm test && npm run demo:local`, contract identifier `policy-v2.counterweight-samet.testnet`, and scope footer `Supervised testnet prototype · Owner observations trusted · Intents dry-only`.",
+      "voiceover": "Counterweight: a supervised DeFi testnet prototype. Built at NEAR HACKATHON. Run the local demo and inspect the testnet evidence.",
+      "caption": "Run local demo. Inspect testnet evidence.",
       "kind": "end",
-      "badge": "BUILT AT NEAR HACKATHON · DEFI TRACK",
+      "badge": "BUILT AT NEAR HACKATHON",
       "shots": [],
       "claims": [
         "versions"
@@ -1110,7 +927,8 @@
       "spoken": [
         "forty-six point nine-six",
         "46.96",
-        "one"
+        "one",
+        "46.957074"
       ]
     },
     "funding": {
@@ -1157,7 +975,8 @@
       "anchor": "Seven attack categories/errors",
       "evidence": "reports/demo-local.json",
       "spoken": [
-        "seven"
+        "seven",
+        "7"
       ]
     },
     "deadman": {
