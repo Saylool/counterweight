@@ -80,7 +80,7 @@ async function record(browser: Browser, shot: string, url: string, prepare: (pag
     const u = new URL(req.url());
     let body: Record<string, unknown> = {};
     try { body = req.postDataJSON() as Record<string, unknown>; } catch { /* invalid JSON rejected below */ }
-    const nearRead = u.hostname === 'rpc.testnet.near.org' && ['query', 'block', 'status', 'tx', 'EXPERIMENTAL_tx_status'].includes(String(body.method));
+    const nearRead = ['rpc.testnet.near.org', 'test.rpc.fastnear.com'].includes(u.hostname) &&['query', 'block', 'status', 'tx', 'EXPERIMENTAL_tx_status'].includes(String(body.method));
     const hlRead = ['api.hyperliquid.xyz', 'api.hyperliquid-testnet.xyz'].includes(u.hostname) && u.pathname === '/info';
     return nearRead || hlRead ? route.continue() : route.abort('blockedbyclient');
   });
@@ -104,8 +104,9 @@ async function record(browser: Browser, shot: string, url: string, prepare: (pag
     if (!url.startsWith(BASE) && (/just a moment|verify you are human|access denied|checking your browser/i.test(body) || body.length < 150)) {
       state = 'unavailable'; notes.push('Public page returned a challenge or incomplete body; preserved without bypass.');
     }
-    if (shot === 'hl-fills' && (!body.includes('3.5121') || !body.includes('3.5212'))) {
-      state = 'unavailable'; notes.push('Expected dated open/close prices are not both present. Inspect explorer fills tab/history/pagination before publishing.');
+    // Hypurrscan's transaction list shows the funding transfer, the spot-to-perp move and the withdrawal.
+    if (shot === 'hl-fills' && (!/withdraw/i.test(body) || !body.includes('46.96') || !body.includes('49.00'))) {
+      state = 'unavailable'; notes.push('Expected withdrawal and spot-to-perp rows are not both present. Inspect the explorer before publishing.');
     }
     if (shot === 'near-keys' && !/delete[\s_-]*key/i.test(body)) {
       state = 'unavailable'; notes.push('Key-deletion action not present in loaded explorer text; inspect transaction details.');
@@ -199,9 +200,9 @@ export async function capture() {
     }
     manifest.records.push(await v3Proof());
     const publicPages = [
-      ['hl-fills', 'https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390'],
-      ['near-open', 'https://testnet.nearblocks.io/txns/2ZHrq1du5UaAeiQZVBoXCzb6vBFj9eMrQd99NiTDcFNd'],
-      ['near-keys', 'https://testnet.nearblocks.io/txns/DGcGa5e5rjma3r7ohmP3Vhoshm9wdHMdU6DdA1ksS8eT'],
+      // The Hyperliquid testnet app explorer does not index this address, nearblocks answers bots with 403 and
+      // explorer.testnet.near.org is only a selector page.
+      ['hl-fills', 'https://testnet.hypurrscan.io/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390'],
     ];
     for (const [shot, url] of publicPages) await record(browser, shot!, url!, async page => {
       if (shot === 'hl-fills') {

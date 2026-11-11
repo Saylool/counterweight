@@ -26,7 +26,7 @@ describe('video timing and claim mapping', () => {
     }
   });
   it('opens the X cut with owner-untouched keeper and rogue evidence, then public testnet proof', () => {
-    expect(short.slice(0, 4).map(scene => scene.shot)).toEqual(['keeper', 'rogue', 'hl-fills', 'near-keys']);
+    expect(short.slice(0, 4).map(scene => scene.shot)).toEqual(['keeper', 'rogue', 'lifecycle-top', 'lifecycle-scroll']);
     expect(short[0]!.scope).toContain('LOCAL');
     expect(main.find(scene => scene.shot === 'v3-proof')!.scope).toContain('SEPARATE V3');
   });

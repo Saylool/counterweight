@@ -14,10 +14,9 @@ The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliq
 | 0:04–0:10 | hero · REAL PRODUCT · READ-ONLY | Counterweight · a NEAR policy prototype on Hyperliquid testnet. | intro |
 | 0:10–0:20 | lifecycle-top · RECORDED V2 · 2026-11-10 | Recorded v2 lifecycle: owner funding preceded key removal; keeper trading followed it. | lifecycle |
 | 0:20–0:28 | lifecycle-scroll · RECORDED V2 · SUPERVISED OWNER STEPS | Dated v2 proof: zero access keys. Funding and the spot-to-perp transfer came first. | keys |
-| 0:28–0:35 | near-keys · PUBLIC EXPLORER · V2 KEY DELETION | Dated v2 proof: zero access keys. Funding and the spot-to-perp transfer came first. | keys |
-| 0:35–0:45 | hl-fills · PUBLIC EXPLORER · V2 TESTNET | Testnet keeper short: 3.5 NEAR at 3.5121; reduce-only close at 3.5212. Position checked flat. | fills |
-| 0:45–0:52 | near-open · PUBLIC EXPLORER · V2 SIGNATURE REQUEST | The public NEAR transaction records the keeper open-signature request; venue fills are separate evidence. | open |
-| 0:52–1:00 | live-v2 · DATED V2 LEDGER AMOUNT · LIVE READS MAY DIFFER | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Destination-chain arrival is unverified. | withdrawal |
+| 0:28–0:35 | live-v3 · LIVE PUBLIC RPC · V3 ZERO ACCESS KEYS | Separate v3 deployment: read-only checks compare finalized code and access keys. This is not the v2 fill account. | v3 |
+| 0:35–0:49 | hl-fills · PUBLIC EXPLORER · HYPURRSCAN · SPOT→PERP + WITHDRAW | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Destination-chain arrival is unverified. | withdrawal |
+| 0:49–1:00 | live-v2 · RECORDED V2 · REAL TESTNET FILLS · 2026-11-10 | Testnet keeper short: 3.5 NEAR at 3.5121; reduce-only close at 3.5212. Position checked flat. | fills |
 | 1:00–1:09 | v3-proof · PUBLIC RPC CAPTURE UTILITY · SEPARATE V3 ACCOUNT | Separate v3 deployment: read-only checks compare finalized code and access keys. This is not the v2 fill account. | v3 |
 | 1:09–1:16 | market · LIVE MAINNET MARKET · ILLUSTRATIVE RISK | Public mainnet market data powers an illustrative risk gate. This panel does not query a trading account. | market |
 | 1:16–1:22 | evidence · DATED EVIDENCE · REHEARSAL LIMITS VISIBLE | Dated evidence and current public reads are separate. Rehearsal signatures do not prove funded fills. | evidence |
@@ -36,9 +35,9 @@ The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliq
 |---|---|---|---|
 | 0:00–0:07 | keeper · LOCAL SANDBOX · MOCK MPC / FILLS · OWNER UNTOUCHED | Local keeper close: reduce-only signature. Owner nonce and balance stay unchanged in the autonomous phase. | keeper |
 | 0:07–0:16 | rogue · LOCAL SANDBOX · SEVEN REJECTIONS | Local contract checks reject seven rogue attempts. Bounded ordinary keeper opens remain permitted. | rogue |
-| 0:16–0:26 | hl-fills · RECORDED V2 · REAL TESTNET FILLS · 2026-11-10 | Testnet keeper short: 3.5 NEAR at 3.5121; reduce-only close at 3.5212. Position checked flat. | fills |
-| 0:26–0:33 | near-keys · RECORDED V2 · PUBLIC KEY-DELETION PROOF | Dated v2 proof: zero access keys. Funding and the spot-to-perp transfer came first. | keys |
-| 0:33–0:40 | near-open · PUBLIC EXPLORER · SIGNATURE REQUEST, NOT FILL PROOF | The public NEAR transaction records the keeper open-signature request; venue fills are separate evidence. | open |
+| 0:16–0:26 | lifecycle-top · RECORDED V2 · REAL TESTNET FILLS · 2026-11-10 | Testnet keeper short: 3.5 NEAR at 3.5121; reduce-only close at 3.5212. Position checked flat. | fills |
+| 0:26–0:33 | lifecycle-scroll · RECORDED V2 · KEY REMOVED BEFORE KEEPER TRADING | Dated v2 proof: zero access keys. Funding and the spot-to-perp transfer came first. | keys |
+| 0:33–0:40 | hl-fills · PUBLIC EXPLORER · HYPURRSCAN · WITHDRAW | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Destination-chain arrival is unverified. | withdrawal |
 | 0:40–0:47 | v3-proof · SEPARATE V3 · READ-ONLY PUBLIC RPC CHECKS | Separate v3 deployment: read-only checks compare finalized code and access keys. This is not the v2 fill account. | v3 |
 | 0:47–0:54 | lifecycle-scroll · SUPERVISED TESTNET · NO LIVE INTENTS ROUTE | Supervised testnet prototype. Owner observations remain trusted; no multi-day carry or live Intents route is proven. | limits |
 | 0:54–1:00 | end · SOURCE AND REBUILD INSTRUCTIONS IN THE REPOSITORY | Built at NEAR HACKATHON · Testnet prototype · not investment advice | end |
