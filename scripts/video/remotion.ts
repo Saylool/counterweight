@@ -43,6 +43,16 @@ export async function prepare(cut:Cut, subtitles=false) {
     await mkdir(path.dirname(to),{recursive:true});await copyFile(from,to);
     assets[asset]=createHash('sha256').update(await readFile(from)).digest('hex');
   }
+  // Keep the rendered source excerpts byte-for-field aligned with saved evidence.
+  if(cut==='x') {
+    const excerpts=JSON.parse(await readFile(path.join(app,'src/recorded-fills.json'),'utf8')) as Record<string,{source:string;verification:unknown}>;
+    for(const record of Object.values(excerpts)) {
+      const rawEvidence=await readFile(path.join(ROOT,record.source),'utf8');
+      const saved=JSON.parse(rawEvidence) as {verification:unknown};
+      if(JSON.stringify(saved.verification)!==JSON.stringify(record.verification))throw new Error(`Stale video excerpt: ${record.source}`);
+      assets[record.source]=createHash('sha256').update(rawEvidence).digest('hex');
+    }
+  }
   const raw=await readFile(path.join(ROOT,'reports/demo-local.json'),'utf8');
   const terminal=transcript(raw).map((text,i)=>({number:i+1,text}));
   const audio:VideoProps['audio']={};
@@ -111,7 +121,7 @@ export async function main() {
   const range=args.find(a=>a.startsWith('--frames='))?.slice(9).split('-').map(Number);
   if(range&&(range.length!==2||range[0]!>range[1]!||range[1]!>=total))throw new Error(`Frame range must be ordered within 0–${total-1}`);
   const sample=Boolean(range)||scale!==1;
-  const outputLocation=path.join(ROOT,'videos',`counterweight-${cut}-${cut==='x'?'v3':'v2'}${props.subtitles?'-subtitles':''}${sample?'-sample':''}.mp4`);
+  const outputLocation=path.join(cut==='x'?build:path.join(ROOT,'videos'),`counterweight-${cut}-${cut==='x'?'v3':'v2'}${props.subtitles?'-subtitles':''}${sample?'-sample':''}.mp4`);
   let last=-1;
   await renderMedia({serveUrl,composition,inputProps:props,outputLocation,codec:'h264',audioCodec:'aac',pixelFormat:'yuv420p',crf:18,
     concurrency:Number(args.find(a=>a.startsWith('--concurrency='))?.slice(14)??2),

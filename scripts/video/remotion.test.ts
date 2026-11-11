@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import data from '../../apps/video/src/scenes.json' with {type:'json'};
-import {scenes, timeline, totalFrames, wordCount, subtitleCues, terminalExcerpt, textBand, hookRevealAt, revealCount, type Cut} from '../../apps/video/src/model.js';
+import {scenes, timeline, totalFrames, wordCount, subtitleCues, terminalExcerpt, textBand, hookRevealAt, revealCount, narrationAt, architectureStage, rogueFocus, terminalTone, type Cut} from '../../apps/video/src/model.js';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const read=(file:string)=>readFileSync(path.join(root,file),'utf8');
 const script=read('apps/video/production-script.md');
@@ -51,13 +51,13 @@ describe('Remotion production tables and evidence',()=>{
         expect(row.from).toBe(i?rows[i-1]!.from+rows[i-1]!.durationInFrames:0);
       });
     }
-    expect(totalFrames('x')).toBe(2526);
+    expect(totalFrames('x')).toBe(2550);
   });
   it('subtitles preserve every exact voiceover word in readable cues',()=>{
     for(const scene of scenes){
       const cues=subtitleCues(scene.voiceover);
       expect(cues.join(' ')).toBe(scene.voiceover);
-      expect(cues.every(cue=>wordCount(cue)<=9)).toBe(true);
+      expect(cues.every(cue=>cue.length<=110 && wordCount(cue)<=16)).toBe(true);
     }
   });
   it('replaces the caption with one subtitle cue in the single text band',()=>{
@@ -65,7 +65,12 @@ describe('Remotion production tables and evidence',()=>{
       const seconds=durationInFrames/30;
       expect(textBand(scene,false,0,seconds)).toBe(scene.caption);
       const cues=subtitleCues(scene.voiceover);
-      cues.forEach((cue,i)=>expect(textBand(scene,true,(i+.5)/cues.length*seconds,seconds)).toBe(cue));
+      let words=0;
+      cues.forEach(cue=>{
+        const midpoint=(words+wordCount(cue)/2)/wordCount(scene.voiceover)*(seconds-.4);
+        expect(textBand(scene,true,midpoint,seconds)).toBe(cue);
+        words+=wordCount(cue);
+      });
     }
     const film=read('apps/video/src/Film.tsx');
     expect(film.match(/data-text-band=/g)).toHaveLength(1);
@@ -138,7 +143,8 @@ describe('Remotion production tables and evidence',()=>{
     expect(read('contracts/policy/tests/sandbox.rs')).toContain('async fn sandbox_v3_keyless_timelock_and_out_of_band_exits(');
     expect(claims).toContain('POLICY-V3.md#protective-exits');
     expect(read('apps/video/src/XEvidence.tsx')).toContain('052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c');
-    expect(scenes.find(s=>s.id==='A4')!.shots).toHaveLength(1);
+    expect(scenes.find(s=>s.id==='A4')!.shots).toHaveLength(2);
+    expect(scenes.find(s=>s.id==='A4')!.shots[1]!.panels[0]!.crop).toEqual([80,138,1040,245]);
   });
   it('checks narrated replay quantities against the committed report fields',()=>{
     const report=JSON.parse(read('reports/replay-report.json'));
@@ -169,6 +175,47 @@ describe('Remotion production tables and evidence',()=>{
     expect(report.assertions.unrelatedDeadmanSigned).toBe(true);
     expect(report.transcript.some((s:string)=>s.includes('DEAD-MAN +601s'))).toBe(true);
     expect(report.transcript.some((s:string)=>s.startsWith('PASS 7/7'))).toBe(true);
+  });
+
+  it('locks final round-4 narration and keeps protected phrases on one subtitle page',()=>{
+    const final={
+      A1:"Counterweight hedges NEAR holdings with a short, and a keyless NEAR policy limits what the keeper can sign. Recorded on Hyperliquid testnet.",
+      A4:"The recorded v2 run withdrew nearly forty-seven USDC net; destination arrival is unverified. Separately, a keyless v3 keeps reduce-only exits open outside the price band.",
+      A5:"In a local simulation with the real policy WASM and mocked signatures, NEAR rallied thirty-two and a half percent in a day. The keeper closed the hedge reduce-only, and the owner's nonce and balance stayed unchanged.",
+      A6:"Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked.",
+    };
+    for(const [id,vo] of Object.entries(final))expect(scenes.find(s=>s.id===id)!.voiceover).toBe(vo);
+    for(const phrase of ["what the keeper can sign","policy's access keys","NEAR HACKATHON","testnet evidence"]){
+      for(const scene of scenes.filter(s=>s.cut==='x'&&s.voiceover.includes(phrase)))expect(subtitleCues(scene.voiceover).some(c=>c.includes(phrase))).toBe(true);
+    }
+  });
+  it('advances architecture once and switches the full-width v3 beat at Separately',()=>{
+    const seconds=13;
+    const stages=Array.from({length:seconds*30},(_,f)=>architectureStage(f/30,seconds));
+    expect([...new Set(stages)]).toEqual([0,1,2,3]);
+    expect(stages.every((s,i)=>i===0||s>=stages[i-1]!)).toBe(true);
+    expect(architectureStage(narrationAt('A2','the contract checks',seconds),seconds)).toBe(1);
+    expect(architectureStage(narrationAt('A2','and NEAR Chain',seconds),seconds)).toBe(2);
+    const at=narrationAt('A4','Separately,',seconds);
+    const a4=scenes.find(s=>s.id==='A4')!;
+    expect(textBand(a4,true,at-.001,seconds)).toBe('destination arrival is unverified.');
+    expect(textBand(a4,true,at+.001,seconds)).toMatch(/^Separately,/);
+  });
+  it('shows authentic verification fills and flat with provenance',()=>{
+    const records=JSON.parse(read('apps/video/src/recorded-fills.json'));
+    for(const record of Object.values(records) as any[])expect(record.verification).toEqual(JSON.parse(read(record.source)).verification);
+    expect(records.open.verification.fills[0]).toMatchObject({sz:'3.5',px:'3.5121'});
+    expect(records.close.verification.fills[0]).toMatchObject({sz:'3.5',px:'3.5212'});
+    expect(records.close.verification.flat).toBe(true);
+  });
+  it('counts exactly seven red rejects, separates timelock and highlights three cases then recovery',()=>{
+    const report=JSON.parse(read('reports/demo-local.json'));
+    const rows=terminalExcerpt(report.transcript.map((text:string,i:number)=>({number:i+1,text})),true);
+    expect(rows.filter(row=>terminalTone(row.text)==='reject')).toHaveLength(7);
+    expect(terminalTone(rows.find(r=>r.number===46)!.text)).toBe('timelock');
+    const focus=Array.from({length:450},(_,f)=>rogueFocus(f/30,15));
+    expect([...new Set(focus)]).toEqual([37,39,44,49]);
+    expect(rogueFocus(narrationAt('A6','After a timeout',15),15)).toBe(49);
   });
   it('matches the CLAIMS rally row close time, price and headroom to the first report close',()=>{
     const report=JSON.parse(read('reports/demo-local.json'));

@@ -1,4 +1,5 @@
 import React from 'react';
+import {architectureStage, narrationAt} from './model';
 import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 
 const C = {owner:'#f59e0b',keeper:'#38bdf8',policy:'#a855f7',mpc:'#22c55e',venue:'#10b981',red:'#ef4444'};
@@ -54,7 +55,7 @@ const LegacyArchitecture:React.FC<{judge:boolean}>=({judge})=>{
 // X: the signing path is directional; owner configuration is a separate edge.
 const XArchitecture:React.FC<{seconds:number}>=({seconds})=>{
   const f=useCurrentFrame(), {fps}=useVideoConfig(),t=f/fps;
-  const active=Math.floor(t/2)%3;
+  const active=architectureStage(t,seconds);
   const xs=[250,710,1200,1660], widths=[320,350,390,330];
   const nodes=[
     {title:['Keeper'],sub:'Proposes an order',badge:'Bounded hedge request',color:C.keeper},
@@ -66,15 +67,17 @@ const XArchitecture:React.FC<{seconds:number}>=({seconds})=>{
     <svg width="1920" height="700" viewBox="0 0 1920 700" style={{fontFamily:'Arial, sans-serif'}}>
       <defs>{[C.keeper,C.policy,C.mpc,C.owner].map((color,i)=><marker key={color} id={`x-arrow-${i}`} viewBox="0 0 10 10" refX={9} refY={5} markerWidth={9} markerHeight={9} orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill={color}/></marker>)}</defs>
       <text x={90} y={62} fill="#94a3b8" fontSize={24}>ONE POLICY. BOUNDED AUTHORITY.</text>
-      <text x={90} y={120} fill="#f1f5f9" fontSize={40}>{['Keeper proposes an order','Policy enforces the owner’s bounds','NEAR Chain Signatures sign for Hyperliquid'][active]}</text>
+      <text x={90} y={120} fill="#f1f5f9" fontSize={40}>{['Keeper proposes an order','Policy checks the owner’s bounds','NEAR Chain Signatures sign','Hyperliquid receives the signed order'][active]}</text>
       <text x={90} y={190} fill={C.policy} fontSize={28}>Enforced bound: keeper cannot change the fixed withdrawal recipient</text>
       {xs.slice(0,3).map((x,i)=>{
         const a=x+widths[i]!/2+10,b=xs[i+1]!-widths[i+1]!/2-15,color=nodes[i]!.color;
-        const p=(t/2-i/3+10)%1;
-        return <g key={i}><path d={`M${a} 350H${b}`} stroke={color} strokeWidth={3} fill="none" markerEnd={`url(#x-arrow-${i})`}/><circle cx={a+(b-a)*p} cy={350} r={8} fill={color}/></g>;
+        const starts=[narrationAt('A2','The keeper proposes',seconds),narrationAt('A2','the contract checks',seconds),narrationAt('A2','and NEAR Chain',seconds)];
+        const ends=[starts[1]!,starts[2]!,narrationAt('A2','for Hyperliquid',seconds)];
+        const p=clamp((t-starts[i]!)/(ends[i]!-starts[i]!));
+        return <g key={i}><path d={`M${a} 350H${b}`} stroke={color} opacity={active===i?1:.3} strokeWidth={active===i?6:3} fill="none" markerEnd={`url(#x-arrow-${i})`}/>{p>0&&p<1&&<circle cx={a+(b-a)*p} cy={350} r={8} fill={color}/>}</g>;
       })}
       {nodes.map((n,i)=><g key={i} transform={`translate(${xs[i]!-widths[i]!/2} 250)`}>
-        <rect width={widths[i]} height={200} rx={20} fill="#162137" stroke={n.color} strokeWidth={2}/>
+        <rect width={widths[i]} height={200} rx={20} fill="#162137" stroke={n.color} strokeWidth={i===active?5:2} opacity={i===active?1:.65}/>
         {n.title.map((line,j)=><text key={line} x={22} y={48+j*33} fontSize={30} fontWeight={650} fill="#f1f5f9">{line}</text>)}
         <text x={22} y={n.title.length>1?119:101} fontSize={24} fill="#b4c2d4">{n.sub}</text>
         <text x={22} y={170} fontSize={22} fill={n.color}>{n.badge}</text>

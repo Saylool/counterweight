@@ -73,10 +73,13 @@ const EndCard:React.FC<{repoUrl:string;judge:boolean}>=({repoUrl,judge})=>{
   const f=useCurrentFrame();const entrance=ease(f/24);
   return <AbsoluteFill style={{padding:'180px 112px 230px',opacity:entrance,transform:`translateY(${(1-entrance)*18}px)`}}>
     {judge&&<div style={{color:theme.accent,fontSize:27,letterSpacing:5,marginBottom:35}}>BUILT AT NEAR HACKATHON · DEFI TRACK</div>}
-    <div style={{fontSize:112,fontWeight:650,letterSpacing:-7}}>counterweight<span style={{color:theme.accent}}>.</span></div>
-    <div style={{marginTop:38,fontSize:repoUrl.length>65?32:40,color:theme.accent,overflowWrap:'anywhere',maxWidth:1640}}>{repoUrl}</div>
-    <div style={{fontFamily:mono,fontSize:29,marginTop:38,borderTop:`1px solid ${theme.line}`,paddingTop:30,opacity:judge?1:ease((f-60)/18)}}>npm ci &amp;&amp; npm test &amp;&amp; npm run demo:local</div>
-    <div style={{fontFamily:mono,fontSize:24,marginTop:30,color:theme.muted,opacity:judge?1:ease((f-120)/18)}}>policy-v2.counterweight-samet.testnet{judge&&<><br/>policy-v3.counterweight-samet.testnet</>}</div>
+    <div style={{fontSize:judge?112:56,fontWeight:650,letterSpacing:judge?-7:-3}}>counterweight<span style={{color:theme.accent}}>.</span></div>
+    <div style={{display:'flex',gap:38,alignItems:'center',marginTop:38}}>
+      {!judge&&<div style={{fontSize:56,lineHeight:1.18,fontWeight:650,maxWidth:650}}>Code + recorded testnet evidence</div>}
+      <div style={{fontSize:repoUrl.length>65?30:38,color:theme.accent,overflowWrap:'anywhere',maxWidth:judge?1640:930}}>{repoUrl}</div>
+    </div>
+    {judge&&<div style={{fontFamily:mono,fontSize:29,marginTop:38,borderTop:`1px solid ${theme.line}`,paddingTop:30}}>npm ci &amp;&amp; npm test &amp;&amp; npm run demo:local</div>}
+    <div style={{fontFamily:mono,fontSize:24,marginTop:30,color:theme.muted,opacity:1}}>policy-v2.counterweight-samet.testnet{judge&&<><br/>policy-v3.counterweight-samet.testnet</>}</div>
     <div style={{fontSize:26,color:theme.muted,marginTop:32}}>Supervised testnet prototype · Owner observations trusted · Intents dry-only</div>
     <div style={{fontSize:23,color:theme.muted,marginTop:16}}>Experimental software, not investment advice</div>
   </AbsoluteFill>;

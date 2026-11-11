@@ -1,0 +1,52 @@
+{
+  "open": {
+    "source": "docs/evidence/lifecycle-relay-2ZHrq1du5UaAeiQZVBoXCzb6vBFj9eMrQd99NiTDcFNd.json",
+    "verification": {
+      "filled": {
+        "totalSz": "3.5",
+        "avgPx": "3.5121",
+        "oid": 65016476566
+      },
+      "fills": [
+        {
+          "coin": "NEAR",
+          "oid": 65016476566,
+          "time": 1794331636657,
+          "hash": "0x6b25c2b7cf4537026c9f042dd231c8010400da9d6a4855d40eee6e0a8e4910ed",
+          "side": "A",
+          "sz": "3.5",
+          "px": "3.5121",
+          "fee": "0.005531",
+          "closedPnl": "0.0"
+        }
+      ],
+      "fullFill": true,
+      "flat": false
+    }
+  },
+  "close": {
+    "source": "docs/evidence/lifecycle-relay-65WWr7W1DSvDKLGjF8tVZJtzYzwL6NX8DGfh7QZeL8JW.json",
+    "verification": {
+      "filled": {
+        "totalSz": "3.5",
+        "avgPx": "3.5212",
+        "oid": 65016537461
+      },
+      "fills": [
+        {
+          "coin": "NEAR",
+          "oid": 65016537461,
+          "time": 1794331700441,
+          "hash": "0xabadf684c164a663ad27042dd235b90101000e6a5c67c5354f76a1d78068804e",
+          "side": "B",
+          "sz": "3.5",
+          "px": "3.5212",
+          "fee": "0.005545",
+          "closedPnl": "-0.03185"
+        }
+      ],
+      "fullFill": true,
+      "flat": true
+    }
+  }
+}
