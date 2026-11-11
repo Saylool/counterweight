@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import data from '../../apps/video/src/scenes.json' with {type:'json'};
-import {scenes, timeline, totalFrames, wordCount, subtitleCues, terminalExcerpt, type Cut} from '../../apps/video/src/model.js';
+import {scenes, timeline, totalFrames, wordCount, subtitleCues, terminalExcerpt, textBand, hookRevealAt, revealCount, type Cut} from '../../apps/video/src/model.js';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const read=(file:string)=>readFileSync(path.join(root,file),'utf8');
 const script=read('apps/video/production-script.md');
@@ -21,7 +21,7 @@ const parse=(text:string)=>text.split('\n').filter(line=>/^\| \*\*[AB]\d+(?:\.|\
 });
 // Long phrases first, then all remaining numeric tokens (including identifiers).
 // English cardinals cover future prose additions; any unmapped expression fails.
-const numbers=(text:string)=>text.match(/forty-six point nine-six|twenty-four-hour|thirty-two|forty-nine|November tenth|\b(?:policy-)?v\d+(?:\.signer)?\b|\$?\b\d[\d,]*(?:\.\d+)?%?|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|tenth)\b/gi)??[];
+const numbers=(text:string)=>text.match(/forty-six point nine-six|twenty-four-hour|thirty-two|forty-seven|forty-nine|November tenth|\b(?:policy-)?v\d+(?:\.signer)?\b|\$?\b\d[\d,]*(?:\.\d+)?%?|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|tenth|half)\b/gi)??[];
 
 describe('Remotion production tables and evidence',()=>{
   it('matches every script row, timing, caption, voiceover and visual direction verbatim',()=>{
@@ -31,7 +31,7 @@ describe('Remotion production tables and evidence',()=>{
     if(process.env.VIDEO_PRODUCTION_SCRIPT)expect(parse(readFileSync(process.env.VIDEO_PRODUCTION_SCRIPT,'utf8'))).toEqual(parse(revised));
     for(const cut of ['x','judge'] as Cut[]){
       const rows=timeline(cut);
-      expect(scenes.filter(s=>s.cut===cut).reduce((n,s)=>n+s.seconds,0)).toBe(cut==='x'?82:165);
+      expect(scenes.filter(s=>s.cut===cut).reduce((n,s)=>n+s.seconds,0)).toBe(cut==='x'?80:165);
       rows.forEach((row,i)=>{
         
         expect(row.durationInFrames).toBe(Math.ceil(Math.max(row.scene.seconds,wordCount(row.scene.voiceover)/2.5+.6)*30));
@@ -51,7 +51,7 @@ describe('Remotion production tables and evidence',()=>{
         expect(row.from).toBe(i?rows[i-1]!.from+rows[i-1]!.durationInFrames:0);
       });
     }
-    expect(totalFrames('x')).toBe(2635);
+    expect(totalFrames('x')).toBe(2526);
   });
   it('subtitles preserve every exact voiceover word in readable cues',()=>{
     for(const scene of scenes){
@@ -59,6 +59,27 @@ describe('Remotion production tables and evidence',()=>{
       expect(cues.join(' ')).toBe(scene.voiceover);
       expect(cues.every(cue=>wordCount(cue)<=9)).toBe(true);
     }
+  });
+  it('replaces the caption with one subtitle cue in the single text band',()=>{
+    for(const {scene,durationInFrames} of timeline('x')){
+      const seconds=durationInFrames/30;
+      expect(textBand(scene,false,0,seconds)).toBe(scene.caption);
+      const cues=subtitleCues(scene.voiceover);
+      cues.forEach((cue,i)=>expect(textBand(scene,true,(i+.5)/cues.length*seconds,seconds)).toBe(cue));
+    }
+    const film=read('apps/video/src/Film.tsx');
+    expect(film.match(/data-text-band=/g)).toHaveLength(1);
+    expect(film).not.toContain('data-subtitle');
+    expect(film).not.toContain('{scene.caption}');
+  });
+  it('paces opening proof reveals and five saved terminal lines without six-second holds',()=>{
+    const hook=timeline('x')[0]!;
+    const points=[0,...hookRevealAt,hook.durationInFrames/30];
+    points.slice(1).forEach((at,i)=>expect(at-points[i]!).toBeLessThanOrEqual(6));
+    const keeper=timeline('x').find(r=>r.scene.id==='A5')!;
+    const seconds=keeper.durationInFrames/30;
+    expect(seconds/5).toBeLessThanOrEqual(6);
+    expect(Array.from({length:5},(_,i)=>revealCount((i+.1)*seconds/5,seconds,5))).toEqual([1,2,3,4,5]);
   });
   it('maps every spoken number to a literal CLAIMS anchor and a real evidence file',()=>{
     for(const scene of scenes){
@@ -98,7 +119,7 @@ describe('Remotion production tables and evidence',()=>{
   it('keeps authentic terminal excerpts ordered, without pipe spacers or missing rogue lines',()=>{
     const report=JSON.parse(read('reports/demo-local.json'));
     const rows=report.transcript.map((text:string,i:number)=>({number:i+1,text}));
-    expect(terminalExcerpt(rows,false).map(r=>r.number)).toEqual([3,5,7,10,16,36,50]);
+    expect(terminalExcerpt(rows,false).map(r=>r.number)).toEqual([3,10,16,36,50]);
     const rogue=terminalExcerpt(rows,true);
     expect(rogue.filter(r=>r.text.startsWith('ROGUE '))).toHaveLength(7);
     expect(rogue.map(r=>r.number)).toEqual([37,38,39,40,41,44,45,46,49,51]);
@@ -148,9 +169,20 @@ describe('Remotion production tables and evidence',()=>{
     expect(report.assertions.unrelatedDeadmanSigned).toBe(true);
     expect(report.transcript.some((s:string)=>s.includes('DEAD-MAN +601s'))).toBe(true);
     expect(report.transcript.some((s:string)=>s.startsWith('PASS 7/7'))).toBe(true);
-    // Do not replace authentic footage with the production directions' stale close.
+  });
+  it('matches the CLAIMS rally row close time, price and headroom to the first report close',()=>{
+    const report=JSON.parse(read('reports/demo-local.json'));
     const close=report.timeline.find((t:any)=>t.action==='reduce-only close');
-    expect(claims).toContain(close.nearPrice.toFixed(4));
-    expect(claims).toContain(close.headroomUsd.toFixed(3));
+    expect(close).toBeDefined();
+    const row=claims.split('\n').find(line=>line.startsWith('| Worst rolling 24h rally '));
+    expect(row).toBeDefined();
+    const match=row!.match(/close at (\d{2}-\d{2} \d{2}:\d{2}) UTC, NEAR \$(\d+\.\d+), H (\d+\.\d+)/);
+    expect(match).not.toBeNull();
+    expect(match!.slice(1)).toEqual([
+      new Date(close.time).toISOString().slice(5,16).replace('T',' '),
+      close.nearPrice.toFixed(4),close.headroomUsd.toFixed(3),
+    ]);
+    expect(row).toContain(`+${report.selection.perpMovePct.toFixed(6)}%`);
+    expect(row).toContain(`${report.selection.candidates} candidates`);
   });
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Architecture} from './Architecture';
 import {XProof, XWithdrawal, XTerminal} from './XEvidence';
-import {subtitleCues, timeline, type Panel, type Rect, type Scene, type VideoProps} from './model';
+import {textBand, timeline, type Panel, type Rect, type Scene, type VideoProps} from './model';
 const theme={bg:'#101815',panel:'#17201b',line:'#344038',ink:'#edf0e9',muted:'#a6b4aa',accent:'#b6df7c'};
 const mono='"SFMono-Regular", Consolas, "Liberation Mono", monospace';
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
@@ -75,32 +75,30 @@ const EndCard:React.FC<{repoUrl:string;judge:boolean}>=({repoUrl,judge})=>{
     {judge&&<div style={{color:theme.accent,fontSize:27,letterSpacing:5,marginBottom:35}}>BUILT AT NEAR HACKATHON · DEFI TRACK</div>}
     <div style={{fontSize:112,fontWeight:650,letterSpacing:-7}}>counterweight<span style={{color:theme.accent}}>.</span></div>
     <div style={{marginTop:38,fontSize:repoUrl.length>65?32:40,color:theme.accent,overflowWrap:'anywhere',maxWidth:1640}}>{repoUrl}</div>
-    <div style={{fontFamily:mono,fontSize:29,marginTop:38,borderTop:`1px solid ${theme.line}`,paddingTop:30}}>npm ci &amp;&amp; npm test &amp;&amp; npm run demo:local</div>
-    <div style={{fontFamily:mono,fontSize:24,marginTop:30,color:theme.muted}}>policy-v2.counterweight-samet.testnet{judge&&<><br/>policy-v3.counterweight-samet.testnet</>}</div>
+    <div style={{fontFamily:mono,fontSize:29,marginTop:38,borderTop:`1px solid ${theme.line}`,paddingTop:30,opacity:judge?1:ease((f-60)/18)}}>npm ci &amp;&amp; npm test &amp;&amp; npm run demo:local</div>
+    <div style={{fontFamily:mono,fontSize:24,marginTop:30,color:theme.muted,opacity:judge?1:ease((f-120)/18)}}>policy-v2.counterweight-samet.testnet{judge&&<><br/>policy-v3.counterweight-samet.testnet</>}</div>
     <div style={{fontSize:26,color:theme.muted,marginTop:32}}>Supervised testnet prototype · Owner observations trusted · Intents dry-only</div>
     <div style={{fontSize:23,color:theme.muted,marginTop:16}}>Experimental software, not investment advice</div>
   </AbsoluteFill>;
 };
 const SceneView:React.FC<{scene:Scene;seconds:number;props:VideoProps}>=({scene,seconds,props})=>{
-  const f=useCurrentFrame();
-  const cues=subtitleCues(scene.voiceover);
-  const cue=cues[Math.min(cues.length-1,Math.floor(f/(seconds*30)*cues.length))];
+  const f=useCurrentFrame(),{fps}=useVideoConfig();
+  const band=textBand(scene,Boolean(props.subtitles),f/fps,seconds);
   return <AbsoluteFill style={{background:theme.bg,color:theme.ink,fontFamily:'Arial, Helvetica, sans-serif'}}>
     <AbsoluteFill style={{background:'radial-gradient(ellipse at 50% 10%, #273b2a55, transparent 70%)'}}/>
     {scene.kind==='footage'&&<Footage scene={scene} seconds={seconds}/>}
     {scene.kind==='proof'&&<XProof scene={scene} seconds={seconds}/>}
-    {scene.kind==='withdrawal'&&<XWithdrawal/>}
+    {scene.kind==='withdrawal'&&<XWithdrawal seconds={seconds}/>}
     {scene.kind==='diagram'&&<Architecture judge={scene.cut==='judge'} seconds={seconds}/>}
     {(scene.kind==='keeper'||scene.kind==='rogue')&&(scene.cut==='x'?<XTerminal scene={scene} seconds={seconds} rows={props.terminal}/>:<Terminal scene={scene} seconds={seconds} rows={props.terminal}/>)}
     {scene.kind==='end'&&<EndCard repoUrl={props.repoUrl} judge={scene.cut==='judge'}/>}
     <div style={{position:'absolute',left:72,top:36,fontSize:23,letterSpacing:2,color:theme.accent,fontWeight:600,maxWidth:1400}}>{scene.badge}</div>
     <div style={{position:'absolute',right:74,top:36,fontSize:24,color:theme.muted}}>counterweight<span style={{color:theme.accent}}>.</span></div>
     {scene.kind!=='end'&&<div style={{position:'absolute',left:72,top:84,fontSize:24,color:theme.muted}}>{scene.id.replace('A','X · ').replace('B','JUDGE · ')} / {scene.title}</div>}
-    <div style={{position:'absolute',left:0,right:0,bottom:0,height:194,background:'#0b120f',borderTop:`1px solid ${theme.line}`,display:'flex',alignItems:props.subtitles?'flex-start':'center',padding:props.subtitles?'18px 90px':'32px 90px',gap:28}}>
+    <div data-text-band={props.subtitles?'subtitle':'caption'} style={{position:'absolute',left:0,right:0,bottom:0,height:194,boxSizing:'border-box',background:'#0b120f',borderTop:`1px solid ${theme.line}`,display:'flex',alignItems:'center',padding:'24px 90px',gap:28}}>
       <div style={{width:5,height:60,background:theme.accent,borderRadius:10}}/>
-      <div style={{fontSize:props.subtitles?42:56,lineHeight:1.16,fontWeight:550,letterSpacing:-.8,maxWidth:1690,opacity:interpolate(f,[0,7],[.7,1],{extrapolateRight:'clamp'})}}>{scene.caption}</div>
+      <div style={{fontSize:props.subtitles?44:56,lineHeight:1.2,fontWeight:550,letterSpacing:-.8,maxWidth:1690,opacity:interpolate(f,[0,7],[.7,1],{extrapolateRight:'clamp'})}}>{band}</div>
     </div>
-    {props.subtitles&&<div data-subtitle style={{position:'absolute',left:118,right:90,bottom:24,fontSize:33,lineHeight:1.22,color:'#fff',background:'#0b120f'}}>{cue}</div>}
     <div style={{position:'absolute',bottom:0,left:0,height:4,width:`${100*clamp(f/(seconds*30-1))}%`,background:theme.accent,opacity:.6}}/>
     {props.audio[scene.id]&&<><Audio src={staticFile(props.audio[scene.id]!.src)}/>{[0,...(scene.kind==='diagram'?[2.9,4,5.6,7.1,9,10.6,...(scene.cut==='judge'?[14,15,16.8]:[])]:scene.kind==='rogue'?[1.2,2.4,3.6,4.8,6,7.2]:[])].map((at,i)=><Sequence key={i} from={Math.round(at*30)} durationInFrames={12}><Audio src={staticFile('tick.wav')} volume={1}/></Sequence>)}</>}
   </AbsoluteFill>;
