@@ -1,5 +1,5 @@
 import React from 'react';
-import {architectureStage, narrationAt} from './model';
+import {architectureHeadlines, architectureStage, narrationAt} from './model';
 import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 
 const C = {owner:'#f59e0b',keeper:'#38bdf8',policy:'#a855f7',mpc:'#22c55e',venue:'#10b981',red:'#ef4444'};
@@ -55,7 +55,7 @@ const LegacyArchitecture:React.FC<{judge:boolean}>=({judge})=>{
 // X: the signing path is directional; owner configuration is a separate edge.
 const XArchitecture:React.FC<{seconds:number}>=({seconds})=>{
   const f=useCurrentFrame(), {fps}=useVideoConfig(),t=f/fps;
-  const active=architectureStage(t,seconds);
+  const active=architectureStage(t,seconds), activeNodes=active===0?[1]:active===1?[0]:active===2?[1]:[2,3];
   const xs=[250,710,1200,1660], widths=[320,350,390,330];
   const nodes=[
     {title:['Keeper'],sub:'Proposes an order',badge:'Bounded hedge request',color:C.keeper},
@@ -67,26 +67,24 @@ const XArchitecture:React.FC<{seconds:number}>=({seconds})=>{
     <svg width="1920" height="700" viewBox="0 0 1920 700" style={{fontFamily:'Arial, sans-serif'}}>
       <defs>{[C.keeper,C.policy,C.mpc,C.owner].map((color,i)=><marker key={color} id={`x-arrow-${i}`} viewBox="0 0 10 10" refX={9} refY={5} markerWidth={9} markerHeight={9} orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill={color}/></marker>)}</defs>
       <text x={90} y={62} fill="#94a3b8" fontSize={24}>ONE POLICY. BOUNDED AUTHORITY.</text>
-      <text x={90} y={120} fill="#f1f5f9" fontSize={40}>{['Keeper proposes an order','Policy checks the owner’s bounds','NEAR Chain Signatures sign','Hyperliquid receives the signed order'][active]}</text>
+      <text x={90} y={120} fill="#f1f5f9" fontSize={40}>{architectureHeadlines[active]}</text>
       <text x={90} y={190} fill={C.policy} fontSize={28}>Enforced bound: keeper cannot change the fixed withdrawal recipient</text>
       {xs.slice(0,3).map((x,i)=>{
         const a=x+widths[i]!/2+10,b=xs[i+1]!-widths[i+1]!/2-15,color=nodes[i]!.color;
         const starts=[narrationAt('A2','The keeper proposes',seconds),narrationAt('A2','the contract checks',seconds),narrationAt('A2','and NEAR Chain',seconds)];
         const ends=[starts[1]!,starts[2]!,narrationAt('A2','for Hyperliquid',seconds)];
         const p=clamp((t-starts[i]!)/(ends[i]!-starts[i]!));
-        return <g key={i}><path d={`M${a} 350H${b}`} stroke={color} opacity={active===i?1:.3} strokeWidth={active===i?6:3} fill="none" markerEnd={`url(#x-arrow-${i})`}/>{p>0&&p<1&&<circle cx={a+(b-a)*p} cy={350} r={8} fill={color}/>}</g>;
+        return <g key={i}><path d={`M${a} 350H${b}`} stroke={color} opacity={active===i+1?1:.3} strokeWidth={active===i+1?6:3} fill="none" markerEnd={`url(#x-arrow-${i})`}/>{p>0&&p<1&&<circle cx={a+(b-a)*p} cy={350} r={8} fill={color}/>}</g>;
       })}
       {nodes.map((n,i)=><g key={i} transform={`translate(${xs[i]!-widths[i]!/2} 250)`}>
-        <rect width={widths[i]} height={200} rx={20} fill="#162137" stroke={n.color} strokeWidth={i===active?5:2} opacity={i===active?1:.65}/>
+        <rect width={widths[i]} height={200} rx={20} fill="#162137" stroke={n.color} strokeWidth={activeNodes.includes(i)?5:2} opacity={activeNodes.includes(i)?1:.65}/>
         {n.title.map((line,j)=><text key={line} x={22} y={48+j*33} fontSize={30} fontWeight={650} fill="#f1f5f9">{line}</text>)}
         <text x={22} y={n.title.length>1?119:101} fontSize={24} fill="#b4c2d4">{n.sub}</text>
         <text x={22} y={170} fontSize={22} fill={n.color}>{n.badge}</text>
         {i===1&&<g transform="translate(224 151)"><rect x={0} y={8} width={22} height={18} rx={3} stroke={n.color} strokeWidth={2} fill="none"/><path d="M4 8V3a7 7 0 0 1 14 0v5" stroke={n.color} strokeWidth={2} fill="none"/></g>}
       </g>)}
-      <g transform="translate(90 535)"><rect width={320} height={110} rx={16} fill="#162137" stroke={C.owner}/><text x={22} y={44} fontSize={29} fill={C.owner}>Owner configuration</text><text x={22} y={80} fontSize={23} fill="#b4c2d4">Caps · fixed recipient</text></g>
-      <path d="M425 590H710V465" stroke={C.owner} strokeWidth={3} strokeDasharray="10 9" strokeDashoffset={-t*25} fill="none" markerEnd="url(#x-arrow-3)"/>
-      <text x={760} y={580} fill="#94a3b8" fontSize={25}>Owner funded first, then deleted policy access keys.</text>
-      <text x={760} y={624} fill="#94a3b8" fontSize={25}>Keeper cannot change caps or the fixed recipient.</text>
+      <g transform="translate(90 535)"><rect width={590} height={90} rx={16} fill="#162137" stroke={C.owner}/><text x={22} y={54} fontSize={25} fill={C.owner}>Owner configuration: caps + fixed recipient</text></g>
+      <path d="M695 580H710V465" stroke={C.owner} strokeWidth={3} strokeDasharray="10 9" strokeDashoffset={-t*25} fill="none" markerEnd="url(#x-arrow-3)"/>
     </svg>
   </AbsoluteFill>;
 };

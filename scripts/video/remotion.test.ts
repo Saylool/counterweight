@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import data from '../../apps/video/src/scenes.json' with {type:'json'};
-import {scenes, timeline, totalFrames, wordCount, subtitleCues, terminalExcerpt, textBand, hookRevealAt, revealCount, narrationAt, architectureStage, rogueFocus, terminalTone, type Cut} from '../../apps/video/src/model.js';
+import {scenes, timeline, totalFrames, wordCount, subtitleCues, terminalExcerpt, textBand, subtitleSchedule, hookBeatTimes, endCardRevealAt, keeperStage, lifecycleTxIndices, narrationAt, architectureStage, rogueFocus, terminalTone, type Cut} from '../../apps/video/src/model.js';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const read=(file:string)=>readFileSync(path.join(root,file),'utf8');
 const script=read('apps/video/production-script.md');
@@ -65,11 +65,8 @@ describe('Remotion production tables and evidence',()=>{
       const seconds=durationInFrames/30;
       expect(textBand(scene,false,0,seconds)).toBe(scene.caption);
       const cues=subtitleCues(scene.voiceover);
-      let words=0;
-      cues.forEach(cue=>{
-        const midpoint=(words+wordCount(cue)/2)/wordCount(scene.voiceover)*(seconds-.4);
-        expect(textBand(scene,true,midpoint,seconds)).toBe(cue);
-        words+=wordCount(cue);
+      subtitleSchedule(scene,seconds).forEach(cue=>{
+        expect(textBand(scene,true,(cue.start+cue.end)/2,seconds)).toBe(cue.text);
       });
     }
     const film=read('apps/video/src/Film.tsx');
@@ -77,14 +74,46 @@ describe('Remotion production tables and evidence',()=>{
     expect(film).not.toContain('data-subtitle');
     expect(film).not.toContain('{scene.caption}');
   });
-  it('paces opening proof reveals and five saved terminal lines without six-second holds',()=>{
-    const hook=timeline('x')[0]!;
-    const points=[0,...hookRevealAt,hook.durationInFrames/30];
-    points.slice(1).forEach((at,i)=>expect(at-points[i]!).toBeLessThanOrEqual(6));
-    const keeper=timeline('x').find(r=>r.scene.id==='A5')!;
-    const seconds=keeper.durationInFrames/30;
-    expect(seconds/5).toBeLessThanOrEqual(6);
-    expect(Array.from({length:5},(_,i)=>revealCount((i+.1)*seconds/5,seconds,5))).toEqual([1,2,3,4,5]);
+  it('scales proof and terminal beats from narration words at different VO durations',()=>{
+    for(const seconds of [10,15,24]) {
+      const times=hookBeatTimes(seconds);
+      expect(times.every((t,i)=>t>=0&&t<seconds&&(i===0||t>times[i-1]!))).toBe(true);
+      for(const [stage,phrase] of ['In a local','NEAR rallied','The keeper closed',"and the owner's"].entries()) {
+        const at=narrationAt('A5',phrase,seconds);
+        expect(keeperStage(at,seconds)).toBe(stage);
+        if(stage>0)expect(keeperStage(at-.001,seconds)).toBe(stage-1);
+        expect(narrationAt('A5',phrase,(seconds-.4)*1.7+.4)).toBeCloseTo(at*1.7);
+      }
+    }
+    expect(lifecycleTxIndices).toEqual([[0,1],[2],[3],[4]]);
+  });
+  it('gives every X subtitle page at least two seconds with silent or measured VO clocks',()=>{
+    for(const {scene,durationInFrames} of timeline('x')) {
+      const seconds=durationInFrames/30;
+      for(const speechSeconds of [seconds-.4,(seconds-.4)*.7,seconds*1.5]) {
+        const effective=Math.max(seconds,speechSeconds+.4);
+        const pages=subtitleSchedule(scene,effective,speechSeconds);
+        expect(pages[0]!.start).toBe(0);
+        expect(pages.at(-1)!.end).toBe(effective);
+        pages.forEach((p,i)=>{
+          expect(p.end-p.start).toBeGreaterThanOrEqual(2-1e-9);
+          if(i)expect(p.start).toBe(pages[i-1]!.end);
+        });
+        // Sample every output frame, including at the adjusted clause boundaries.
+        const counts=new Map<string,number>();
+        for(let f=0;f<Math.round(effective*30);f++) {
+          const text=textBand(scene,true,f/30,effective,speechSeconds);
+          counts.set(text,(counts.get(text)??0)+1);
+        }
+        counts.forEach(count=>expect(count).toBeGreaterThanOrEqual(60));
+      }
+    }
+    const a7=scenes.find(s=>s.id==='A7')!;
+    expect(subtitleCues(a7.voiceover)).toEqual(a7.voiceover.split(/(?<=\.)\s+/));
+    for(const seconds of [8,8.6,16]){
+      expect(endCardRevealAt(seconds)).toBeLessThanOrEqual(.3);
+      expect(seconds-endCardRevealAt(seconds)).toBeGreaterThanOrEqual(3);
+    }
   });
   it('maps every spoken number to a literal CLAIMS anchor and a real evidence file',()=>{
     for(const scene of scenes){
@@ -177,13 +206,16 @@ describe('Remotion production tables and evidence',()=>{
     expect(report.transcript.some((s:string)=>s.startsWith('PASS 7/7'))).toBe(true);
   });
 
-  it('locks final round-4 narration and keeps protected phrases on one subtitle page',()=>{
+  it('locks all seven round-5 voiceovers and keeps protected phrases on one subtitle page',()=>{
     const final={
-      A1:"Counterweight hedges NEAR holdings with a short, and a keyless NEAR policy limits what the keeper can sign. Recorded on Hyperliquid testnet.",
-      A4:"The recorded v2 run withdrew nearly forty-seven USDC net; destination arrival is unverified. Separately, a keyless v3 keeps reduce-only exits open outside the price band.",
-      A5:"In a local simulation with the real policy WASM and mocked signatures, NEAR rallied thirty-two and a half percent in a day. The keeper closed the hedge reduce-only, and the owner's nonce and balance stayed unchanged.",
-      A6:"Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked.",
-    };
+      "A1": "Counterweight hedges NEAR holdings with a short, and a keyless NEAR policy limits what the keeper can sign. Recorded on Hyperliquid testnet.",
+      "A2": "Counterweight puts a keyless NEAR policy contract between the keeper and the exchange. The keeper proposes an order, the contract checks its bounds, and NEAR Chain Signatures sign it for Hyperliquid.",
+      "A3": "The owner funded the account, then deleted the policy's access keys. The keeper opened a 3.5 NEAR short and closed it reduce-only. The position is flat.",
+      "A4": "The recorded v2 run withdrew nearly forty-seven USDC net; destination arrival is unverified. Separately, keyless v3 can authorize reduce-only exits outside the opening price band.",
+      "A5": "In a local simulation with the real policy WASM and mocked signatures, NEAR rallied thirty-two and a half percent in a day. The keeper closed the hedge reduce-only, and the owner's nonce and balance stayed unchanged.",
+      "A6": "Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked.",
+      "A7": "Counterweight is a supervised testnet prototype, built at NEAR HACKATHON. Run the local demo and check the testnet evidence yourself."
+};
     for(const [id,vo] of Object.entries(final))expect(scenes.find(s=>s.id===id)!.voiceover).toBe(vo);
     for(const phrase of ["what the keeper can sign","policy's access keys","NEAR HACKATHON","testnet evidence"]){
       for(const scene of scenes.filter(s=>s.cut==='x'&&s.voiceover.includes(phrase)))expect(subtitleCues(scene.voiceover).some(c=>c.includes(phrase))).toBe(true);
@@ -194,8 +226,9 @@ describe('Remotion production tables and evidence',()=>{
     const stages=Array.from({length:seconds*30},(_,f)=>architectureStage(f/30,seconds));
     expect([...new Set(stages)]).toEqual([0,1,2,3]);
     expect(stages.every((s,i)=>i===0||s>=stages[i-1]!)).toBe(true);
-    expect(architectureStage(narrationAt('A2','the contract checks',seconds),seconds)).toBe(1);
-    expect(architectureStage(narrationAt('A2','and NEAR Chain',seconds),seconds)).toBe(2);
+    expect(architectureStage(narrationAt('A2','The keeper proposes',seconds),seconds)).toBe(1);
+    expect(architectureStage(narrationAt('A2','the contract checks',seconds),seconds)).toBe(2);
+    expect(architectureStage(narrationAt('A2','and NEAR Chain',seconds),seconds)).toBe(3);
     const at=narrationAt('A4','Separately,',seconds);
     const a4=scenes.find(s=>s.id==='A4')!;
     expect(textBand(a4,true,at-.001,seconds)).toBe('destination arrival is unverified.');
@@ -208,13 +241,16 @@ describe('Remotion production tables and evidence',()=>{
     expect(records.close.verification.fills[0]).toMatchObject({sz:'3.5',px:'3.5212'});
     expect(records.close.verification.flat).toBe(true);
   });
-  it('counts exactly seven red rejects, separates timelock and highlights three cases then recovery',()=>{
+  it('counts seven rejects but highlights only the two spoken examples and recovery',()=>{
     const report=JSON.parse(read('reports/demo-local.json'));
     const rows=terminalExcerpt(report.transcript.map((text:string,i:number)=>({number:i+1,text})),true);
     expect(rows.filter(row=>terminalTone(row.text)==='reject')).toHaveLength(7);
     expect(terminalTone(rows.find(r=>r.number===46)!.text)).toBe('timelock');
     const focus=Array.from({length:450},(_,f)=>rogueFocus(f/30,15));
-    expect([...new Set(focus)]).toEqual([37,39,44,49]);
+    expect([...new Set(focus)]).toEqual([null,37,39,49]);
+    expect(rogueFocus(narrationAt('A6','oversized shorts',15),15)).toBe(37);
+    expect(rogueFocus(narrationAt('A6','rogue withdrawals',15),15)).toBe(39);
+    expect(rogueFocus(narrationAt('A6','were all rejected',15),15)).toBeNull();
     expect(rogueFocus(narrationAt('A6','After a timeout',15),15)).toBe(49);
   });
   it('matches the CLAIMS rally row close time, price and headroom to the first report close',()=>{
