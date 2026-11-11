@@ -94,3 +94,19 @@ Video edit times (2:30 main, 45 seconds short, each row's timestamps) are editor
 - Keeper direct execution-debit ceiling: `configured_keeper_maximum_direct_execution_debit_bound`, README authority tiers; fee assumption and exclusions stated next to the number.
 - Network init enum and Mainnet/Testnet signing separation: `immutable_mainnet_domain_and_network_accounts`; mainnet operation remains unverified.
 - Shared noop codec: `packages/hyperliquid/src/noop.test.ts`; duplicate relay implementation removed.
+
+## Remotion production video claims
+
+The checked scene/voiceover/caption source is `apps/video/src/scenes.json`, imported verbatim from the production tables in `apps/video/production-script.md`. `scripts/video/remotion.test.ts` checks every spoken numeric expression against this index, resolves evidence files, and checks replay and sandbox quantities against actual report fields. Scene durations are editorial, extended only for voiceover tails.
+
+| Claim / spoken quantity | Evidence and limit |
+|---|---|
+| Video funding: 4 wNEAR, 50 mock USDC, 49 USDC | `evidence/2026-11-10-lifecycle-summary.md`; four wrapped NEAR deposited, fifty mock USDC sent to spot, forty-nine USDC transferred spot→perp before key deletion. Supervised testnet. |
+| Video date: November tenth | `evidence/2026-11-10-lifecycle-summary.md`: November tenth = 2026-11-10. Historical run. |
+| Video rounding: 46.96 USDC | `evidence/2026-11-10-lifecycle-status.md`: forty-six point nine-six = net 46.957074 rounded to 46.96 USDC; 47.957074 gross minus one USDC fee. Destination arrival unverified. |
+| Video signer: v1.signer | Chain Signatures signer identifier, not an execution-version claim; lifecycle signature requests in `evidence/2026-11-10-lifecycle-summary.md`. |
+| Video versions: policy-v2 / policy-v3 | v2 = recorded funded lifecycle; v3 = separate current keyless band-exit fix. `videos/build/captures/v3-proof.json` records zero access keys and SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`. The script's visual direction assigning v2 hash `1bb1cc57…08a7a` to v3 is stale. Product mismatch warning is retained; separate verifier checks the v3 artifact. |
+| Video rally: 32.499065% | `reports/demo-local.json.selection`: 24 hours (twenty-four-hour), 4297 candidates; +32.499065% rounds to 32.5%. X's “thirty-two percent” is coarse rounding. Exact saved close: 2026-09-17 10:00 UTC, NEAR $2.8062, H 2.280557 (2.281 displayed); script's later $3.2299/H 2.535 is not used as a fabricated close. Mocked MPC/fills; owner unchanged during autonomous phase. |
+| Video replay: 4,320 hours; $67.28; 1.18%; 0 breaches; 1,222 breach hours; 0.63% OOS | `reports/replay-report.json`: `provenance.completeHours`; full illustrative hedged-rebalance `netPnlUsd`, `netReturnPct`, `maintenanceProxyBreachHours`; full illustrative always-hedged `maintenanceProxyBreachHours`, negative `minMarkedVenueEquityUsd`; holdout illustrative hedged-rebalance `netReturnPct`. Rounded to two decimals. Historical simulation; retrospective holdout; no return guarantee. |
+
+The existing keyless, fills, seven-attack and +601s dead-man entries above also cover video narration. No video overlay converts local signatures or simulated execution into live fills. Current capture assets are generated inputs; the lead must retain them or recapture before rendering.

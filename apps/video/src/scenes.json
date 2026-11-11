@@ -1,0 +1,1196 @@
+{
+  "schema": 1,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "source": "production-script.md",
+  "scenes": [
+    {
+      "id": "A1",
+      "cut": "x",
+      "number": 1,
+      "title": "Proof Hook",
+      "start": 0,
+      "end": 5,
+      "seconds": 5,
+      "visual": "**50/50 Split-Screen:** Left: Web dashboard `funded lifecycle table` zoomed `2x` onto the `Access key removal (0 keys)` and `Keeper IOC short 3.5 NEAR @ 3.5121` rows (`policy-v2.counterweight-samet.testnet`). Right: Hypurrscan explorer page for `0x3e72...5390` zoomed `2x` onto the `49.00 USDC` perp transfer and `-46.96 USDC` withdrawal rows, cropping out the top `Error: RPC HTTP 0` badge. Persistent top-left badge: `RECORDED V2 · HYPERLIQUID TESTNET`.",
+      "voiceover": "Zero access keys on NEAR. Real short and close on Hyperliquid testnet.",
+      "caption": "Zero keys on NEAR. Real Hyperliquid fills.",
+      "kind": "footage",
+      "badge": "RECORDED V2 · HYPERLIQUID TESTNET",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/lifecycle-top.png",
+              "box": [
+                0,
+                0,
+                0.5,
+                1
+              ],
+              "label": "NEAR · KEY REMOVAL → KEEPER SHORT",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    620,
+                    635,
+                    430,
+                    225
+                  ]
+                },
+                {
+                  "at": 4,
+                  "rect": [
+                    620,
+                    700,
+                    430,
+                    225
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/hl-fills.png",
+              "box": [
+                0.5,
+                0,
+                0.5,
+                1
+              ],
+              "label": "HYPURRSCAN · TRANSACTIONS",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    1140,
+                    294,
+                    430,
+                    220
+                  ]
+                }
+              ],
+              "crop": [
+                76,
+                230,
+                1768,
+                337
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "keys",
+        "fills",
+        "withdraw",
+        "funding"
+      ]
+    },
+    {
+      "id": "A2",
+      "cut": "x",
+      "number": 2,
+      "title": "Animated Diagram",
+      "start": 5,
+      "end": 19,
+      "seconds": 14,
+      "visual": "**Full-Screen Animated Architecture Diagram (14 s):** Dark canvas (`#0f172a`). Nodes: `Owner Wallet`, `Keeper Bot`, `NEAR Policy Contract (0 keys)`, `NEAR MPC (v1.signer)`, `Hyperliquid Account (0x3e72...5390)`. Beats 1–3 play in sequence: Owner locks rules and burns the contract key; Keeper sends bounded short request through Policy Contract to `v1.signer` and Hyperliquid; Rogue Keeper withdrawal/leverage spike hits Policy Contract and shatters in red before reaching `v1.signer`.",
+      "voiceover": "Keepers today need hot private keys. Counterweight replaces that key with a keyless NEAR policy contract. The keeper proposes a hedge, the contract enforces strict bounds, and NEAR MPC v1.signer signs the Hyperliquid order.",
+      "caption": "Owner sets policy. NEAR MPC signs orders.",
+      "kind": "diagram",
+      "badge": "NEAR CHAIN SIGNATURES · TESTNET",
+      "shots": [],
+      "claims": [
+        "keys",
+        "fills",
+        "deadman",
+        "signer"
+      ]
+    },
+    {
+      "id": "A3",
+      "cut": "x",
+      "number": 3,
+      "title": "Happy Path: Funded Lifecycle",
+      "start": 19,
+      "end": 35,
+      "seconds": 16,
+      "visual": "**Web Dashboard (`funded lifecycle table`):** Top 82% canvas frame (bottom 18% reserved for caption bar so zero rows clip). Smooth `2x` pan down rows 1–6: Owner deposits `4 wNEAR` (`H4ecuH...`), sends `50 USDC` to spot and transfers `49 USDC` `spot->perp` (`FnEqLs...`, with badge `Funding preceded key removal`), deletes last access key (`DGcGa5...`), then Keeper opens `3.5 NEAR @ 3.5121` (`2ZHrq1...`) and closes reduce-only `3.5 NEAR @ 3.5212` flat (`65WWr7...`).",
+      "voiceover": "In our funded v2 testnet run, the owner deposited four wrapped NEAR, moved forty-nine USDC to perps, and deleted the contract's access key. With zero keys left, the keeper opened a 3.5 NEAR short and closed it reduce-only, flat.",
+      "caption": "Key deleted first. Keeper shorts then closes.",
+      "kind": "footage",
+      "badge": "RECORDED V2 · FUNDING PRECEDED KEY REMOVAL",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/lifecycle-top.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "RECORDED FUNDED LIFECYCLE · ROWS 1–6",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    445,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 5,
+                  "rect": [
+                    370,
+                    540,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 9,
+                  "rect": [
+                    370,
+                    626,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 15,
+                  "rect": [
+                    370,
+                    695,
+                    900,
+                    348
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "funding",
+        "keys",
+        "fills",
+        "versions"
+      ]
+    },
+    {
+      "id": "A4",
+      "cut": "x",
+      "number": 4,
+      "title": "Explorer Proof & v2/v3 Resolution",
+      "start": 35,
+      "end": 46,
+      "seconds": 11,
+      "visual": "**60/40 Split-Screen:** Left: Hypurrscan `TRANSACTIONS` table zoomed `2.2x` on `0xdf68992e... Withdraw -46.96 USDC` (with badge `Destination arrival unverified`). Right: Web dashboard `live v3 panel` zoomed onto `Access keys: 0`, committed WASM `1bb1cc57…08a7a`, and configured NEAR/USDC caps (with badge `v2 = funded run · v3 = current fix`).",
+      "voiceover": "Hypurrscan records the forty-six point nine-six USDC net withdrawal to a fixed recipient. Our current v3 deployment stays keyless and fixes exits outside the price band.",
+      "caption": "Hypurrscan ledger verified. v3 fixes band exits.",
+      "kind": "footage",
+      "badge": "V2 = FUNDED RUN · V3 = CURRENT FIX",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/hl-fills.png",
+              "box": [
+                0,
+                0,
+                0.6,
+                1
+              ],
+              "label": "DESTINATION ARRIVAL UNVERIFIED",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    240,
+                    286,
+                    520,
+                    330
+                  ]
+                }
+              ],
+              "crop": [
+                76,
+                230,
+                1768,
+                337
+              ]
+            },
+            {
+              "asset": "captures/live-v3.png",
+              "box": [
+                0.6,
+                0,
+                0.4,
+                1
+              ],
+              "label": "V3 · CURRENT KEYLESS DEPLOYMENT",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    1135,
+                    440,
+                    375,
+                    400
+                  ]
+                },
+                {
+                  "at": 6,
+                  "rect": [
+                    980,
+                    640,
+                    375,
+                    400
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 7,
+          "panels": [
+            {
+              "asset": "captures/hl-fills.png",
+              "box": [
+                0,
+                0,
+                0.6,
+                1
+              ],
+              "label": "HYPURRSCAN · NET WITHDRAWAL",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    1080,
+                    288,
+                    520,
+                    330
+                  ]
+                }
+              ],
+              "crop": [
+                76,
+                230,
+                1768,
+                337
+              ]
+            },
+            {
+              "asset": "captures/v3-proof.png",
+              "box": [
+                0.6,
+                0,
+                0.4,
+                1
+              ],
+              "label": "SEPARATE FINALIZED V3 VERIFIER",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    80,
+                    300,
+                    1000,
+                    690
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "withdraw",
+        "keys",
+        "versions"
+      ]
+    },
+    {
+      "id": "A5",
+      "cut": "x",
+      "number": 5,
+      "title": "Sandbox: Keeper Close",
+      "start": 46,
+      "end": 57,
+      "seconds": 11,
+      "visual": "**Local Demo Terminal (`keeper`):** Whole-line instant reveal (no character-by-character typing). Start with lines `001–009` visible (`offlineGuardActive`, `policyKeys=0`, `SHA256 1bb1cc57...`). Zoom `2x` onto the `+32.5%` 24h NEAR rally trigger (`H = 2.535`), the keeper `reduce-only close` signature, and `OWNER FROZEN nonce=7000002` with unchanged balance. Persistent badge: `LOCAL SANDBOX · REAL WASM · MOCKED EXTERNALS`.",
+      "voiceover": "In our offline sandbox, real policy WASM runs against mocked externals. During a thirty-two percent rally, the keeper closes reduce-only while the owner wallet stays untouched.",
+      "caption": "Offline WASM sandbox: owner wallet stays untouched.",
+      "kind": "keeper",
+      "badge": "LOCAL SANDBOX · REAL WASM · MOCKED EXTERNALS",
+      "shots": [],
+      "claims": [
+        "rally",
+        "local",
+        "keys"
+      ]
+    },
+    {
+      "id": "A6",
+      "cut": "x",
+      "number": 6,
+      "title": "Rogue-Keeper Kill-Shot",
+      "start": 57,
+      "end": 69,
+      "seconds": 12,
+      "visual": "**Local Demo Terminal (`rogue`):** Whole-line snaps of all 7 red rejection lines (`exceeds max_short_size`, `price override`, `unauthorized withdraw`, `approveAgent`, `replayed callback`, `stale price`, `non-keeper`), locking for 3 full seconds on green summary line `051 | PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed`.",
+      "voiceover": "When a compromised keeper attempts seven attacks — excess leverage, price overrides, rogue withdrawals, agent delegation, or replayed callbacks — the contract rejects all seven and signs dead-man recovery after timeout.",
+      "caption": "PASS 7/7: every rogue keeper attack rejected.",
+      "kind": "rogue",
+      "badge": "LOCAL SANDBOX · REAL WASM · MOCKED MPC/FILLS",
+      "shots": [],
+      "claims": [
+        "attacks",
+        "deadman",
+        "local"
+      ]
+    },
+    {
+      "id": "A7",
+      "cut": "x",
+      "number": 7,
+      "title": "End Card",
+      "start": 69,
+      "end": 75,
+      "seconds": 6,
+      "visual": "**Clean Title/End Card:** Large readable repo URL (`gitlab.com/gocworks-group/hip3-smart-money` / public submission URL — no template placeholders), reproduction command `npm ci && npm test && npm run demo:local`, and scope line `Supervised testnet prototype · Owner observations trusted · Intents dry-only`.",
+      "voiceover": "Counterweight: a supervised DeFi testnet prototype built at NEAR HACKATHON. Reproduce everything from the repo.",
+      "caption": "Built at NEAR HACKATHON · DeFi Track",
+      "kind": "end",
+      "badge": "BUILT AT NEAR HACKATHON · DEFI TRACK",
+      "shots": [],
+      "claims": [
+        "versions"
+      ]
+    },
+    {
+      "id": "B1",
+      "cut": "judge",
+      "number": 1,
+      "title": "Hook, Problem & One-Sentence Solution",
+      "start": 0,
+      "end": 12,
+      "seconds": 12,
+      "visual": "**Split-Screen Hook:** Left: Web dashboard `hero` showing the keyless policy architecture card. Right: Zoomed crop of the recorded Hyperliquid testnet `3.5 NEAR` short and reduce-only close fills. At `0:06`, smooth zoom into the hero headline and `policy-v2.counterweight-samet.testnet` badge.",
+      "voiceover": "Automating a Hyperliquid hedge today means handing a hot private key to an off-chain keeper. Counterweight replaces that hot key with a keyless NEAR policy contract using NEAR Chain Signatures.",
+      "caption": "Replace hot keeper keys with NEAR policy.",
+      "kind": "footage",
+      "badge": "RECORDED V2 · HYPERLIQUID TESTNET",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/hero.png",
+              "box": [
+                0,
+                0,
+                0.5,
+                1
+              ],
+              "label": "KEYLESS NEAR POLICY",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    360,
+                    600,
+                    1150,
+                    570
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/lifecycle-top.png",
+              "box": [
+                0.5,
+                0,
+                0.5,
+                1
+              ],
+              "label": "RECORDED SHORT & REDUCE-ONLY CLOSE",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    620,
+                    697,
+                    430,
+                    225
+                  ]
+                },
+                {
+                  "at": 5,
+                  "rect": [
+                    620,
+                    758,
+                    430,
+                    225
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 6,
+          "panels": [
+            {
+              "asset": "captures/hero.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "COUNTERWEIGHT · FUNDED TESTNET",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    330,
+                    210,
+                    1000,
+                    450
+                  ]
+                },
+                {
+                  "at": 5,
+                  "rect": [
+                    330,
+                    310,
+                    940,
+                    410
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/lifecycle-top.png",
+              "box": [
+                0.4,
+                0.75,
+                0.6,
+                0.25
+              ],
+              "label": "RECORDED POLICY ACCOUNT",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    275,
+                    1200,
+                    130
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "keys",
+        "fills"
+      ]
+    },
+    {
+      "id": "B2",
+      "cut": "judge",
+      "number": 2,
+      "title": "Animated Mechanism",
+      "start": 12,
+      "end": 31,
+      "seconds": 19,
+      "visual": "**Full-Screen Animated Architecture Diagram (19 s):** Full 4-beat sequence (`Owner -> Policy Contract -> NEAR MPC v1.signer -> Hyperliquid account 0x3e72...5390`; `Keeper` valid path; `Rogue Keeper` blocked at Policy Contract; `+601s` dead-man switch close). Highlight derivation path `counterweight-1` and `0 access keys` lock icon on the Policy Contract node.",
+      "voiceover": "Here is how the mechanism works. The owner deposits collateral, configures strict risk caps and a fixed withdrawal address, and deletes the contract's access key. A keeper can request bounded shorts or reduce-only closes, which v1.signer signs for the derived Hyperliquid account. Any out-of-policy request reverts.",
+      "caption": "Policy contract gates NEAR MPC v1.signer signatures.",
+      "kind": "diagram",
+      "badge": "NEAR CHAIN SIGNATURES · TESTNET",
+      "shots": [],
+      "claims": [
+        "keys",
+        "fills",
+        "deadman",
+        "signer"
+      ]
+    },
+    {
+      "id": "B3",
+      "cut": "judge",
+      "number": 3,
+      "title": "Funded Testnet Lifecycle: Setup & Key Removal",
+      "start": 31,
+      "end": 53,
+      "seconds": 22,
+      "visual": "**Web Dashboard (`funded lifecycle table` rows 1–4) + Hypurrscan Inset:** Zoom `2x` on rows 1–4 of the `2026-11-10` `policy-v2` table: `Owner spot deposit` (`4 wNEAR`, tx `H4ecuH...`), `Owner UI Send` (`50 mock USDC` to spot), `Owner-only spot -> perp` (`49 USDC` `usdClassTransfer`, tx `FnEqLs...`), and `Access key removal` (`0 keys`, WASM `1bb1cc57…08a7a`, tx `DGcGa5...`). Badge: `RECORDED V2 · FUNDING PRECEDED KEY REMOVAL`.",
+      "voiceover": "On November tenth, we executed a full funded lifecycle on Hyperliquid testnet. The owner deposited four wrapped NEAR into the policy contract, sent fifty mock USDC to spot, and signed an owner-only forty-nine USDC transfer from spot to perp margin. The contract's last access key was then deleted before any keeper trading began.",
+      "caption": "Owner funds account, then deletes access key.",
+      "kind": "footage",
+      "badge": "RECORDED V2 · FUNDING PRECEDED KEY REMOVAL",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/lifecycle-top.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "2026-11-10 · OWNER FUNDING → KEY REMOVAL",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    450,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 7,
+                  "rect": [
+                    370,
+                    514,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 14,
+                  "rect": [
+                    370,
+                    620,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 21,
+                  "rect": [
+                    370,
+                    620,
+                    900,
+                    348
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/hl-fills.png",
+              "box": [
+                0.67,
+                0.56,
+                0.33,
+                0.44
+              ],
+              "label": "HYPURRSCAN · 49 USDC SPOT → PERP",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    1060,
+                    345,
+                    700,
+                    210
+                  ]
+                }
+              ],
+              "crop": [
+                76,
+                230,
+                1768,
+                337
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "date",
+        "funding",
+        "keys"
+      ]
+    },
+    {
+      "id": "B4",
+      "cut": "judge",
+      "number": 4,
+      "title": "Funded Testnet Lifecycle: Open, Close & Withdraw",
+      "start": 53,
+      "end": 77,
+      "seconds": 24,
+      "visual": "**Web Dashboard (`funded lifecycle table` rows 5–9) -> Hypurrscan Explorer:** First 13 s: Zoom `2x` on rows 5–8 (`Keeper IOC short 3.5 NEAR @ 3.5121` oid `65016476566`, `Keeper reduce-only close 3.5 NEAR @ 3.5212` flat, `Owner settlement`, `configure_rebalancing` fixed recipient `0xb1af...f36a`). Last 11 s: Cut to tightly cropped Hypurrscan `TRANSACTIONS` table showing `0xdf68992e... Withdraw -46.96 USDC` (`47.957074` gross, `1.0 USDC` fee; top `RPC HTTP 0` badge cropped out). Badge: `DESTINATION ARRIVAL UNVERIFIED`.",
+      "voiceover": "With zero keys verified at the receipt blocks, the keeper opened a 3.5 NEAR short at 3.5121 and closed 3.5 NEAR reduce-only at 3.5212, leaving the perp position flat. After owner settlement, the Hypurrscan explorer ledger records a 46.96 USDC net withdrawal, after the one USDC fee, to the fixed recipient.",
+      "caption": "Short 3.5 @ 3.5121; close @ 3.5212; withdraw.",
+      "kind": "footage",
+      "badge": "RECORDED V2 · DESTINATION ARRIVAL UNVERIFIED",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/lifecycle-scroll.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "KEEPER OPEN → CLOSE → OWNER SETTLEMENT",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    200,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 6,
+                  "rect": [
+                    370,
+                    280,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 12,
+                  "rect": [
+                    370,
+                    365,
+                    900,
+                    348
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 13,
+          "panels": [
+            {
+              "asset": "captures/hl-fills.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "HYPURRSCAN · TRANSACTIONS TABLE",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    90,
+                    285,
+                    820,
+                    340
+                  ]
+                },
+                {
+                  "at": 5,
+                  "rect": [
+                    1000,
+                    285,
+                    820,
+                    340
+                  ]
+                }
+              ],
+              "crop": [
+                76,
+                230,
+                1768,
+                337
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "keys",
+        "fills",
+        "withdraw"
+      ]
+    },
+    {
+      "id": "B5",
+      "cut": "judge",
+      "number": 5,
+      "title": "Clean v2 / v3 Resolution (Said Once)",
+      "start": 77,
+      "end": 91,
+      "seconds": 14,
+      "visual": "**Web Dashboard (`live v3 panel` + `v3-proof` verifier output):** Side-by-side view of the live `v3` contract panel (`0 access keys`, raw integer caps beside formatted NEAR/USDC limits) and the `testnet:verify` JSON output confirming finalized code hash `1bb1cc57…08a7a`. Badge: `V2 = FUNDED LIFECYCLE · V3 = BAND-EXIT FIX`.",
+      "voiceover": "To resolve version labels once: policy-v2 is that recorded funded lifecycle account, while policy-v3 is our current keyless deployment, verified with zero keys and matching WASM, that fixes reduce-only exits outside the price band.",
+      "caption": "v2 ran lifecycle; v3 fixes out-of-band exits.",
+      "kind": "footage",
+      "badge": "V2 = FUNDED LIFECYCLE · V3 = BAND-EXIT FIX",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/live-v3.png",
+              "box": [
+                0,
+                0,
+                0.5,
+                1
+              ],
+              "label": "PRODUCT V3 · KEYS & RAW CAPS",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    975,
+                    430,
+                    565,
+                    570
+                  ]
+                },
+                {
+                  "at": 7,
+                  "rect": [
+                    975,
+                    630,
+                    565,
+                    570
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/v3-proof.png",
+              "box": [
+                0.5,
+                0,
+                0.5,
+                1
+              ],
+              "label": "SEPARATE FINALIZED V3 VERIFIER",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    80,
+                    260,
+                    1100,
+                    700
+                  ]
+                },
+                {
+                  "at": 7,
+                  "rect": [
+                    80,
+                    400,
+                    1300,
+                    700
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/live-v3.png",
+              "box": [
+                0,
+                0.78,
+                0.5,
+                0.22
+              ],
+              "label": "PRODUCT WARNING · V2 ARTIFACT COMPARISON",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    360,
+                    1000,
+                    800,
+                    105
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "versions",
+        "keys"
+      ]
+    },
+    {
+      "id": "B6",
+      "cut": "judge",
+      "number": 6,
+      "title": "Local Adversarial Demo: Autonomous Close",
+      "start": 91,
+      "end": 108,
+      "seconds": 17,
+      "visual": "**Local Demo Terminal (`keeper`):** Whole-line reveal starting with lines `001–009` pre-rendered (`offlineGuardActive: true`, `policyHasNoKeys: true`). Smooth `2x` zoom onto the worst 24-hour rally selection (`+32.499065%` across `4,297` candidates, `2026-09-18 02:00 UTC`, NEAR `$3.2299`, `H = 2.535`), the keeper `reduce-only close` signature, and `OWNER FROZEN` (`nonce` and balance unchanged). Badge: `LOCAL SANDBOX · REAL WASM · MOCKED MPC/FILLS`.",
+      "voiceover": "Next, our offline local sandbox runs the real policy WASM against mocked MPC signatures, tokens, and venue fills. Replaying the worst 32.5% twenty-four-hour NEAR rally, stress headroom drops and the keeper signs a reduce-only close while the owner wallet stays completely untouched.",
+      "caption": "Sandbox: keeper closes; owner nonce stays frozen.",
+      "kind": "keeper",
+      "badge": "LOCAL SANDBOX · REAL WASM · MOCKED EXTERNALS",
+      "shots": [],
+      "claims": [
+        "rally",
+        "local",
+        "keys"
+      ]
+    },
+    {
+      "id": "B7",
+      "cut": "judge",
+      "number": 7,
+      "title": "Local Adversarial Demo: 7/7 Rogue Rejections & Dead-Man",
+      "start": 108,
+      "end": 126,
+      "seconds": 18,
+      "visual": "**Local Demo Terminal (`rogue`):** Whole-line reveal of the 7 adversarial test cases (1: over-cap open, 2: price-bearing close override, 3: keeper withdrawal, 4: `approveAgent`, 5: replayed MPC callback, 6: stale price, 7: non-keeper caller), early dead-man rejection, `+601s` public dead-man close signature, and a 3.5-second hold on line `051 | PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed`.",
+      "voiceover": "We then fire seven adversarial calls at the contract: exceeding size caps, overriding close prices, keeper withdrawals, agent delegation, replayed callbacks, stale prices, and unauthorized callers. All seven revert before MPC signing, and after a 601-second timeout, the public dead-man switch signs recovery.",
+      "caption": "7/7 rogue attempts rejected; dead-man close signed.",
+      "kind": "rogue",
+      "badge": "LOCAL SANDBOX · REAL WASM · MOCKED MPC/FILLS",
+      "shots": [],
+      "claims": [
+        "attacks",
+        "deadman",
+        "local"
+      ]
+    },
+    {
+      "id": "B8",
+      "cut": "judge",
+      "number": 8,
+      "title": "Honest Results: Full Replay & Out-of-Sample",
+      "start": 126,
+      "end": 145,
+      "seconds": 19,
+      "visual": "**Web Dashboard (`market/risk panel` -> `replay results` full & OOS tables):** 4 s on the illustrative mainnet risk gate, then `2x` zoom on the `4,320`-hour comparison rows (`hedged-rebalance` illustrative: `$67.28` net / `1.18%`, `0` breaches; `always-hedged`: `1,222` breach hours and negative venue equity; `spot-holder`: smaller capital denominator; `demo` small size losing to costs) and the retrospective OOS holdout row (`0.63%`). Badge: `HISTORICAL SIMULATION · NO RETURN GUARANTEE`.",
+      "voiceover": "Across 4,320 recorded mainnet hours, simulated hedged rebalancing nets $67.28, or 1.18%, with zero modeled breaches, while naive always-hedged breaches margin 1,222 times. Spot holding keeps directional exposure on a smaller capital base, small allocations lose to costs, and the retrospective out-of-sample holdout nets 0.63%.",
+      "caption": "Simulated 4,320h replay: 1.18% full, 0.63% OOS.",
+      "kind": "footage",
+      "badge": "HISTORICAL SIMULATION · NO RETURN GUARANTEE",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/market.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "ILLUSTRATIVE MAINNET RISK GATE",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    490,
+                    1175,
+                    460
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 4,
+          "panels": [
+            {
+              "asset": "captures/results-full.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "FULL WINDOW · ALL COMMITTED CAPITAL",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    345,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 6,
+                  "rect": [
+                    650,
+                    500,
+                    900,
+                    348
+                  ]
+                },
+                {
+                  "at": 10,
+                  "rect": [
+                    650,
+                    500,
+                    900,
+                    348
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "at": 15,
+          "panels": [
+            {
+              "asset": "captures/results-oos.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "RETROSPECTIVE OUT-OF-SAMPLE HOLDOUT",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    320,
+                    900,
+                    348
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "replay"
+      ]
+    },
+    {
+      "id": "B9",
+      "cut": "judge",
+      "number": 9,
+      "title": "Plain Limitations (Said Once)",
+      "start": 145,
+      "end": 159,
+      "seconds": 14,
+      "visual": "**Web Dashboard (`evidence & limitations` summary cards):** Clean, unclipped view of the scope matrix highlighting: (1) Testnet only; (2) Supervised owner funding, price/margin observations, and settlement; (3) `4 wNEAR` spot remains directional after perp close; (4) Withdrawal destination arrival unverified; (5) NEAR Intents `1Click` `dry: true` quote capture only.",
+      "voiceover": "Our limits are stated plainly: this is a supervised testnet prototype. Owner funding and venue observations are trusted, retained spot stays directional after closing, withdrawal arrival is unverified, and NEAR Intents uses dry quotes only.",
+      "caption": "Testnet prototype: supervised owner steps, dry Intents.",
+      "kind": "footage",
+      "badge": "TESTNET PROTOTYPE · SUPERVISED OWNER · DRY INTENTS",
+      "shots": [
+        {
+          "at": 0,
+          "panels": [
+            {
+              "asset": "captures/evidence.png",
+              "box": [
+                0,
+                0,
+                1,
+                1
+              ],
+              "label": "EVIDENCE & LIMITATIONS",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    340,
+                    250,
+                    1240,
+                    480
+                  ]
+                }
+              ]
+            },
+            {
+              "asset": "captures/lifecycle-scroll.png",
+              "box": [
+                0,
+                0.62,
+                1,
+                0.38
+              ],
+              "label": "RECORDED LIFECYCLE · SCOPE",
+              "camera": [
+                {
+                  "at": 0,
+                  "rect": [
+                    370,
+                    585,
+                    1180,
+                    210
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "claims": [
+        "funding",
+        "versions"
+      ]
+    },
+    {
+      "id": "B10",
+      "cut": "judge",
+      "number": 10,
+      "title": "Close Card",
+      "start": 159,
+      "end": 165,
+      "seconds": 6,
+      "visual": "**End Card:** Public repository URL, `npm ci && npm test && npm run demo:local`, contract addresses (`policy-v2` & `policy-v3`), and `Built at NEAR HACKATHON · DeFi Track · Experimental software, not investment advice`.",
+      "voiceover": "Counterweight, built for the NEAR HACKATHON DeFi track. Inspect the public proofs and reproduce offline.",
+      "caption": "Built at NEAR HACKATHON · DeFi Track",
+      "kind": "end",
+      "badge": "BUILT AT NEAR HACKATHON · DEFI TRACK",
+      "shots": [],
+      "claims": [
+        "versions"
+      ]
+    }
+  ],
+  "claims": {
+    "keys": {
+      "anchor": "v2 zero access keys",
+      "evidence": "docs/evidence/2026-11-10-release-testnet-verify.json",
+      "spoken": [
+        "Zero",
+        "zero"
+      ]
+    },
+    "fills": {
+      "anchor": "Keeper IOC short 3.5 @ 3.5121",
+      "evidence": "docs/evidence/2026-11-10-lifecycle-summary.md",
+      "spoken": [
+        "3.5",
+        "3.5121",
+        "3.5212"
+      ]
+    },
+    "withdraw": {
+      "anchor": "Video rounding: 46.96 USDC",
+      "evidence": "docs/evidence/2026-11-10-lifecycle-status.md",
+      "spoken": [
+        "forty-six point nine-six",
+        "46.96",
+        "one"
+      ]
+    },
+    "funding": {
+      "anchor": "Video funding: 4 wNEAR, 50 mock USDC, 49 USDC",
+      "evidence": "docs/evidence/2026-11-10-lifecycle-summary.md",
+      "spoken": [
+        "four",
+        "fifty",
+        "forty-nine"
+      ]
+    },
+    "date": {
+      "anchor": "Video date: November tenth",
+      "evidence": "docs/evidence/2026-11-10-lifecycle-summary.md",
+      "spoken": [
+        "November tenth"
+      ]
+    },
+    "versions": {
+      "anchor": "Video versions: policy-v2 / policy-v3",
+      "evidence": "videos/build/captures/v3-proof.json",
+      "spoken": [
+        "v2",
+        "v3",
+        "policy-v2",
+        "policy-v3"
+      ]
+    },
+    "rally": {
+      "anchor": "Video rally: 32.499065%",
+      "evidence": "reports/demo-local.json",
+      "spoken": [
+        "thirty-two",
+        "32.5%",
+        "twenty-four-hour"
+      ]
+    },
+    "local": {
+      "anchor": "Owner nonce/balance unchanged",
+      "evidence": "reports/demo-local.json",
+      "spoken": []
+    },
+    "attacks": {
+      "anchor": "Seven attack categories/errors",
+      "evidence": "reports/demo-local.json",
+      "spoken": [
+        "seven"
+      ]
+    },
+    "deadman": {
+      "anchor": "Seven attack categories/errors",
+      "evidence": "reports/demo-local.json",
+      "spoken": [
+        "601"
+      ]
+    },
+    "replay": {
+      "anchor": "Video replay: 4,320 hours",
+      "evidence": "reports/replay-report.json",
+      "spoken": [
+        "4,320",
+        "$67.28",
+        "1.18%",
+        "zero",
+        "1,222",
+        "0.63%"
+      ]
+    },
+    "signer": {
+      "anchor": "Video signer: v1.signer",
+      "evidence": "docs/evidence/2026-11-10-lifecycle-summary.md",
+      "spoken": [
+        "v1.signer"
+      ]
+    }
+  },
+  "editorialDeviations": [
+    "V3 proof captures show 052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c, not the v2 1bb1cc57…08a7a hash stated in the visual directions. Real capture retained.",
+    "Saved local report closes 2026-09-17 10:00 UTC at $2.8062, H=2.280557 (display 2.281). 2026-09-18 02:00 UTC/$3.2299 is later, after close. Display authentic terminal lines, not the visual directions’ H=2.535.",
+    "Existing evidence capture has three proof cards, not a scope matrix. Show those cards with actual recorded lifecycle limitation text.",
+    "Existing full/OOS captures show illustrative size; small-size loss and negative venue equity remain narrated and claim-checked against reports, not fabricated as extra table rows."
+  ]
+}

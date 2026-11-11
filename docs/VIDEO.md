@@ -1,4 +1,87 @@
-# Rebuilding the Counterweight demo videos
+# Remotion production cuts (v2)
+
+The primary production workflow is the `@counterweight/video` npm workspace in `apps/video`, driven by `scripts/video/remotion.ts`. The only root changes are npm command registration/workspace lock metadata and these requested documentation/claim entries. No product, keeper, contract, capture or existing edit logic is changed. No Git command, key, signing operation, testnet send, paid API, AI imagery or music is needed.
+
+From the repository root:
+
+```sh
+npm ci --cache /private/tmp/counterweight-video-npm
+npm run video:remotion:test
+npm --workspace @counterweight/video run typecheck
+export VIDEO_REPO_URL=https://gitlab.com/gocworks-group/hip3-smart-money
+npm run video:remotion -- --cut=x
+npm run video:remotion -- --cut=judge
+```
+
+Verify that `VIDEO_REPO_URL` is the public submission URL before publishing. If unset, the review card deliberately displays `[PUBLIC REPOSITORY URL — SET VIDEO_REPO_URL]`. The renderer never discovers it through Git. Use the environment value for an alternative submission repository.
+
+| Composition | Silent base length | Output |
+|---|---|---|
+| `XCut` | 75 seconds / 2,250 frames | `videos/counterweight-x-v2.mp4` |
+| `JudgeCut` | 165 seconds / 4,950 frames | `videos/counterweight-judge-v2.mp4` |
+
+Both compositions are 1920×1080 at 30 fps, H.264/yuv420p (CRF 18). Voiceover is AAC when present. Each scene without a supplied MP3 is silent, including its UI clicks. No music is added. When voiceover is present, quiet synthesized state clicks accompany transitions; the click source is normalized to -24 LUFS. Numeric tables have no music bed. External fonts are not fetched; the film uses system sans/monospace and the real product's captured typography.
+
+## Preview and inspection
+
+```sh
+npm run video:remotion -- --cut=x --preview
+# Open http://localhost:3333, choose XCut or JudgeCut. Ctrl-C stops Studio.
+# Refresh/restart the command after adding/replacing voiceover files.
+npm run video:remotion -- --cut=judge --stills
+# Cheap 1-second sample (960×540; sample file, never overwrites final):
+npm run video:remotion -- --cut=x --frames=0-29 --scale=0.5
+# Bundle and audit the timing/assets without launching Chromium:
+npm run video:remotion -- --cut=x --bundle-only
+npm run video:remotion -- --cut=judge --bundle-only
+```
+
+`--preview` prepares **both** cuts and opens a local Remotion Studio server without launching a browser. Git-source integration is disabled; file polling is enabled. Stills include every scene and all architecture beats in `apps/video/build/stills/{x,judge}/`. Inclusive `--frames=START-END` renders to `videos/counterweight-{x,judge}-v2-sample.mp4`. `--scale=0.5` is a review-only resolution override and always uses the sample filename; omit it for final output. `--concurrency=2` is the default; lower to `1` if memory is tight.
+
+The first local Chromium selection reuses `videos/build/browsers/chromium_headless_shell-*` when available; otherwise Remotion uses its normal local browser discovery/download. A custom browser can be supplied:
+
+```sh
+REMOTION_BROWSER_EXECUTABLE=/absolute/path/to/chrome npm run video:remotion -- --cut=x
+REMOTION_BROWSER_EXECUTABLE=/absolute/path/to/chrome npm run video:remotion -- --cut=judge
+```
+
+This sandbox successfully installs dependencies, typechecks, runs the new/existing video tests, prepares both cuts and compiles their bundle. Its Chromium launch fails with macOS `bootstrap_check_in ... MachPortRendezvousServer ... Permission denied (1100)`. Studio additionally fails with `EMFILE: too many open files, watch` here, even with polling. The available browser host is unavailable. **No new v2 MP4 or rendered still is claimed.** The lead must run the two final render commands above outside this sandbox, then inspect the stills and finished movies at phone size. A browser path alone does not remove a process-launch restriction. `ffmpeg`/`ffprobe` must be on PATH (`brew install ffmpeg` on macOS).
+
+## Voiceover and the single scene data file
+
+Place scene files at `videos/vo/x/01.mp3` … `07.mp3`, and `videos/vo/judge/01.mp3` … `10.mp3`. Names are two-digit scene numbers from the corresponding production table. Missing files are accepted. Present but invalid/unreadable audio fails rather than silently disappearing. `ffprobe` measures each actual MP3; the timeline uses:
+
+```text
+durationInFrames = ceil(max(scriptSeconds, audioSeconds + 0.4) * 30)
+```
+
+Later scenes start immediately after the extended scene, so nothing overlaps and dialogue is never truncated. Diagram beats run at the script's specified 0–4 / 4–9 / 9–14 / 14–19 seconds, then hold if voiceover extends the scene. Footage pans scale over the available scene duration. The rogue summary holds for the last 3 seconds in X and 3.5 seconds in Judge. All terminal lines appear whole, with their original source line numbers; no typewriter effect or invented transcript.
+
+`apps/video/src/scenes.json` is the one edit file for scene order, timing, exact VO, captions, footage camera rectangles, split-screen placement, badges, numeric claim anchors and known editorial deviations. `apps/video/production-script.md` is a verbatim review snapshot of the supplied final script. The correspondence test can also compare to the lead's source:
+
+```sh
+VIDEO_PRODUCTION_SCRIPT=/absolute/path/to/out-v-senaryo.md npm run video:remotion:test
+```
+
+`apps/video/build/{x,judge}-timeline.json` records the effective frame schedule, missing audio, source hashes and repo URL; `*-props.json` records render inputs. Completed render verification writes `{x,judge}-render.json` with ffprobe results. These generated files and staged public inputs are ignored inside the video workspace. Preparing does not execute the local demo or contact any explorer: it reads existing captures and the passed `reports/demo-local.json`.
+
+## Evidence and review notes for the lead
+
+All requested footage already exists. The renderer stages original PNG captures and animates smooth camera moves over them; these are authentic captured frames, not recreated product screens. It checks capture-manifest status and fails for absent/failed footage. The sole original illustration is the shared animated architecture diagram, shown once per cut. Hypurrscan is hard-cropped to source rectangle `(76,230,1768,337)` **before** every camera transform, so the RPC error box above it can never re-enter frame. Destination arrival remains labelled unverified.
+
+The supplied script's visual directions contain details that disagree with actual inputs. Voiceover/captions/timings are kept verbatim; footage retains the recorded evidence:
+
+- The finalized **v3** verifier shows SHA `052d4d87…87838c`, distinct from the recorded v2/local `1bb1cc57…08a7a`. Judge's side-by-side view includes the real product mismatch warning as an inset and the separate verifier receipt; it never paints a fake hash match into the product UI.
+- The saved sandbox closes on **2026-09-17 10:00 UTC, $2.8062, H 2.281**. The script's **2026-09-18 02:00 UTC, $3.2299, H 2.535** close direction is stale. The +32.499065% window and untouched-owner proof are retained with actual lines.
+- The existing evidence shot has three proof/limitation cards, not the proposed scope matrix. The cut supplements it with the real lifecycle limitations text. The existing full/OOS screenshots show the illustrative size; small-size losses and negative venue equity remain narrated and checked against the report, without fabricated extra table rows.
+
+These deviations are also recorded in the scene data and `docs/CLAIMS.md`. Before public release the lead should approve the evidence-faithful visual substitutions (or supply new real shots), add final voiceover, confirm the public URL, render, and review numerical framing/legibility. If a real shot is missing, the lead can rerun `npm run video:capture`; the Remotion workflow itself does not recapture or send transactions.
+
+The new tests enforce exact script correspondence, continuous base timing, MP3-extension arithmetic, ≤8 caption words (standalone separators do not count as words), one diagram per cut, proof-first hooks, mock labels, transaction-table hard crops, complete spoken-number mappings into `docs/CLAIMS.md`, and replay/local quantities against committed reports. Existing legacy video tests also pass. The actual MP3 duration probe and synthesized click normalization were exercised locally (-24.05 LUFS measured for the click source). No browser render or visual QA is asserted from these checks.
+
+---
+
+# Legacy ffmpeg edit (prior cuts)
 
 Run from the repository root with Node >=22.19.0. No wallet, keys, paid APIs, AI imagery, signing, testnet sends or music are used. Chromium visits the real read-only product and public explorers in a fresh browser context. Local execution uses the existing offline-guarded disposable sandbox. Video typing and edit times are editorial, not command runtimes.
 

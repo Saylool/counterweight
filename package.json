@@ -40,7 +40,9 @@
     "video:terminal": "tsx scripts/video/terminal.ts",
     "video:assemble": "tsx scripts/video/assemble.ts",
     "video:script": "tsx scripts/video/script.ts",
-    "video:test": "vitest run scripts/video/video.test.ts"
+    "video:test": "vitest run scripts/video/video.test.ts",
+    "video:remotion": "tsx scripts/video/remotion.ts",
+    "video:remotion:test": "vitest run scripts/video/remotion.test.ts"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",
