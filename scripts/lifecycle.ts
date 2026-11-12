@@ -321,6 +321,12 @@ export async function lifecycle(argv: string[]) {
       console.log(`Live mark $${market.mark}. IOC ${step}: ${order.size} NEAR; limit $${order.price}. Run these keeper commands in terminal B now, in order:`);
       printCommand(callCommand('heartbeat', {}, KEEPER, '30 Tgas', '0 NEAR', policy));
       printCommand(callCommand('set_keeper_price', { price: order.reference, observed_at: String(Math.floor(Date.parse(market.capturedAt) / 1000)) }, KEEPER, '30 Tgas', '0 NEAR', policy));
+      if (v3 && step === 'open') {
+        // v3 opens check an owner margin attestation at most 30 s old (assert_margin_health), so the owner attests last.
+        if (Date.now() - before.observedAtMs > 8000) throw new Error('Hyperliquid margin observation too old; restart for fresh commands');
+        printCommand(callCommand('observe_margin', { equity_usdc: String(Math.floor(before.account.equity * 1e6)),
+          withdrawable_usdc: String(Math.floor(Math.min(before.account.withdrawable, before.account.equity) * 1e6)), observed_at_ms: String(before.observedAtMs) }, OWNER, '30 Tgas', '0 NEAR', policy));
+      }
     }
     const command = callCommand(expected.method, expected.args, expected.caller, '300 Tgas', '0 NEAR', policy);
     record.command = command; record.expected = expected;

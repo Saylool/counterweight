@@ -15,11 +15,22 @@ V3 is **deployed keyless** as `policy-v3.counterweight-samet.testnet`, derived
 address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`. The
 [saved code/key proof](../videos/build/captures/v3-proof.json) records zero keys and
 WASM SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
-[Funding evidence](evidence/lifecycle-relay-AEk3mDFkuVnVowPzfXRfPBBkk7ympuSR6cZfXk7eNN5s.json)
-and [keeper records](KEEPER-RUN.md#recorded-runs-through-12-november-2026) show
-49 USDC in perps, no spot deposit and no position in available observations.
-Out-of-band exit authorization is locally tested; a live v3 exit fill is unproved.
+[12 November lifecycle evidence](evidence/2026-11-12-v3-lifecycle-summary.md) verifies
+4 wNEAR custody, a keeper IOC short of 3.6 NEAR @ 3.3788 and a reduce-only buy
+of 3.6 @ 3.3796, leaving the venue flat with 48.986173 USDC equity. Both successful
+requests have zero policy keys at their request/signature receipt blocks and recovered
+signers matching the derived address. Owner settlement remains pending after open expiry;
+the contract still reserves 3.6 NEAR. Out-of-band exit authorization is locally tested;
+this live close occurred inside the opening band and proves no live paused/out-of-band fill.
 These changes do not repair v2; its historical WASM remains separately pinned.
+
+The first v3 opening request failed with `ERR_REBALANCE_STALE`. V3 opens require
+an owner `observe_margin` attestation no more than 30 seconds old: the keeper
+cannot open alone; it can reduce alone. `scripts/lifecycle.ts` now prints the
+owner observation last, immediately before the keeper request for v3 opens;
+v2 trading and closes omit it. The successful open capture records that command
+order, and the close capture records keeper-only commands. Margin and settlement
+remain owner attestations without an on-chain venue verifier.
 
 V3 build size is **343,212 bytes** after release stripping and Binaryen optimization
 (previously 672,309). Its measured creation budget is **6.25131 NEAR**:
@@ -31,14 +42,14 @@ plan. Recovered wNEAR needs no new wrap. There is no fixed 5-NEAR spot requireme
 All sandbox fixtures execute the shipped optimized production artifact. See
 [build, reserve and staged funding details](POLICY-V3.md).
 
-V2 cleanup is **pending**, not complete. Its retained nonces are
-`1794331472735` and `1794331863418`; the review's first nonce was incorrect.
-The configured fee cap is 1 micro-USDC versus the actual 1 USDC withdrawal fee,
-so truthful `reconcile_margin_withdrawal` cannot succeed on v2. The printed
-[V2-CLEANUP procedure](V2-CLEANUP.md) waits until after 2026-11-12 17:31:03.419 UTC,
-prunes expired nonces, abandons the reservation without margin credit, and returns
-4 wNEAR to the fixed owner. The saved evidence does not establish execution of that cleanup. Use
-2026-11-12 17:31:04 UTC or later and recheck finalized state before any owner action.
+V2 cleanup **completed on 12 November**: pause, expiry, abandonment, owner wrap.testnet
+registration and return of 4 wNEAR to the fixed owner. The operator's status run
+verified paused, expired, abandoned, spotReturned and ownerIncreaseVerified=true;
+see the [transaction table, provenance and baseline](evidence/2026-11-12-v3-lifecycle-summary.md).
+Those 4 wNEAR were then deposited into v3. The historical v2 fee-cap mismatch
+(1 micro-USDC configured versus the actual 1 USDC fee) still prevents truthful
+`reconcile_margin_withdrawal`; cleanup instead abandoned its expired reservation
+without margin credit or any claim of destination-chain arrival.
 
 V3's exit IOC guarantees at most 1% above its fresh **reported** mark (fees extra),
 rounded down. With no authenticated oracle, callers can lie about price or timestamp;
@@ -58,8 +69,11 @@ maximum cycle-start gap. The release handoff reports host-process exit around
 22:21 UTC (last cycle finished 22:22); its saved `running` label is stale.
 A new run started 12 November at 08:46 UTC; its one-cycle snapshot confirms a
 heartbeat but rejects a future-dated venue book and lacks risk data. Continuous
-uptime, later liveness and a successful live v3 reduction are unverified. Host
-exit timing/cause comes from the handoff, not an independently captured exit event.
+uptime and later liveness are unverified by those snapshots. The separate
+[supervised 12 November v3 run](evidence/2026-11-12-v3-lifecycle-summary.md) does
+verify an open and reduce-only close; it does not establish autonomous opening
+or continuous trading. Host exit timing/cause comes from the handoff, not an
+independently captured exit event.
 
 ## Historical funded keyless v2 smoke test; v1 remains a rehearsal
 
@@ -110,7 +124,7 @@ Order proofs expire after 60 seconds; historical transactions cannot be revived.
 
 Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
 no multi-day carry, Intents dry quotes only, no live rebalancing route, and no destination-chain arrival verification.
-The 4 wNEAR spot leg remains directional until the unsent cleanup completes. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
+The 4 wNEAR spot leg is now in v3 custody and remains directional after the venue close; owner settlement is pending. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
 signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
 
 ## 3. Demo attack semantics and owner boundary

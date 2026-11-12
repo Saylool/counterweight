@@ -116,6 +116,27 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 describe('funded lifecycle relay (offline public API fixtures)', () => {
+  it.each([
+    [V3_POLICY, 'open', true],
+    [V3_POLICY, 'close', false],
+    [NEXT_POLICY, 'open', false],
+    [NEXT_POLICY, 'close', false],
+  ] as const)('prints owner margin attestation immediately before only the v3 open request (%s, %s)', async (policy, step, observesMargin) => {
+    await setup(step, false, false, false, policy);
+    await lifecycle([`--policy=${policy}`, `--step=${step}`]);
+    const printed = vi.mocked(console.log).mock.calls
+      .map(([message]) => String(message)).filter(message => message.startsWith('near contract '));
+    expect(printed.map(command => command.match(/ as-transaction \S+ (\S+) json-args /)![1])).toEqual([
+      'heartbeat', 'set_keeper_price', ...(observesMargin ? ['observe_margin'] : []), 'request_order_signature',
+    ]);
+    expect(printed.at(-1)).toContain(`sign-as ${KEEPER}`);
+    if (observesMargin) {
+      expect(printed.at(-2)).toContain(`sign-as ${OWNER}`);
+      expect(printed.at(-2)).toContain(`as-transaction ${V3_POLICY} observe_margin`);
+      expect(printed.at(-2)).toContain(`'${JSON.stringify({ equity_usdc: '50000000', withdrawable_usdc: '50000000', observed_at_ms: String(now) })}'`);
+    }
+  });
+
   it.each([NEXT_POLICY, V3_POLICY])('verification selects saved plan and artifact from %s', async policy => {
     await setup('to-perp', false, false, false, policy);
     await verifyTestnet([`--policy=${policy}`, '--before-key-removal=true']);
