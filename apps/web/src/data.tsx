@@ -6,9 +6,10 @@ import {
   maintenanceMargin,
   HOUR_MS,
 } from "../../../packages/domain/src/index";
-import type { Artifact } from "./model";
+import type { Artifacts } from "./model";
 
 export const DEFAULT_ACCOUNT = "policy-v2.counterweight-samet.testnet";
+export const V3_ACCOUNT = "policy-v3.counterweight-samet.testnet";
 export const REHEARSAL_ACCOUNT = "policy.counterweight-samet.testnet";
 export const HL_TESTNET_API = "https://api.hyperliquid-testnet.xyz/info";
 export const NEAR_RPC =
@@ -113,7 +114,7 @@ export function addressFromPublicKey(value: string) {
 }
 export async function readContract(
   account: string,
-  artifact: Artifact,
+  artifacts: Artifacts,
   fetcher: typeof fetch = fetch,
 ) {
   if (
@@ -190,7 +191,10 @@ export async function readContract(
     state,
     keyCount: keys.keys.length,
     codeHash: info.code_hash,
-    codeMatches: info.code_hash === artifact.codeHash,
+    expectedArtifact: account === DEFAULT_ACCOUNT ? artifacts.v2 : account === V3_ACCOUNT ? artifacts.v3 : null,
+    artifactVersion: account === DEFAULT_ACCOUNT ? "v2" : account === V3_ACCOUNT ? "v3" : null,
+    codeMatches: account === DEFAULT_ACCOUNT ? info.code_hash === artifacts.v2.codeHash
+      : account === V3_ACCOUNT ? info.code_hash === artifacts.v3.codeHash : null,
     blockHeight: info.block_height,
     address,
     derivationError,

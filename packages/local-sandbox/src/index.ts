@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { Worker, type NearAccount, type TransactionResult } from 'near-workspaces';
 
 export const POLICY_SHA256 = '1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a';
+export const POLICY_V3_SHA256 = '052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c';
 export const MOCK_SHA256 = '69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f';
 export const BASE = 10n ** 24n;
 export const GAS = 300n * 10n ** 12n;
@@ -50,11 +51,13 @@ export class LocalSandbox {
     readonly rogue: NearAccount, readonly stranger: NearAccount, readonly policy: NearAccount,
     readonly mock: NearAccount, readonly directory: string) {}
 
-  static async start(priceMicro: string, quantity: string, assetIndex: number, sizeDecimals: number) {
-    const policyBytes = await readFile(join(root, 'contracts/policy/artifacts/counterweight_policy.wasm'));
-    verifyHash(policyBytes, POLICY_SHA256, 'Committed policy');
+  static async start(priceMicro: string, quantity: string, assetIndex: number, sizeDecimals: number, version: 'v2' | 'v3' = 'v2') {
+    const filename = version === 'v3' ? 'counterweight_policy_v3.wasm' : 'counterweight_policy.wasm';
+    const digest = version === 'v3' ? POLICY_V3_SHA256 : POLICY_SHA256;
+    const policyBytes = await readFile(join(root, 'contracts/policy/artifacts', filename));
+    verifyHash(policyBytes, digest, 'Committed policy');
     const sums = await readFile(join(root, 'contracts/policy/artifacts/SHA256SUMS'), 'utf8');
-    assert(sums.split('\n').includes(`${POLICY_SHA256}  artifacts/counterweight_policy.wasm`), 'Published policy digest changed');
+    assert(sums.split('\n').includes(`${digest}  artifacts/${filename}`), 'Published policy digest changed');
     // Text encoding keeps this fixture distributable under the repository's *.wasm ignore rule.
     const mockBytes = Buffer.from(await readFile(join(root, 'packages/local-sandbox/artifacts/mock-mpc.wasm.base64'), 'utf8'), 'base64');
     verifyHash(mockBytes, MOCK_SHA256, 'Labelled mock MPC');
@@ -86,6 +89,7 @@ export class LocalSandbox {
       const mock = await registrar.createSubAccount('mock-mpc');
       const local = new LocalSandbox(worker, owner, keeper, rogue, stranger, policy, mock, directory);
       assert((await policy.deploy(policyBytes)).succeeded);
+      if (version === 'v3') verifyHash(await policy.viewCode(), digest, 'Deployed v3 policy');
       assert((await mock.deploy(mockBytes)).succeeded);
       await local.mustCall(owner, 'new', {
         owner: owner.accountId, keeper: keeper.accountId, asset_index: assetIndex, size_decimals: sizeDecimals,

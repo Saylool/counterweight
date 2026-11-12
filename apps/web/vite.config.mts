@@ -47,16 +47,21 @@ function publicEvidence(): Plugin {
     "data/demo.json",
     demoSchema.parse(JSON.parse(read("reports/demo-local.json"))),
   );
-  const bytes = readFileSync(
-    `${root}contracts/policy/artifacts/counterweight_policy.wasm`,
-  );
-  const sha256 = createHash("sha256").update(bytes).digest("hex");
-  if (!read("contracts/policy/artifacts/SHA256SUMS").startsWith(`${sha256}  `))
-    throw new Error("Committed WASM manifest mismatch");
-  add("data/artifact.json", {
-    sha256,
-    codeHash: base58.encode(new Uint8Array(Buffer.from(sha256, "hex"))),
-  });
+  const manifest = read("contracts/policy/artifacts/SHA256SUMS").trim().split("\n");
+  const artifacts = Object.fromEntries([
+    ["v2", "counterweight_policy.wasm"],
+    ["v3", "counterweight_policy_v3.wasm"],
+  ].map(([version, filename]) => {
+    const bytes = readFileSync(`${root}contracts/policy/artifacts/${filename}`);
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    if (!manifest.includes(`${sha256}  artifacts/${filename}`))
+      throw new Error(`Committed ${version} WASM manifest mismatch`);
+    return [version, {
+      sha256,
+      codeHash: base58.encode(new Uint8Array(Buffer.from(sha256, "hex"))),
+    }];
+  }));
+  add("data/artifacts.json", artifacts);
   const evidence = readdirSync(`${root}docs/evidence`).filter((n) =>
     /\.(md|json|txt)$/.test(n),
   );

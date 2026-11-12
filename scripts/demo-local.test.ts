@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { loadMarket, type MarketDataset } from '../apps/keeper/src/market.js';
 import { prepareLocalReplay, replayRisk } from '../apps/keeper/src/local-replay.js';
-import { verifyHash, POLICY_SHA256, MOCK_SHA256 } from '@counterweight/local-sandbox';
+import { verifyHash, POLICY_SHA256, POLICY_V3_SHA256, MOCK_SHA256 } from '@counterweight/local-sandbox';
 
 let data: MarketDataset;
 beforeAll(async () => { data = await loadMarket(fileURLToPath(new URL('../fixtures/market/', import.meta.url))); });
@@ -15,6 +15,12 @@ describe('local demo real squeeze and build provenance', () => {
     expect(verifyHash(mock, MOCK_SHA256, 'mock')).toBe(MOCK_SHA256);
     const corrupt = Buffer.from(policy); corrupt[50] = corrupt[50]! ^ 1;
     expect(() => verifyHash(corrupt, POLICY_SHA256, 'policy')).toThrow('SHA-256 mismatch');
+  });
+  it('pins the separately shipped v3 bytes and rejects a v2 substitution', async () => {
+    const v3 = await readFile(new URL('../contracts/policy/artifacts/counterweight_policy_v3.wasm', import.meta.url));
+    const v2 = await readFile(new URL('../contracts/policy/artifacts/counterweight_policy.wasm', import.meta.url));
+    expect(verifyHash(v3, POLICY_V3_SHA256, 'v3')).toBe(POLICY_V3_SHA256);
+    expect(() => verifyHash(v2, POLICY_V3_SHA256, 'v3')).toThrow('SHA-256 mismatch');
   });
   it('selects the largest positive rolling 24h move independently over all 4297 endpoints', () => {
     const plan = prepareLocalReplay(data);

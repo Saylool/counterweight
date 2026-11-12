@@ -1,10 +1,12 @@
 # Counterweight demo script
 
+Archived legacy capture/edit table. The authoritative submission narration is [apps/video/revised-x-script.md](../apps/video/revised-x-script.md), mirrored in [scenes.json](../apps/video/src/scenes.json); see [VIDEO.md](VIDEO.md). This table does not override it.
+
 Generated editorial table from `scripts/video/edit.ts`. Update that file, then run `npm run video:script`. Captions below are the exact burned-in English text. No narration or music is generated.
 
 Real product captures, public explorer pages and actual local logs only. No wallet, credentials, signing, testnet sends, paid APIs or AI imagery. The browser uses a fresh profile. Keep testnet, historical and mock labels visible.
 
-The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliquid address `0x3e72c8963761c3f436710df9b891d8e3a74b5390`. **policy-v3 is a separate deployment**, not the account behind those fills. The current product may compare all live accounts with the v2 artifact; do not relabel that mismatch as a match. A separate, clearly labelled capture utility compares actual finalized v3 RPC responses with the committed v3 WASM bytes. Raw responses and failures are saved.
+The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliquid address `0x3e72c8963761c3f436710df9b891d8e3a74b5390`. **policy-v3 is a separate deployment**, not the account behind those fills. The product compares v2 and v3 with their respective committed artifacts; v2 remains the funded-evidence default. Unknown accounts have no configured artifact comparison. A separate, clearly labelled capture utility compares actual finalized v3 RPC responses with the committed v3 WASM bytes. Raw responses and failures are saved.
 
 ## Main cut: 150 seconds
 

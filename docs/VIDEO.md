@@ -1,4 +1,8 @@
-# Counterweight X cut — round 5 · locked narration and visual polish
+# Counterweight X cut — final voiced export
+
+The authoritative submission demo script is [apps/video/revised-x-script.md](../apps/video/revised-x-script.md), the locked A1–A7 X-cut narration mirrored in [scenes.json](../apps/video/src/scenes.json). [DEMO-SCRIPT.md](DEMO-SCRIPT.md) is the archived legacy capture/edit table; it does not override the locked narration.
+
+The final voiced export is [docs/media/counterweight-demo.mp4](media/counterweight-demo.mp4): **98.13 seconds of H.264 video + AAC audio, -14 LUFS** (98.20-second container including the audio tail). The seven **ElevenLabs Curtis** voiceover files are present at `videos/vo/x/01.mp3` through `07.mp3`; `videos/` is gitignored, so those source recordings do not appear in the repository. The MP4 includes the narration.
 
 Only the X cut is a deliverable. The Judge cut remains archived. Source changes and local build artifacts stay in `apps/video`, `scripts/video` and this file; existing reports, captures and voiceover directories are inputs.
 
@@ -8,7 +12,7 @@ From the repository root:
 npm run video:remotion:test
 npm run video:test
 npm --workspace @counterweight/video run typecheck
-# Silent review now; the same command includes new recordings when present:
+# Render with the existing voiceover recordings:
 node --import tsx scripts/video/remotion.ts --cut=x --subtitles
 # Local Studio:
 node --import tsx scripts/video/remotion.ts --cut=x --preview --subtitles
@@ -24,11 +28,11 @@ Output: `apps/video/build/counterweight-x-v3-subtitles.mp4`, 1920×1080, 30 fps,
 
 ## Narration, subtitles and timing
 
-`src/scenes.json` and `revised-x-script.md` contain the locked A1–A7 narration, with **only A4** replaced by the exact round-5 wording: **184 whitespace-delimited words**. All seven scenes require new recordings. No paid generation, network evidence capture, keys, chain sends or demo rerun is needed.
+`src/scenes.json` and `revised-x-script.md` contain the locked A1–A7 narration, with **only A4** replaced by the exact round-5 wording: **184 whitespace-delimited words**. All seven scenes have ElevenLabs Curtis recordings in `videos/vo/x/`. No paid generation, network evidence capture, keys, chain sends or demo rerun is needed.
 
 There is **one bottom text band**. `--subtitles` replaces the bold editorial caption with sentence/clause narration pages, sized for at most two lines. Every X subtitle page holds for **at least 2 seconds**. Word-position boundaries are rebalanced only as needed to meet that minimum; A4 has withdrawal / arrival caveat / v3 pages, A6 has the three requested balanced chunks, and A7 has one complete sentence per page. It does not stack captions and subtitles. Protected phrases stay on one page: “what the keeper can sign”, “policy's access keys”, “NEAR HACKATHON” and “testnet evidence”. Evidence labels, source records and the requested A1 headline remain in the main picture. The final voiced export should use `--subtitles` too.
 
-Script slots total **80 seconds**. The current silent preview is **2,550 frames / 85.0 seconds**, using the unchanged timing rule:
+Script slots total **80 seconds**. The historical silent preview was **2,550 frames / 85.0 seconds**, using the unchanged timing rule:
 
 ```text
 missing audio: ceil(max(scriptSeconds, voiceoverWords / 2.5 + 0.6) * 30)
@@ -45,9 +49,9 @@ present audio: ceil(max(scriptSeconds, measuredAudioSeconds + 0.4) * 30)
 | A6 | 15s | 15.0s |
 | A7 | 8s | 8.6s |
 
-The voiced runtime depends on measured recordings and will be at least 80 seconds. No speed-up is applied. Missing audio produces no synthesized voice, music or click track. New recordings are read from `videos/vo/x/01.mp3` through `07.mp3`; those files are currently absent. Old recordings remain in their existing archive. Preparation rebuilds the audio map, so stale staged public assets cannot activate a scene.
+The final voiced runtime is 98.13 seconds; render timing uses measured recordings. No speed-up is applied. Missing audio produces no synthesized voice, music or click track. Recordings are read from the existing `videos/vo/x/01.mp3` through `07.mp3` files (ElevenLabs Curtis; gitignored). Old recordings remain in their existing archive. Preparation rebuilds the audio map, so stale staged public assets cannot activate a scene.
 
-`apps/video/build/x-{props,timeline}.json` records effective timing, source hashes and absent audio. The end-card repository URL defaults to `https://github.com/Saylool/counterweight`; `VIDEO_REPO_URL` overrides it. This pass does not claim a remote accessibility check.
+`apps/video/build/x-{props,timeline}.json` records effective timing, source hashes and audio availability for each render. The end-card repository URL defaults to `https://github.com/Saylool/counterweight`; `VIDEO_REPO_URL` overrides it. This pass does not claim a remote accessibility check.
 
 ## Picture changes
 
@@ -59,7 +63,7 @@ The voiced runtime depends on measured recordings and will be at least 80 second
 - A6 keeps the big **7/7 tested cases**. Only **increase beyond caps** and **withdraw to rogue** brighten during their spoken examples; all other rows dim. **Were all rejected** clears the example highlight. **After a timeout** reveals and emphasises the **+601s mocked recovery** row. The early timelock check stays separate from the seven requests.
 - A7 reveals the complete card within **0.3s**, leaving **8.3s** fully visible in the silent cut. The repository URL is enlarged to 58px at its default length, with **npm ci && npm test && npm run demo:local** below in small type. The policy address is removed. Prototype and trust limitations remain.
 
-Picture beats and click cues derive from **word positions in the locked scene narration**. With recordings, the clock uses measured VO length, even when a shorter recording fits inside a longer minimum scene slot. Without audio, it uses the silent estimate minus its 0.4s tail. Subtitle boundaries start from that same clock and borrow adjacent reading time for the two-second minimum. A7's word-derived entrance is capped at the requested 0.3s. Final waveform alignment still needs checking after recording; no speech is accelerated.
+Picture beats and click cues derive from **word positions in the locked scene narration**. With recordings, the clock uses measured VO length, even when a shorter recording fits inside a longer minimum scene slot. Without audio, it uses the silent estimate minus its 0.4s tail. Subtitle boundaries start from that same clock and borrow adjacent reading time for the two-second minimum. A7's word-derived entrance is capped at the requested 0.3s. Waveform alignment should be checked when replacing recordings; no speech is accelerated.
 
 ## Sentence audit
 
@@ -87,6 +91,6 @@ Every supplied sentence is supported in the stated testnet/local scope. No unsup
 
 The video regression suites and workspace TypeScript check cover script correspondence, numerical claim anchors, complete subtitle wording, authentic source-line ordering, silent/audio timing and reveal pacing. A dedicated regression parses the **specific Worst rolling 24h rally CLAIMS row** and compares its close timestamp, four-decimal NEAR price and three-decimal H with the first `reduce-only close` in `reports/demo-local.json`. It also checks selection percentage and candidate count; matching another row cannot hide a stale claim.
 
-Validation passed in round 5: **17 Remotion tests + 7 legacy video tests (24 total)** and the video workspace TypeScript check. The X bundle compiles with **zero audio files**, and its prepared timeline remains **2,550 frames / 85.0s**. Tests lock every X voiceover, confirm exact script correspondence and authentic evidence, sample subtitle durations frame by frame (at least 60 frames per page), and exercise varied narration lengths, four architecture states, keeper beats, the two rogue examples, recovery and the closing-card reveal/hold.
+Validation passed in round 5: **17 Remotion tests + 7 legacy video tests (24 total)** and the video workspace TypeScript check. That historical silent-build check compiled with **zero audio files** and prepared **2,550 frames / 85.0s**; it predates the existing 98.13-second voiced export. Tests lock every X voiceover, confirm exact script correspondence and authentic evidence, sample subtitle durations frame by frame (at least 60 frames per page), and exercise varied narration lengths, four architecture states, keeper beats, the two rogue examples, recovery and the closing-card reveal/hold.
 
-The fresh still-render attempt stopped with **`Error: No available ports found`** when Remotion tried to open its local render server in this sandbox. No new MP4 or frame-level visual QA is claimed. Any pre-existing MP4 in `apps/video/build/` or `videos/` is from an earlier edit; this pass updated source, props, timeline and bundle only. Run the render/stills commands above on a host that permits the local server and Chromium. No voiceover was generated, and no keys, chain sends, paid APIs or demo rerun were used.
+The earlier restricted-sandbox still-render attempt stopped with **`Error: No available ports found`** when Remotion tried to open its local render server in this sandbox. That historical attempt updated source, props, timeline and bundle only; it does not describe the current deliverable. The final voiced MP4 now exists at `docs/media/counterweight-demo.mp4`, with the Curtis recordings in `videos/vo/x/`. Run the render/stills commands above on a host that permits the local server and Chromium to reproduce. This documentation update generated no voiceover and used no keys, chain sends, paid APIs or demo rerun.

@@ -1,10 +1,18 @@
-# V3 validation — 2026-11-10
+# V3 validation — captured 2026-11-10 18:50 UTC
 
-Current artifact, exact ABI/trust boundaries and fresh deployment plan:
-[POLICY-V3](../../docs/POLICY-V3.md). V3 has not been deployed. Only public RPC
-reads and disposable localhost tests were used; no real private keys, keychain
-access or testnet sends. Native policy layout compatibility does not make a keyless
-v2 upgrade possible. Historical binary/demo pins remain unchanged.
+Current artifact and ABI/trust boundaries: [POLICY-V3](../../docs/POLICY-V3.md).
+The validation counts below are the **10 November 2026, 18:50 UTC** snapshot
+([JSON](../../docs/evidence/policy-v3-validation.json)); frontend counts were last
+validated at **18:29 UTC** that day. They are historical, not current suite counts.
+That pre-deployment validation used public reads and disposable localhost tests.
+
+V3 was subsequently deployed separately as `policy-v3.counterweight-samet.testnet`.
+The [saved keyless verification](../../docs/evidence/2026-11-10-policy-v3-keyless-verify.txt)
+at finalized block **277108250** (`5BD3Ur5pomULd1t9rTPFsX8r6WxRYGdDcjZ8Ams5nARp`)
+reports zero access keys and code hash `MD74j7DDmMa2zMHNiCZBbhe1AdQuDZGGxP3d5HfzzKm`,
+matching the v3 artifact below. This is deployment evidence, not a v3 trading-fill
+proof. Native policy layout compatibility does not make a keyless v2 upgrade
+possible. Historical binary/demo pins remain unchanged.
 
 | Check | V3 result |
 |---|---|

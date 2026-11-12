@@ -2,7 +2,7 @@
 
 ## Recorded runs through 12 November 2026
 
-These are saved report snapshots, not a current liveness check. All three runs
+These are saved report snapshots, not a current liveness check. All four runs
 used keyless v3 on testnet with **opening disabled**. JSONL observations show
 heartbeats and fallback-price updates, 49 USDC perp equity, zero spot custody and
 no position where venue data is available. No verified opens or reductions were
@@ -14,6 +14,7 @@ protective-exit fill.
 | [10 Nov 19:07–20:08](../reports/keeper-run/2026-11-10T19-07-53-363Z-6d892ee6.md) · [JSONL](../reports/keeper-run/2026-11-10T19-07-53-363Z-6d892ee6.jsonl) | 13 | 3 | 0 | 0 | 327.611 s |
 | [11 Nov 12:16–22:22](../reports/keeper-run/2026-11-11T12-16-04-347Z-9654a6dd.md) · [JSONL](../reports/keeper-run/2026-11-11T12-16-04-347Z-9654a6dd.jsonl) | 80 | 18 | 6 | 41 | 8415.541 s |
 | [12 Nov restart 08:46; snapshot 08:47](../reports/keeper-run/2026-11-12T08-46-45-868Z-4c251f05.md) · [JSONL](../reports/keeper-run/2026-11-12T08-46-45-868Z-4c251f05.jsonl) | 1 | 1 | 1 | 0 | 0 s (one cycle) |
+| [12 Nov restart 08:52; snapshot 08:57](../reports/keeper-run/2026-11-12T08-52-39-345Z-9fe1df24.md) · [JSONL](../reports/keeper-run/2026-11-12T08-52-39-345Z-9fe1df24.jsonl) | 2 | 0 | 0 | 0 | 276.597 s |
 
 The release handoff reports that the 11 November host process exited around
 22:21 UTC; the last saved cycle began at 22:21:46 and finished at 22:22:06.
@@ -21,6 +22,10 @@ Its rolling summary still says `running`, so that label is not evidence of
 continued uptime. A [preserved stale lock](../reports/keeper-run/stale-lock-2026-11-11T12-16-04-347Z-9654a6dd.json)
 identifies the previous run; the new report starts at 08:46:45 UTC on 12 November.
 The logs do not independently establish the host-exit cause or exact time.
+The newest saved summary was updated at **12 November 08:57:36 UTC**: two
+cycles over 297.359 seconds, no errors, no missing intervals and no cycles
+without risk data. It confirms no new heartbeat, open or reduction in that
+snapshot. Its `running` label does not establish current process liveness.
 
 The 11 November snapshot has four cycles without risk data and includes public
 RPC failures and uncertain NEAR submissions. The restart snapshot has one

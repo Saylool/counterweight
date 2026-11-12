@@ -108,5 +108,6 @@
     "wrap": false
   },
   "gitCommandsExecuted": 0,
-  "v2ArtifactUntouched": true
+  "v2ArtifactUntouched": true,
+  "currentStatusNote": "deploymentStatus records the historical 2026-11-10 validation capture, not current deployment state. V3 is now separately deployed and keyless; see docs/POLICY-V3.md and docs/evidence/2026-11-10-policy-v3-keyless-verify.txt. The 2026-11-12 local v3 demo passed with matching shipped/deployed WASM hashes; see reports/demo-local-v3.json and .md. MPC/token/marks are mocked; no v3 venue fills are claimed."
 }

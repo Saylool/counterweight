@@ -1,16 +1,18 @@
 # Counterweight policy contract — v3 source, testnet prototype
 
-**V3 is undeployed.** Use `artifacts/counterweight_policy_v3.wasm` and the fresh
-[POLICY-V3 plan](../../docs/POLICY-V3.md). `artifacts/counterweight_policy.wasm`
+**V3 is separately deployed and keyless** at `policy-v3.counterweight-samet.testnet`.
+Use `artifacts/counterweight_policy_v3.wasm` and the
+[POLICY-V3 guide](../../docs/POLICY-V3.md). `artifacts/counterweight_policy.wasm`
 is the retained historical v2 binary for existing demo pins. Deployed keyless v2
 has the immutable-band exit bug and cannot be upgraded; its cleanup is printed in
 [V2-CLEANUP](../../docs/V2-CLEANUP.md). The v3 guide supersedes historical behavior
 and in-place deployment instructions below.
 
 Implements DESIGN Part B custody tiers and the owner-approved rebalancing revision
-in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). The previous artifact was deployed on testnet by the team lead; this updated
-artifact has not been deployed. Sandbox signer/token/route behavior is mocked;
-there are no real MPC signatures or venue fills. See [TEST_RESULTS](TEST_RESULTS.md).
+in [DESIGN-NOTES](../../docs/DESIGN-NOTES.md). The v3 artifact is deployed separately on testnet. The latest
+[local v3 demo](../../reports/demo-local-v3.md) passed with the shipped production
+WASM. Sandbox signer/token/route behavior is mocked; there are no real MPC
+signatures or venue fills in these local tests. See [TEST_RESULTS](TEST_RESULTS.md).
 
 Owner-run testnet deployment commands and public-RPC verification are in
 [TESTNET-DEPLOYMENT](../../docs/TESTNET-DEPLOYMENT.md). `npm run testnet:plan`

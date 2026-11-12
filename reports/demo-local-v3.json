@@ -1,0 +1,465 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "startedAt": "2026-11-12T09:10:34.283Z",
+  "version": "v3",
+  "policySha256": "052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c",
+  "mockSha256": "69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f",
+  "offlineGuardActive": true,
+  "mocked": [
+    "MPC signature-shaped response (not cryptographic)",
+    "token deposit",
+    "illustrative honest and malicious marks; no venue fills or external oracle"
+  ],
+  "boundaries": [
+    "Real shipped production v3 WASM, hash checked before and after deployment on localhost",
+    "Signature authorization is not a fill; IOC can partially fill or fail, fees are additional",
+    "The 1% limit is relative to an unauthenticated supplied mark, not the true market or a total loss cap",
+    "No public chain, wallet credentials, public RPC, paid API or venue relay"
+  ],
+  "transcript": [
+    "V3 LOCAL SANDBOX | production WASM | MOCK MPC / TOKEN / MARKS | NO FILLS",
+    "PASS paused opening rejected ERR_PAUSED; reductions remain eligible",
+    "PASS paused keeper exit | supplied $5 | signed IOC buy limit $5.05 | 1.00% above illustrative true mark | reduce-only",
+    "PASS out-of-band keeper exit while paused | supplied $50 | signed IOC buy limit $50.5 | 1.00% above illustrative true mark | reduce-only",
+    "PASS malicious high mark while paused | supplied $100 | signed IOC buy limit $101 | 102.00% above illustrative true mark | reduce-only",
+    "BOUNDARY the 1% cap stops a limit above supplied mark +1%; it does not authenticate the mark, guarantee fills, cap fees or bound total portfolio loss.",
+    "SANDBOX stopped; disposable local accounts removed"
+  ],
+  "diagnostics": [
+    "Receipt: 5pnkdyfYZaU1ARpJPYgvU9PszEYMw5T1bsUj28kdGmh1",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":54,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"1000000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}",
+    "Receipt: 4CJM52dzQXqcnXeSdrqxYRJFYCrrDN5KpCLBAmE3szis",
+    "\tLog [mock-mpc.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"1000000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}",
+    "Receipts: 3VMJaZ2tMd9XJkEm5hB7APXt9bLwfKgom9VbCMz64cfn, yE5Dsx2Eafzu2d5RBPSTot98kEYFuC3RP1urLcz69oT, H3KjYk36zwZUCcdn6ToNb7PHCap5DweSqLViG4Pm5hE5",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":false,\"p\":\"4.95\",\"s\":\"1\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474657571,\"expiresAfter\":1794474717571},\"digest\":\"caec8b0a1b204d85593bd8a4912335287a6f98cea99457db76a1b1b3e1bb6bc7\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: JCE2YAPm33a5oywqEBRzTGEbEYQj4k5GbKTqTXXkrxdi",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794474657571\",\"expiresAfter\":\"1794474717571\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipts: FwU2pXLm6WQkEZHmSeHPwDFtGGqEhp8ijybTDzpxTQHT, CVucT7BLL1nD5AE8aUZoyr7yt7KgKNbhLY7MntzuGHqf, BjCcYs8nz1FLqPmC51fiKzjRPfDrCjCb8BhUxvevriNj",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"invalidation_required\",\"data\":[{\"nonce\":\"1794474657571\",\"expiresAfter\":\"1794474717571\"}]}",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"complete\":false}]}",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"owner.testnet\",\"kind\":\"Invalidation\",\"payload\":{\"action\":{\"type\":\"noop\"},\"nonce\":1794474657571,\"expiresAfter\":1794474717571},\"digest\":\"0be5a98ff10636d7ee33013f29cff95b02f1819745db0df40d4e1cedf7f544a9\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 22GgYQwGpA1gCEXHd5CvBauFemNaauzMUBwhC8FzDkfG",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794474657571\",\"expiresAfter\":\"1794474717571\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: 7MfwSFa93WN1aCgWxnLG8hkYiYhBse4xpmJiNyU5nPox",
+    "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_PAUSED\"}}}}",
+    "Receipts: 65AdFKcnjqXm4hMgudY2RaR8hnjqyXrVAPz7Q4BYzhfZ, HAZhgMVRG4ZNsw717Nv75LanB6wS4Fe2iLuCznRWaEwh, Az551Xttijowyg7vimVfewbJx9F7NAhpmkn7QHnu8Z7Q",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":true,\"p\":\"5.05\",\"s\":\"1\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474665461,\"expiresAfter\":1794474725461},\"digest\":\"681438428e11183d55f7eefb456e12066a2723931fea443a2c683be4542a892b\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 2EndiMr2x1qwhJsTP3hfiVM8c5XgG8MvTpcXbZ3hp2ux",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794474665461\",\"expiresAfter\":\"1794474725461\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipts: 2VE2vmmjsUgqexmo9xgb4xyNKkpB8shgcogYLBVfXpoN, 2sgCi7n8ZubxKYmJyVH9M4Expd4dVYqmbyW1xk91VPHm, EbDEtcMZDQ2FQF3deNxpJXdYuw2CxvDcYV52aAn2UK5y",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"4\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":true,\"p\":\"50.5\",\"s\":\"1\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474668496,\"expiresAfter\":1794474728496},\"digest\":\"3e5c6567e624169c6995541eb706f909e821baf378bab56e3cd07ec0787d5bb3\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: HJRiVunEmFfyBcuPsf4ZvrRDu9DCh2F39mNX64x9yzTs",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"4\",\"nonce\":\"1794474668496\",\"expiresAfter\":\"1794474728496\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipts: 9m43DZgCsQkiogDkX9v6cnAh3tZSa96SQueHBLfHEo14, HrfYx1xhB7uZpVYhCn7RGWwT291Cd3KEPDjnffLBmNhV, 6BzQ68GG5QMiVt6cuMqWU8hfD68jqBRCDPBLrEgrm5uV",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"5\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":true,\"p\":\"101\",\"s\":\"1\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474671522,\"expiresAfter\":1794474731522},\"digest\":\"ae72b9bd1a6855e737efd30046490979dcd36cd12000c6801768f9dc05134d21\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: 6E8umTjjFkuYR6sHnmA5LFPnJLqBAkCGAiesqHhEFxtC",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"5\",\"nonce\":\"1794474671522\",\"expiresAfter\":\"1794474731522\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+  ],
+  "cases": [
+    {
+      "name": "paused keeper exit",
+      "authorized": true,
+      "paused": true,
+      "suppliedMarkMicroUsd": "5000000",
+      "observedAt": "1794474662",
+      "illustrativeTrueMarkMicroUsd": "5000000",
+      "signedLimitMicroUsd": "5050000",
+      "capMicroUsd": "5050000",
+      "premiumToTrueMarkPct": 1,
+      "withinSuppliedMarkCap": true,
+      "request": {
+        "id": "3",
+        "caller": "keeper.testnet",
+        "kind": "Reduce",
+        "payload": {
+          "action": {
+            "type": "order",
+            "orders": [
+              {
+                "a": 54,
+                "b": true,
+                "p": "5.05",
+                "s": "1",
+                "r": true,
+                "t": {
+                  "limit": {
+                    "tif": "Ioc"
+                  }
+                }
+              }
+            ],
+            "grouping": "na"
+          },
+          "nonce": 1794474665461,
+          "expiresAfter": 1794474725461
+        },
+        "digest": "681438428e11183d55f7eefb456e12066a2723931fea443a2c683be4542a892b",
+        "digest_implementation": "HYPERLIQUID_MSGPACK_EIP712_V1"
+      },
+      "transactionHash": "BHwrxFxMWZUpSwvHheXCwNsemYjw3ukGVDrav2CTAEnq"
+    },
+    {
+      "name": "out-of-band keeper exit while paused",
+      "authorized": true,
+      "paused": true,
+      "suppliedMarkMicroUsd": "50000000",
+      "observedAt": "1794474665",
+      "illustrativeTrueMarkMicroUsd": "50000000",
+      "signedLimitMicroUsd": "50500000",
+      "capMicroUsd": "50500000",
+      "premiumToTrueMarkPct": 1,
+      "withinSuppliedMarkCap": true,
+      "request": {
+        "id": "4",
+        "caller": "keeper.testnet",
+        "kind": "Reduce",
+        "payload": {
+          "action": {
+            "type": "order",
+            "orders": [
+              {
+                "a": 54,
+                "b": true,
+                "p": "50.5",
+                "s": "1",
+                "r": true,
+                "t": {
+                  "limit": {
+                    "tif": "Ioc"
+                  }
+                }
+              }
+            ],
+            "grouping": "na"
+          },
+          "nonce": 1794474668496,
+          "expiresAfter": 1794474728496
+        },
+        "digest": "3e5c6567e624169c6995541eb706f909e821baf378bab56e3cd07ec0787d5bb3",
+        "digest_implementation": "HYPERLIQUID_MSGPACK_EIP712_V1"
+      },
+      "transactionHash": "4XkoPVJ7DywddgWb5bXUYp1ZYu5ghj54eoN51pNNVvpN"
+    },
+    {
+      "name": "malicious high mark while paused",
+      "authorized": true,
+      "paused": true,
+      "suppliedMarkMicroUsd": "100000000",
+      "observedAt": "1794474668",
+      "illustrativeTrueMarkMicroUsd": "50000000",
+      "signedLimitMicroUsd": "101000000",
+      "capMicroUsd": "101000000",
+      "premiumToTrueMarkPct": 102,
+      "withinSuppliedMarkCap": true,
+      "request": {
+        "id": "5",
+        "caller": "keeper.testnet",
+        "kind": "Reduce",
+        "payload": {
+          "action": {
+            "type": "order",
+            "orders": [
+              {
+                "a": 54,
+                "b": true,
+                "p": "101",
+                "s": "1",
+                "r": true,
+                "t": {
+                  "limit": {
+                    "tif": "Ioc"
+                  }
+                }
+              }
+            ],
+            "grouping": "na"
+          },
+          "nonce": 1794474671522,
+          "expiresAfter": 1794474731522
+        },
+        "digest": "ae72b9bd1a6855e737efd30046490979dcd36cd12000c6801768f9dc05134d21",
+        "digest_implementation": "HYPERLIQUID_MSGPACK_EIP712_V1"
+      },
+      "transactionHash": "BgNLsGujQcVFNNggEB7kesWpAsekETmm7qb9AS8EBaKb"
+    }
+  ],
+  "chain": [
+    {
+      "actor": "owner.testnet",
+      "method": "new",
+      "args": {
+        "owner": "owner.testnet",
+        "keeper": "keeper.testnet",
+        "asset_index": 54,
+        "size_decimals": 1,
+        "derivation_path": "counterweight-local-mock-only",
+        "evm_recipient": "0x1111111111111111111111111111111111111111",
+        "signer_account": "mock-mpc.testnet",
+        "wnear_account": "mock-mpc.testnet",
+        "limits": {
+          "max_short_size": "1000000000000000000000000",
+          "per_order_notional_cap": "30000000",
+          "per_day_notional_cap": "30000000",
+          "cooldown_seconds": 60,
+          "price_band_bps": 100,
+          "price_max_age_seconds": 120
+        },
+        "network": "Testnet",
+        "heartbeat_timeout_seconds": 600,
+        "reference_price": "5000000",
+        "signing_limits": null,
+        "oracle": {
+          "account_id": null,
+          "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+          "max_age_seconds": 120,
+          "max_confidence_bps": 100,
+          "min_price": "2500000",
+          "max_price": "10000000"
+        }
+      },
+      "transactionHash": "C1kB4WMq7zbtUSVf3ZEXBDkPE9YZ6KpZFtwW9wSZDbJQ",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":54,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"1000000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "mock:deposit_to",
+      "args": {
+        "amount": "1000000000000000000000000"
+      },
+      "transactionHash": "5YScnLgmfoZs25toeA4QQuoG4mrAoroKg1A4rr8VXUXQ",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"1000000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "keeper.testnet",
+      "method": "request_order_signature",
+      "args": {
+        "order": {
+          "asset_index": 54,
+          "size": "1000000000000000000000000",
+          "reduce_only": false,
+          "reference_price": null
+        }
+      },
+      "transactionHash": "EmVphu6ePGvoauezQ538wL9F3kmQTtGiJ51tYst6fptS",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":false,\"p\":\"4.95\",\"s\":\"1\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474657571,\"expiresAfter\":1794474717571},\"digest\":\"caec8b0a1b204d85593bd8a4912335287a6f98cea99457db76a1b1b3e1bb6bc7\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794474657571\",\"expiresAfter\":\"1794474717571\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "owner.testnet",
+      "method": "set_paused",
+      "args": {
+        "paused": true
+      },
+      "transactionHash": "3aSXiz6eE5TecHRW8q38w89fcV9SBA8yq3gnEPc1AGYH",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"invalidation_required\",\"data\":[{\"nonce\":\"1794474657571\",\"expiresAfter\":\"1794474717571\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"complete\":false}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"owner.testnet\",\"kind\":\"Invalidation\",\"payload\":{\"action\":{\"type\":\"noop\"},\"nonce\":1794474657571,\"expiresAfter\":1794474717571},\"digest\":\"0be5a98ff10636d7ee33013f29cff95b02f1819745db0df40d4e1cedf7f544a9\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794474657571\",\"expiresAfter\":\"1794474717571\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "keeper.testnet",
+      "method": "request_order_signature",
+      "args": {
+        "order": {
+          "asset_index": 54,
+          "size": "1000000000000000000000000",
+          "reduce_only": false,
+          "reference_price": null
+        }
+      },
+      "transactionHash": "J26V6cN9Kqk4rgjkBND44ztYP5SrWfanxBUW4LqjqKkd",
+      "succeeded": false,
+      "logs": [],
+      "errors": [
+        "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_PAUSED\"}}}}"
+      ]
+    },
+    {
+      "actor": "keeper.testnet",
+      "method": "request_order_signature",
+      "args": {
+        "order": {
+          "asset_index": 54,
+          "size": "1000000000000000000000000",
+          "reduce_only": true,
+          "reference_price": "5000000",
+          "observed_at": "1794474662"
+        }
+      },
+      "transactionHash": "BHwrxFxMWZUpSwvHheXCwNsemYjw3ukGVDrav2CTAEnq",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":true,\"p\":\"5.05\",\"s\":\"1\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474665461,\"expiresAfter\":1794474725461},\"digest\":\"681438428e11183d55f7eefb456e12066a2723931fea443a2c683be4542a892b\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794474665461\",\"expiresAfter\":\"1794474725461\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "keeper.testnet",
+      "method": "request_order_signature",
+      "args": {
+        "order": {
+          "asset_index": 54,
+          "size": "1000000000000000000000000",
+          "reduce_only": true,
+          "reference_price": "50000000",
+          "observed_at": "1794474665"
+        }
+      },
+      "transactionHash": "4XkoPVJ7DywddgWb5bXUYp1ZYu5ghj54eoN51pNNVvpN",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"4\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":true,\"p\":\"50.5\",\"s\":\"1\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474668496,\"expiresAfter\":1794474728496},\"digest\":\"3e5c6567e624169c6995541eb706f909e821baf378bab56e3cd07ec0787d5bb3\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"4\",\"nonce\":\"1794474668496\",\"expiresAfter\":\"1794474728496\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+      ],
+      "errors": []
+    },
+    {
+      "actor": "keeper.testnet",
+      "method": "request_order_signature",
+      "args": {
+        "order": {
+          "asset_index": 54,
+          "size": "1000000000000000000000000",
+          "reduce_only": true,
+          "reference_price": "100000000",
+          "observed_at": "1794474668"
+        }
+      },
+      "transactionHash": "BgNLsGujQcVFNNggEB7kesWpAsekETmm7qb9AS8EBaKb",
+      "succeeded": true,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"5\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":54,\"b\":true,\"p\":\"101\",\"s\":\"1\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794474671522,\"expiresAfter\":1794474731522},\"digest\":\"ae72b9bd1a6855e737efd30046490979dcd36cd12000c6801768f9dc05134d21\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"5\",\"nonce\":\"1794474671522\",\"expiresAfter\":\"1794474731522\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+      ],
+      "errors": []
+    }
+  ],
+  "deployedSha256": "052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c",
+  "pausedOpenRejection": [
+    "{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_PAUSED\"}}}}"
+  ],
+  "ownerBeforeExits": {
+    "balanceYocto": "99998752612565629500000000",
+    "accessKeys": [
+      {
+        "publicKey": "ed25519:3RFhxjWtkCuzftirePzha1YqLe75ZwXMBJLNuzga5gaA",
+        "nonce": 7000003
+      }
+    ]
+  },
+  "openingBand": {
+    "minMicroUsd": "2500000",
+    "maxMicroUsd": "10000000"
+  },
+  "ownerAfterExits": {
+    "balanceYocto": "99998752612565629500000000",
+    "accessKeys": [
+      {
+        "publicKey": "ed25519:3RFhxjWtkCuzftirePzha1YqLe75ZwXMBJLNuzga5gaA",
+        "nonce": 7000003
+      }
+    ]
+  },
+  "finalState": {
+    "network": "Testnet",
+    "oracle": {
+      "account_id": null,
+      "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+      "max_age_seconds": 120,
+      "max_confidence_bps": 100,
+      "min_price": "2500000",
+      "max_price": "10000000"
+    },
+    "oracle_price": "0",
+    "oracle_timestamp": "0",
+    "owner": "owner.testnet",
+    "keeper": "keeper.testnet",
+    "coin": "NEAR",
+    "asset_index": 54,
+    "size_decimals": 1,
+    "derivation_path": "counterweight-local-mock-only",
+    "near_recipient": "owner.testnet",
+    "evm_recipient": "0x1111111111111111111111111111111111111111",
+    "signer_account": "mock-mpc.testnet",
+    "wnear_account": "mock-mpc.testnet",
+    "limits": {
+      "max_short_size": "1000000000000000000000000",
+      "per_order_notional_cap": "30000000",
+      "per_day_notional_cap": "30000000",
+      "cooldown_seconds": 60,
+      "price_band_bps": 100,
+      "price_max_age_seconds": 120
+    },
+    "spot_balance": "1000000000000000000000000",
+    "signed_short_size": "1000000000000000000000000",
+    "daily_usage": "5050000",
+    "usage_day": 20769,
+    "operation_id": "5",
+    "pending": null,
+    "paused": true,
+    "last_keeper_heartbeat": "1794474652",
+    "heartbeat_timeout_seconds": 600,
+    "reference_price": "5000000",
+    "reference_price_timestamp": "1794474652",
+    "last_nonce": "1794474671522",
+    "signing_limits": {
+      "keeper_per_block": 2,
+      "keeper_per_window": 8,
+      "keeper_outstanding": 8,
+      "owner_per_window": 16,
+      "window_ms": 60000,
+      "max_nonce_ahead_ms": 1000
+    },
+    "outstanding": [
+      {
+        "nonce": 1794474657571,
+        "expires_after": 1794474717571,
+        "keeper": true,
+        "discarded": true,
+        "invalidation_requested": true,
+        "invalidation_signed": true,
+        "invalidation_confirmed": false,
+        "withdrawal": false
+      }
+    ],
+    "pause_complete": false,
+    "lifetime_opened": "1000000000000000000000000",
+    "last_open_expiry": "1794474717571",
+    "keeper_weight_used": "5",
+    "keeper_weight_limit": "5000",
+    "mpc_fee": "1",
+    "signer_gas_tgas": 230,
+    "callback_gas_tgas": 30
+  },
+  "assertions": {
+    "pausedOpenRejected": true,
+    "pausedExitAuthorized": true,
+    "outOfBandExitAuthorized": true,
+    "maliciousMarkAuthorized": true,
+    "signedLimitWithinSuppliedMarkPlusOnePercent": true,
+    "trueMarketOnePercentGuaranteeDisproved": true,
+    "exitsBuyReduceOnlyIocFixedMarketAndSize": true,
+    "ownerUnchangedDuringExits": true,
+    "policyHasNoKeys": true,
+    "signaturesDoNotSettleExposure": true
+  },
+  "finishedAt": "2026-11-12T09:11:13.383Z"
+}

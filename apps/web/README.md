@@ -22,7 +22,7 @@ The default base is `./`, suitable for a static directory. Optional build-time e
 
 - `VITE_POLICY_ACCOUNT`: defaults to `policy-v2.counterweight-samet.testnet`; the panel can inspect another named testnet account.
 - `VITE_NEAR_RPC`: defaults to `https://rpc.testnet.near.org`; use a public CORS-enabled NEAR testnet RPC when the default rate-limits. CLI commands instead use `NEAR_TESTNET_RPC`; never embed credentials in frontend variables.
-- `VITE_REPO_URL`: source repository link; until configured the footer shows a placeholder.
+- `VITE_REPO_URL`: source repository link; defaults to `https://github.com/Saylool/counterweight` when unset.
 - `WEB_BASE_PATH`: Vite asset base, defaults to `./`.
 
 `npm test` includes the existing suite and frontend Vitest tests. `npm run typecheck` and `npm run build` include frontend checks; `npm run web:test` runs only frontend tests.

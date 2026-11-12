@@ -4,6 +4,7 @@ import { base58 } from "@scure/base";
 import { z } from "zod";
 import {
   DEFAULT_ACCOUNT,
+  V3_ACCOUNT,
   HL_TESTNET_API,
   readVenue,
   addressFromPublicKey,
@@ -112,7 +113,7 @@ const contractFetch = (
       ? response({ error: { cause: { name: "UNAVAILABLE_SHARD" } } })
       : response({ result: view(publicKey) });
   });
-const artifact = { sha256: "a".repeat(64), codeHash: "expected" };
+const artifact = { v2: { sha256: "a".repeat(64), codeHash: "expected" }, v3: { sha256: "b".repeat(64), codeHash: "v3-code" } };
 
 describe("formatting", () => {
   it("formats money, negative values and percentages", () => {
@@ -254,6 +255,15 @@ describe("NEAR public views", () => {
       path: state.derivation_path,
       domain_id: 0,
     });
+  });
+  it("compares v3 with its own artifact and leaves unknown accounts unconfigured", async () => {
+    const v3 = await readContract(V3_ACCOUNT, artifact, contractFetch([], "v3-code"));
+    expect(v3.codeMatches).toBe(true);
+    expect(v3.expectedArtifact).toEqual(artifact.v3);
+    expect((await readContract(V3_ACCOUNT, artifact, contractFetch([], "expected"))).codeMatches).toBe(false);
+    const unknown = await readContract("other.testnet", artifact, contractFetch([], "expected"));
+    expect(unknown.codeMatches).toBeNull();
+    expect(unknown.expectedArtifact).toBeNull();
   });
   it("exposes mismatched code and retains independently verified fields if derivation fails", async () => {
     const data = await readContract(

@@ -12,7 +12,7 @@ import {
 import {
   lifecycleSchema,
   type LifecycleSummary,
-  artifactSchema,
+  artifactsSchema,
   comparisonsFor,
   date,
   demoSchema,
@@ -22,13 +22,14 @@ import {
   policyNames,
   reportSchema,
   usd,
-  type Artifact,
+  type Artifacts,
   type Report,
 } from "./model";
 import {
   assetUrl,
   DEFAULT_ACCOUNT,
   REHEARSAL_ACCOUNT,
+  V3_ACCOUNT,
   readVenue,
   illustrativeRisk,
   liquidationDistance,
@@ -43,7 +44,7 @@ const sourceDocs = {
   hyperliquid:
     "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint",
 };
-function ContractPanel({ artifact }: { artifact: Artifact }) {
+export function ContractPanel({ artifact }: { artifact: Artifacts }) {
   const [account, setAccount] = useState(
     import.meta.env.VITE_POLICY_ACCOUNT || DEFAULT_ACCOUNT,
   );
@@ -77,11 +78,19 @@ function ContractPanel({ artifact }: { artifact: Artifact }) {
       </form>
       <div className="segmented" aria-label="Deployment selection">
         {[{ value: DEFAULT_ACCOUNT, label: "v2 · funded keyless lifecycle" },
+          { value: V3_ACCOUNT, label: "v3 · separate keyless deployment" },
           { value: REHEARSAL_ACCOUNT, label: "v1 · rehearsal with an access key" }].map(({ value, label }) => (
           <button key={value} aria-pressed={account === value} onClick={() => { setDraft(value); setAccount(value); }}>{label}</button>
         ))}
       </div>
       {account === REHEARSAL_ACCOUNT && <Notice tone="warning">v1 rehearsal deployment with an access key. Use v2 for funded keyless evidence.</Notice>}
+      {account === V3_ACCOUNT && <Notice tone="warning">
+        V3 authorizes paused and out-of-band reduce-only IOC buys up to the supplied mark +1%.
+        IOC orders can partially fill or fail to fill; fees are additional.
+        <strong> The mark is unauthenticated: a malicious caller can submit a false high mark</strong>
+        {" "}within the sanity range and authorize an adverse buyback up to that mark +1%.
+        The cap does not guarantee 1% against the true market. No live v3 exit fill is claimed.
+      </Notice>}
       <ResourceState {...result} />
       {data && (
         <>
@@ -172,6 +181,7 @@ function ContractPanel({ artifact }: { artifact: Artifact }) {
             <span className={`badge ${data.codeMatches ? "good" : "warning"}`}>
               {data.codeMatches
                 ? "Code matches committed WASM"
+                : data.codeMatches === null ? "Code comparison unavailable · no deployment artifact configured"
                 : "Code mismatch · deployed artifact differs"}
             </span>
             <dl className="key-values">
@@ -179,13 +189,13 @@ function ContractPanel({ artifact }: { artifact: Artifact }) {
               <dd>
                 <code>{data.codeHash}</code>
               </dd>
-              <dt>Committed code hash (base58)</dt>
+              <dt>Committed {data.artifactVersion ?? "deployment"} code hash (base58)</dt>
               <dd>
-                <code>{artifact.codeHash}</code>
+                <code>{data.expectedArtifact?.codeHash ?? "Unconfigured account"}</code>
               </dd>
               <dt>Committed WASM SHA-256</dt>
               <dd>
-                <code>{artifact.sha256}</code>
+                <code>{data.expectedArtifact?.sha256 ?? "Unconfigured account"}</code>
               </dd>
             </dl>
           </div>
@@ -868,7 +878,7 @@ function DemoPanel() {
 }
 export default function App() {
   const artifact = useResource(() =>
-    loadJson("data/artifact.json", artifactSchema),
+    loadJson("data/artifacts.json", artifactsSchema),
   );
   return (
     <>
@@ -995,19 +1005,13 @@ export default function App() {
           counterweight<span className="brand-period">.</span>
         </a>
         <p>Testnet prototype. Not a fund, not investment advice.</p>
-        {import.meta.env.VITE_REPO_URL ? (
-          <a
-            href={import.meta.env.VITE_REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Source repository ↗
-          </a>
-        ) : (
-          <span className="repo-placeholder">
-            Repository link · coming soon
-          </span>
-        )}
+        <a
+          href={import.meta.env.VITE_REPO_URL || "https://github.com/Saylool/counterweight"}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Source repository ↗
+        </a>
       </footer>
     </>
   );

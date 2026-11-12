@@ -135,6 +135,8 @@ export const artifactSchema = z.object({
   codeHash: z.string(),
 });
 export type Artifact = z.infer<typeof artifactSchema>;
+export const artifactsSchema = z.object({ v2: artifactSchema, v3: artifactSchema });
+export type Artifacts = z.infer<typeof artifactsSchema>;
 export const policies = [
   "hedged-rebalance",
   "always-hedged",

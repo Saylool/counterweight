@@ -55,3 +55,14 @@ with historical quotes. HTTP proxy environments are supported without logging
 their credentials. API references: [Hyperliquid info](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint),
 [1Click quote](https://docs.near-intents.org/api-reference/oneclick/request-a-swap-quote),
 [HyperCore asset](https://docs.near-intents.org/integration/distribution-channels/1click-api/hyperliquid).
+
+## Separate shipped-v3 exit demo
+
+`npm run demo:local:v3` deploys the separately pinned
+`counterweight_policy_v3.wasm` and checks the deployed bytes too. It authorizes
+a paused keeper close, a close beyond the unchanged opening band, and a false-high-mark
+close. The signed buy/reduce-only/IOC limit stays within supplied mark +1%, but the
+false mark permits more than 1% above the illustrative true mark. Marks, token
+deposit and MPC are mocks; no venue fills are claimed. Outputs are exclusively
+`reports/demo-local-v3.json` and `.md`. The original v2 command and saved reports
+remain the historical video inputs.

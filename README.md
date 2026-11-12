@@ -55,7 +55,7 @@ Prime the Rust dependency/build cache once while online (use the isolated toolch
 npm test
 ```
 
-You should see passing `Test Files` and `Tests` summaries for both the root suite and frontend suite. This runs TypeScript/frontend tests and the focused cross-layer Cargo regression. Rust 1.95+ is required for that regression; full native/sandbox validation is recorded separately below.
+You should see passing `Test Files` and `Tests` summaries for both the root suite and frontend suite. This runs TypeScript/frontend tests and the focused cross-layer Cargo regression. Rust 1.95+ is required for that regression; full native/sandbox validation is recorded separately below. Run `npm run test:all` to run `npm test` plus the full native Rust library suite (with the Rust toolchain/cache environment above configured).
 
 ```sh
 npm run replay
@@ -69,11 +69,15 @@ npm run demo:local
 
 You should see `OFFLINE GUARD active | Node connections restricted to loopback`, `policy access keys: 0` in the setup line, `PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed`, then `OWNER RESUMED` and `REBALANCE rebalance complete`. The owner stays untouched only during the autonomous phase. MPC responses, token handling, venue fills and route receipts are mocks; the policy WASM executes in the local NEAR sandbox.
 
+The separate v3 command is `npm run demo:local:v3`, with output in `reports/demo-local-v3.json` and `.md`. It checks paused and out-of-band exits plus a false-mark case against the shipped v3 WASM; MPC/token/marks are mocked and no venue fills are claimed. It requires a host that permits loopback listeners. The latest saved run **passed** on 2026-11-12, including paused/out-of-band exits and the false-mark boundary case; the deployed WASM hash matches the shipped artifact. The v2 run and saved video inputs are unchanged.
+
+Computed cost sensitivities, a same-capital cash benchmark and the intended customer are in [ECONOMICS](docs/ECONOMICS.md); reproduce with `npm run economics`.
+
 ```sh
 npm run web
 ```
 
-You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Funded testnet lifecycle**, its transaction table, derived-address explorer link and live testnet position/margin/ledger. The contract panel defaults to v2; v1 is selectable as a rehearsal with a key. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
+You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Funded testnet lifecycle**, its transaction table, derived-address explorer link and live testnet position/margin/ledger. The contract panel defaults to v2; v3 is selectable as a separate keyless deployment with its own artifact, and v1 as a rehearsal with a key. V3 exit limits are relative to an unauthenticated mark; the adjacent warning explains the false-mark risk. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
 
 ```sh
 npm run testnet:verify

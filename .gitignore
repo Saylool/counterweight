@@ -15,3 +15,7 @@ coverage/
 
 # Reproducible video captures, frames and encoded deliverables
 videos/
+
+# Live keeper locks are ephemeral; stale-lock-*.json evidence remains trackable.
+reports/keeper-run/*.lock.json
+!reports/keeper-run/stale-lock-*.json

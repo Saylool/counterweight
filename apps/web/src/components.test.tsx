@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import App, { LifecycleTable } from "./App";
+import App, { ContractPanel, LifecycleTable } from "./App";
 import { readFileSync } from "node:fs";
 import { lifecycleSchema } from "./model";
 import { Architecture, Chart, ContractLimit, Notice, ResourceState, Stat } from "./components";
@@ -29,6 +29,19 @@ describe("read-only presentation", () => {
     expect(html).toContain(
       "Testnet prototype. Not a fund, not investment advice.",
     );
+  });
+  it("keeps v2 as default and puts the false-mark warning beside the v3 exit cap", () => {
+    const artifacts = { v2: { sha256: "a".repeat(64), codeHash: "v2" }, v3: { sha256: "b".repeat(64), codeHash: "v3" } };
+    const html = renderToStaticMarkup(<ContractPanel artifact={artifacts} />);
+    expect(html).toContain('aria-pressed="true">v2');
+    expect(html).toContain('v3 · separate keyless deployment');
+    vi.stubEnv("VITE_POLICY_ACCOUNT", "policy-v3.counterweight-samet.testnet");
+    try {
+      const v3 = renderToStaticMarkup(<ContractPanel artifact={artifacts} />);
+      expect(v3).toContain('supplied mark +1%');
+      expect(v3).toContain('malicious caller can submit a false high mark');
+      expect(v3).toContain('No live v3 exit fill is claimed');
+    } finally { vi.unstubAllEnvs(); }
   });
   it("renders each architecture actor with an accessible description", () => {
     const html = renderToStaticMarkup(<Architecture />);
