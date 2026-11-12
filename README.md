@@ -1,10 +1,12 @@
 # Counterweight
 
-Counterweight completed a **keyless, funded Hyperliquid testnet lifecycle** on 2026-11-10 through `policy-v2.counterweight-samet.testnet`: 4 wNEAR custody, an owner-only 49 USDC spot→perp transfer, a keeper IOC short of 3.5 NEAR @ 3.5121, a reduce-only close @ 3.5212 (flat), owner settlement, and a fixed-recipient withdrawal recorded as **46.957074 USDC net**. NEAR Chain Signatures signed the venue actions; the policy had zero access keys verified after key removal.
+Counterweight is a NEAR policy prototype for wNEAR holders who want a bounded keeper to manage a Hyperliquid short hedge. The contract holds spot and authorizes venue actions through Chain Signatures; the submission combines funded testnet evidence, a local sandbox demo and historical replay.
 
-Owner funding (deposit, UI Send and spot→perp transfer) occurred **before key removal**. The keeper open, close and withdrawal were verified with **zero keys at their receipt blocks**.
+[Watch the 98-second demo](docs/media/counterweight-demo.mp4) · voiced and subtitled.
 
-## Funded testnet lifecycle: start here
+## What is proven
+
+**v2 completed a supervised, funded testnet lifecycle on 10 November:** 4 wNEAR custody, 49 USDC spot→perp, keeper open and reduce-only close, owner settlement and fixed-recipient withdrawal. Funding preceded key removal; keeper trading and withdrawal were verified with **zero access keys at their receipt blocks**.
 
 [Full summary and transaction table](docs/evidence/2026-11-10-lifecycle-summary.md) · [v2 policy on NEAR testnet](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) · [derived Hyperliquid testnet address](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390).
 
@@ -19,7 +21,13 @@ Owner funding (deposit, UI Send and spot→perp transfer) occurred **before key 
 | Fixed-recipient withdraw3 | [9cWjW9vY…](https://testnet.nearblocks.io/txns/9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25); signed gross 47.957074 USDC |
 | Withdrawal ledger | [0xdf68992e…0501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0); 46.957074 USDC net + 1 USDC fee |
 
-This proves a **supervised testnet lifecycle**, public fills and a withdrawal ledger entry. Owner funding, observations, settlement and withdrawal approval were required; venue state is not verified on-chain. UI Send lands in **spot**, so the owner separately moved margin to perps. Destination-chain arrival is unverified; Intents has **dry quotes only**; there is **no multi-day carry**, mainnet or live rebalancing-route proof. The retained 4 wNEAR remains directional after the perp close. The old `policy.counterweight-samet.testnet` is a **rehearsal with an access key**.
+The fills and withdrawal ledger are testnet evidence. Owner observations, settlement and withdrawal approval were required; venue state is not verified on-chain. Destination-chain arrival, live Intents routes and multi-day carry remain unproved. v2 still holds 4 wNEAR, directional after close; its [unsent cleanup](docs/V2-CLEANUP.md) requires a finalized block after **12 November 2026, 17:31:03.419 UTC**. v1 remains a rehearsal with an access key.
+
+## v3 and the keeper loop
+
+[v3](docs/POLICY-V3.md) is a **separate keyless deployment** at `policy-v3.counterweight-samet.testnet`, derived address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`. Saved evidence shows 49 USDC in perps, zero access keys and WASM `052d4d87…838c`. Local tests establish that reduce-only authorization bypasses opening price bounds; fills remain unguaranteed. v2 retains its band-exit bug.
+
+The [keeper reports](docs/KEEPER-RUN.md#recorded-runs-through-12-november-2026) show heartbeats and price updates since 10–11 November, with opening disabled, no deposited v3 spot and no verified opens or reductions. The 11 November run stopped around 22:21 UTC when its host process exited (release handoff); the last cycle finished at 22:22 UTC. A new run started **12 November, 08:46 UTC**. Saved reports contain errors and gaps; they establish monitoring, not continuous uptime or autonomous trading.
 
 ## Judge quickstart
 
@@ -94,7 +102,7 @@ Owner -> exact spot-sale approval -> fixed adapter -> margin receipt reconciliat
 Web <- recorded reports + dated evidence + public RPC/market reads
 ```
 
-The Rust contract builds typed MessagePack/EIP-712 payloads and reserves signed exposure; a signature is not a fill. Replay and configured contract margin checks use H = equity − fee reserve − upper-band short notional. Optional public oracle reads enforce age/confidence; the current Pyth NEAR service is retired, so this plan uses immutable keeper-price bounds. There is no venue light client. Spot-sale accounting exists, but the included adapter is a sandbox mock; the live Intents evidence is a dry quote only. See [contract implementation and invariants](contracts/policy/README.md), [keeper design](docs/DESIGN-NOTES.md), and [demo boundary](packages/local-sandbox/README.md).
+The Rust contract builds typed MessagePack/EIP-712 payloads and reserves signed exposure; a signature is not a fill. Replay and configured contract margin checks use H = equity − fee reserve − upper-band short notional. Optional public oracle reads enforce age/confidence; the recorded Pyth retirement leaves this plan using bounded keeper prices (immutable bounds on v2; time-locked owner updates on v3). There is no venue light client. Spot-sale accounting exists, but the included adapter is a sandbox mock; the live Intents evidence is a dry quote only. See [contract implementation and invariants](contracts/policy/README.md), [keeper design](docs/DESIGN-NOTES.md), and [demo boundary](packages/local-sandbox/README.md).
 
 ## Authority tiers
 
@@ -105,9 +113,9 @@ The Rust contract builds typed MessagePack/EIP-712 payloads and reserves signed 
 | Public | `deleverage` after heartbeat timeout | Signs a reduce-only close and pauses keeper signing; does not prove a venue fill or sell the spot leg. |
 | No exported method | Arbitrary digest signing, agent registration, recipient changes or upgrades | Zero account access keys are also required: a remaining full-access key bypasses the intended custody boundary. |
 
-Pause blocks new keeper requests and queues original-nonce invalidations. Existing signatures remain usable until venue consumption or expiry. Keeper/public signing shares a bounded cumulative allowance; owner recovery has separate capacity. Reserve-funded MPC fees in the new artifact address zero-deposit function-call keeper keys. See [known issues and recovery limits](docs/KNOWN-ISSUES.md).
+On v2, pause blocks new keeper requests and queues original-nonce invalidations; v3 permits protective closes while paused. Existing signatures remain usable until venue consumption or expiry. Keeper/public signing shares a bounded cumulative allowance; owner recovery has separate capacity. Reserve-funded MPC fees in the new artifact address zero-deposit function-call keeper keys. See [known issues and recovery limits](docs/KNOWN-ISSUES.md).
 
-Keeper maximum direct execution debit: let K = floor(5,000 / 5) = 1,000 lifetime keeper/public authorizations, Q = max(reserved short, max_short_size), and L = tick-rounded-up(max_price × (1 + price_band_bps / 10,000)). Then **D ≤ K × ceil_micro(Q × L × (1 + f))**, assuming taker fee f = 0.00045. The historical cancellation fixture used Q = 1 NEAR and L = $1.0605, giving $1,060.978 (`configured_keeper_maximum_direct_execution_debit_bound`). The [funded v2 plan](docs/FUNDED-LIFECYCLE.md) uses Q = 5 NEAR and live mark bounds, so that historical dollar ceiling does not apply; for the $3.6348 test mark the funded ceiling is $22,036.913 including tick and per-action micro rounding (`scripts/testnet.test.ts`). This counts the entire buy debit, including principal, even if every authorization is a filled close; cancellations consume the same allowance. Bound assumes fixed limits and no owner budget replenishment. Subsidized MPC fees separately cost at most **10 NEAR** over that allowance (1,000 × 0.01 NEAR); gas paid by callers is separate. There is **no finite total portfolio-loss guarantee**: market moves, funding, liquidation, venue/oracle failure, missed hedges and owner attestations are outside this execution-debit bound. The fee is a model assumption, not enforced venue pricing. A daily churn formula based only on the open cap omits uncapped recovery turnover.
+For v2, keeper maximum direct execution debit: let K = floor(5,000 / 5) = 1,000 lifetime keeper/public authorizations, Q = max(reserved short, max_short_size), and L = tick-rounded-up(max_price × (1 + price_band_bps / 10,000)). Then **D ≤ K × ceil_micro(Q × L × (1 + f))**, assuming taker fee f = 0.00045. The historical cancellation fixture used Q = 1 NEAR and L = $1.0605, giving $1,060.978 (`configured_keeper_maximum_direct_execution_debit_bound`). The [funded v2 plan](docs/FUNDED-LIFECYCLE.md) uses Q = 5 NEAR and live mark bounds, so that historical dollar ceiling does not apply; for the $3.6348 test mark the funded ceiling is $22,036.913 including tick and per-action micro rounding (`scripts/testnet.test.ts`). This counts the entire buy debit, including principal, even if every authorization is a filled close; cancellations consume the same allowance. Bound assumes fixed limits and no owner budget replenishment. Subsidized MPC fees separately cost at most **10 NEAR** over that allowance (1,000 × 0.01 NEAR); gas paid by callers is separate. There is **no finite total portfolio-loss guarantee**: market moves, funding, liquidation, venue/oracle failure, missed hedges and owner attestations are outside this execution-debit bound. The fee is a model assumption, not enforced venue pricing. A daily churn formula based only on the open cap omits uncapped recovery turnover.
 
 ## Evidence and deployment status
 
@@ -115,6 +123,7 @@ Keeper maximum direct execution debit: let K = floor(5,000 / 5) = 1,000 lifetime
 |---|---|
 | Keyless funded lifecycle | **Completed on testnet**, with supervised owner steps. [Summary](docs/evidence/2026-11-10-lifecycle-summary.md), [open](docs/evidence/2026-11-10-lifecycle-open.md), [close](docs/evidence/2026-11-10-lifecycle-close.md), [withdrawal/status](docs/evidence/2026-11-10-lifecycle-status.md). |
 | v2 code / custody | Committed WASM `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`; zero account access keys verified after deletion. [Manifest](contracts/policy/artifacts/SHA256SUMS). No upgrade export; key deletion freezes the code under this ABI. |
+| v3 code / monitoring | **Separate keyless deployment**, 49 USDC perps and no spot/position in saved observations. [Code/key capture](videos/build/captures/v3-proof.json), [v3 policy](docs/POLICY-V3.md), [keeper records](docs/KEEPER-RUN.md#recorded-runs-through-12-november-2026). No v3 fill proof. |
 | v1 contract signing | **REHEARSAL with a key** on `policy.counterweight-samet.testnet`, old WASM `698195e3…2d289`. [Historical proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md). |
 | Owner signing / old preflight | Earlier identity-only [owner proof](docs/evidence/2026-11-10-signing-proof.md) and [pre-account-creation preflight](docs/evidence/2026-11-10-testnet-preflight.md); superseded for deployment status by the funded v2 evidence. |
 | Intents | Expired mainnet `dry: true` quote; no route execution or funds moved. [Request/response](docs/evidence/2026-11-10-oneclick-dry-quote.json). |

@@ -90,7 +90,8 @@ export class PublicClient {
     const book = z.object({ coin: z.literal('NEAR'), time: z.number().int().nonnegative(), levels: z.tuple([
       z.array(z.object({ px: positive, sz: positive })), z.array(z.object({ px: positive, sz: positive })),
     ]) }).parse(bookRaw);
-    if (book.time > this.rt.now() + 1000) throw new Error('Hyperliquid book timestamp is in the future');
+    // Host clocks drift by a few seconds; 5 s tolerates that while still rejecting clearly bogus timestamps.
+    if (book.time > this.rt.now() + 5000) throw new Error('Hyperliquid book timestamp is in the future');
     const mark = Number(market.mark), asks = book.levels[1], bids = book.levels[0];
     const askDepth = asks.filter(a => Number(a.px) <= mark * 1.0025).reduce((s, a) => s + Number(a.px) * Number(a.sz), 0);
     const bidDepth = bids.filter(b => Number(b.px) >= mark * 0.9975).reduce((s, b) => s + Number(b.px) * Number(b.sz), 0);

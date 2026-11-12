@@ -1,14 +1,18 @@
 # Policy v3 — exit availability and fresh deployment
 
-This source revision is **not deployed**. The fresh account is
-`policy-v3.counterweight-samet.testnet`, path `counterweight-1`, signer
-`v1.signer-prod.testnet`. Its derived EVM address is
+**Deployed separately and keyless** at `policy-v3.counterweight-samet.testnet`,
+path `counterweight-1`, signer `v1.signer-prod.testnet`. Its derived EVM address is
 **`0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`**, locally derived from the
 public root and cross-checked against the signer's public view at block 277102080.
-Read-only capture and exact printed commands:
-[evidence/policy-v3-plan.json](evidence/policy-v3-plan.json),
-[evidence/policy-v3-plan.txt](evidence/policy-v3-plan.txt).
-No keys were read and no testnet transactions were sent.
+The [11 November code/key capture](../videos/build/captures/v3-proof.json)
+records zero access keys and matching v3 code. The [funding relay](evidence/lifecycle-relay-AEk3mDFkuVnVowPzfXRfPBBkk7ympuSR6cZfXk7eNN5s.json)
+and [keeper observations](KEEPER-RUN.md#recorded-runs-through-12-november-2026)
+record 49 USDC in perps, no spot deposit and no position. This is separate from
+v2's completed funded trading lifecycle; no live v3 exit fill is claimed.
+The [saved plan](evidence/policy-v3-plan.json) and
+[printed commands](evidence/policy-v3-plan.txt) are deployment history, not
+instructions to redeploy this keyless account. This release edit used local
+evidence only and sent no testnet transactions.
 
 The new production artifact is `contracts/policy/artifacts/counterweight_policy_v3.wasm`:
 **343,212 bytes** (48.95% smaller than 672,309 bytes),
@@ -161,13 +165,16 @@ authorize an open. Fresh oracle values outside the opening band
 remain available for exits/health; **opens recheck the current band on every
 request**, including after narrowing/recentering. Exits never wait for a proposal.
 
-## Fresh deployment procedure (print only)
+## Historical fresh deployment procedure (print only)
+
+The account above is already deployed and keyless. Retain this procedure for
+review; do not recreate, reinitialize or rerun funding for that account.
 
 `npm run testnet:plan -- --owner-evm=<your fixed recipient>` now targets v3 and
 creates `policy-v3-plan.json` exclusively. The existing saved plan uses the same
 public owner recipient as v2; confirm it against owner intent before funding.
-Regenerate an archived **undeployed** plan with current market metadata/price
-before execution. Do not use its captured mark as a fresh observation later.
+For any future, distinct account, generate a new plan with current market
+metadata/price before execution. Do not use its captured mark as a fresh observation later.
 
 The printed flow creates a fresh account, verifies the v3 hash, and atomically
 deploys+initializes via its temporary account key. `new` permits the owner or the

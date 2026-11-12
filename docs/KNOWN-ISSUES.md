@@ -1,6 +1,6 @@
 # Known issues
 
-## V2 has the immutable-band exit bug; v3 is undeployed
+## V2 retains the immutable-band exit bug; v3 is separately deployed
 
 **Deployed keyless v2 has the band bug:** when NEAR leaves its fixed
 $2.784560–$4.176840 band, keeper closes and public deleverage can panic
@@ -8,11 +8,18 @@ $2.784560–$4.176840 band, keeper closes and public deleverage can panic
 its dead-man exit as available across price regimes. It also rejects withdrawals
 while a short is open and requires the dummy route for flat withdrawals.
 
-The separate [v3 source/artifact and fresh-deploy plan](POLICY-V3.md) remove those
-contract gates, add independent exit rate capacity, adapter-free partial withdrawals
-with post-withdrawal H checks, and cancellable 24h owner opening-bound updates.
-V3 is **not deployed**; these changes do not repair the live v2 account. The v2
-artifact remains pinned for historical demo/code verification; v3 has its own WASM.
+The separate [deployed v3 policy](POLICY-V3.md) removes those
+contract gates and adds independent exit rate capacity, adapter-free partial
+withdrawals with post-withdrawal H checks, and cancellable 24h owner opening-bound updates.
+V3 is **deployed keyless** as `policy-v3.counterweight-samet.testnet`, derived
+address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`. The
+[saved code/key proof](../videos/build/captures/v3-proof.json) records zero keys and
+WASM SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
+[Funding evidence](evidence/lifecycle-relay-AEk3mDFkuVnVowPzfXRfPBBkk7ympuSR6cZfXk7eNN5s.json)
+and [keeper records](KEEPER-RUN.md#recorded-runs-through-12-november-2026) show
+49 USDC in perps, no spot deposit and no position in available observations.
+Out-of-band exit authorization is locally tested; a live v3 exit fill is unproved.
+These changes do not repair v2; its historical WASM remains separately pinned.
 
 V3 build size is **343,212 bytes** after release stripping and Binaryen optimization
 (previously 672,309). Its measured creation budget is **6.25131 NEAR**:
@@ -30,7 +37,8 @@ The configured fee cap is 1 micro-USDC versus the actual 1 USDC withdrawal fee,
 so truthful `reconcile_margin_withdrawal` cannot succeed on v2. The printed
 [V2-CLEANUP procedure](V2-CLEANUP.md) waits until after 2026-11-12 17:31:03.419 UTC,
 prunes expired nonces, abandons the reservation without margin credit, and returns
-4 wNEAR to the fixed owner. None of those calls was sent.
+4 wNEAR to the fixed owner. The saved evidence does not establish execution of that cleanup. Use
+2026-11-12 17:31:04 UTC or later and recheck finalized state before any owner action.
 
 V3's exit IOC guarantees at most 1% above its fresh **reported** mark (fees extra),
 rounded down. With no authenticated oracle, callers can lie about price or timestamp;
@@ -39,6 +47,19 @@ ceiling, and no guaranteed fill. Price sanity ($0.00001–$1,000,000), venue tic
 short-only direction, freshness and separate rate limits remain enforced. Signer,
 venue, gas and fee availability still matter. See the explicit trust boundary in
 [POLICY-V3](POLICY-V3.md).
+
+## Keeper monitoring has interruptions; no autonomous trading proof
+
+The [recorded-run table](KEEPER-RUN.md#recorded-runs-through-12-november-2026)
+links each Markdown summary and raw JSONL. It reports heartbeats and price updates
+with opening disabled and no verified opens or reductions. The 11 November
+snapshot records 6 errors, 41 estimated missed intervals and an 8415.541-second
+maximum cycle-start gap. The release handoff reports host-process exit around
+22:21 UTC (last cycle finished 22:22); its saved `running` label is stale.
+A new run started 12 November at 08:46 UTC; its one-cycle snapshot confirms a
+heartbeat but rejects a future-dated venue book and lacks risk data. Continuous
+uptime, later liveness and a successful live v3 reduction are unverified. Host
+exit timing/cause comes from the handoff, not an independently captured exit event.
 
 ## Historical funded keyless v2 smoke test; v1 remains a rehearsal
 
@@ -130,8 +151,8 @@ bricks the exit request itself. V3 permits 24h time-locked owner band updates an
 keeps exits independent of those bounds. The dummy $0.95–$1.05 proof configuration must not be funded.
 
 Historical v2 keeper/public reductions have configured price bands and bounded quantities.
-README authority tiers publishes the conservative $1,060.978 lifetime direct buy-debit
-ceiling at the current plan's limits, with fee and owner-replenishment assumptions;
+README authority tiers gives $1,060.978 for the historical cancellation fixture
+and $22,036.913 for the funded v2 test mark, with fee and owner-replenishment assumptions;
 this is not a total portfolio-loss or liquidation guarantee and is not a bound for v3. Subsidized MPC costs
 have a separate worst-case 10 NEAR lifetime ceiling at the per-request fee maximum.
 

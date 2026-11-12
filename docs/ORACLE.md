@@ -1,7 +1,7 @@
 # Price source and fallback — v3 revision, 2026-11-10
 
-Deployed keyless v2 retains the immutable-band exit bug. The following source-level
-changes apply only to the separate undeployed [v3 artifact](POLICY-V3.md).
+Deployed keyless v2 retains the immutable-band exit bug. The following
+changes apply to the separate deployed keyless [v3 policy](POLICY-V3.md).
 
 Pyth's [official NEAR integration page](https://docs.pyth.network/price-feeds/core/use-real-time-data/pull-integration/near) says NEAR support ended on August 26, 2026. Its [current contract registry](https://docs.pyth.network/pro/contract-addresses) no longer supplies supported NEAR testnet or mainnet IDs. Consequently neither network has a currently maintained ID to verify there. The old `pyth-oracle.testnet` / `pyth-oracle.near` names are historical, not recommended live endpoints; the proposed init explicitly uses `account_id: null`. No testnet transaction was sent to investigate availability.
 
