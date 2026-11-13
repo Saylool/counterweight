@@ -188,11 +188,15 @@ The always-hedged comparator permits unfunded losses and negative venue equity: 
 
 Fees, slippage, signing overhead and route latency are frozen modeling assumptions, not measured execution quotes. Hourly OHLC and zero proxy breaches do not prove intrabar solvency. See the complete [report](reports/replay-report.md), [protocol and costs](docs/REPLAY-PROTOCOL.md), and [market provenance](fixtures/market/README.md). Historical results are not yield promises.
 
+## Hackathon baseline (Q-002, Q-003, Q-004, Q-005, Q-015)
+
+Hackathon window: 2026-10-19 to 2026-11-14. This repository was created for the hackathon: first commit `07aa968` is dated **2026-11-09** and holds only the README, license and ignore rules. No pre-hackathon code is reused. Tags: `pre-hackathon` = `07aa968`, `hackathon-submission` = the submitted commit ([diff](https://github.com/Saylool/counterweight/compare/pre-hackathon...hackathon-submission)). This is the author's only NEAR HACKATHON submission (1 of 1).
+
 ## NEAR technology and hackathon work (Q-004)
 
-The first commit is **2026-11-09**, per the release brief and the initial local HEAD reflog entry; this release does not independently audit the complete commit history. The repository implements the Rust `near-sdk` policy, NEP-141 wNEAR receiver, Chain Signatures payload construction/relay and public-key derivation, deterministic keeper/replay, owner-approved rebalance accounting, sandbox demonstrations, and read-only web interface. Those are the work presented for the hackathon window. Dependencies and recorded market history are reused inputs, not work claimed as newly invented.
+The repository implements the Rust `near-sdk` policy, NEP-141 wNEAR receiver, Chain Signatures payload construction/relay and public-key derivation, deterministic keeper/replay, owner-approved rebalance accounting, sandbox demonstrations, and read-only web interface. Those are the work presented for the hackathon window. Dependencies and recorded market history are reused inputs, not work claimed as newly invented.
 
-NEAR Chain Signatures is exercised in the funded keyless v2 lifecycle; earlier owner and v1 rehearsal proofs remain historical evidence. NEAR Intents 1Click is exercised as a mainnet dry quote; external adapter execution remains pending. The current artifact's reserve-funded signing is deployed on keyless v2 and locally tested. [Recorded Rust validation](contracts/policy/TEST_RESULTS.md) reports native, export and sandbox checks; the full native/sandbox suites remain separate; `npm test` also invokes the focused cross-layer Cargo regression. Follow [contract reproduction instructions](contracts/policy/README.md) for the separate Rust toolchain.
+NEAR Chain Signatures is exercised in the funded keyless v2 lifecycle (10 Nov) and the live keyless v3 open/close/settlement (12 Nov); earlier owner and v1 rehearsal proofs remain historical evidence. NEAR Intents 1Click is exercised as a mainnet dry quote; external adapter execution remains pending. Reserve-funded signing is deployed on keyless v2 and v3. [Recorded Rust validation](contracts/policy/TEST_RESULTS.md) reports native, export and sandbox checks; the full native/sandbox suites remain separate; `npm test` also invokes the focused cross-layer Cargo regression. Follow [contract reproduction instructions](contracts/policy/README.md) for the separate Rust toolchain.
 
 ## Disclosures (Q-005)
 
