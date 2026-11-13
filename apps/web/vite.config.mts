@@ -1,19 +1,27 @@
 import { defineConfig, type Plugin } from "vite";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { base58 } from "@scure/base";
 import {
   lifecycleSchema,
   reportSchema,
-  demoSchema,
-  v3DemoSchema,
+  normalizeDemo,
+  normalizeV3Demo,
   policies,
   nearTransactionHashes,
 } from "./src/model";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const read = (path: string) => readFileSync(`${root}${path}`, "utf8");
+/** Missing or truncated JSON becomes undefined so the normalizers can mark it failed. */
+const readOptionalJson = (path: string): unknown => {
+  try {
+    return JSON.parse(read(path));
+  } catch {
+    return undefined;
+  }
+};
 /** Static, build-time copies: the browser never needs filesystem access or a server. */
 function publicEvidence(): Plugin {
   const assets = new Map<string, { source: string; type: string }>();
@@ -45,11 +53,15 @@ function publicEvidence(): Plugin {
     run.equityCurve = points.filter((_, i) => keep.has(i));
   }
   add("data/replay.json", report);
-  add(
-    "data/demo.json",
-    demoSchema.parse(JSON.parse(read("reports/demo-local.json"))),
-  );
-  add("data/demo-v3.json", v3DemoSchema.parse(JSON.parse(read("reports/demo-local-v3.json"))));
+  // Local sandbox reports are regenerated on judges' machines; a failed/partial run renders as
+  // "failed" with its recorded evidence instead of aborting the static build.
+  const demo = normalizeDemo(readOptionalJson("reports/demo-local.json"));
+  const demoV3 = normalizeV3Demo(readOptionalJson("reports/demo-local-v3.json"));
+  for (const [name, value] of [["demo-local.json", demo], ["demo-local-v3.json", demoV3]] as const)
+    if (value.status !== "passed")
+      console.warn(`[counterweight] reports/${name} is ${value.status}: ${value.error ?? "see report"}. Rendering it as failed; rerun the demo or restore the committed report.`);
+  add("data/demo.json", demo);
+  add("data/demo-v3.json", demoV3);
   const manifest = read("contracts/policy/artifacts/SHA256SUMS").trim().split("\n");
   const artifacts = Object.fromEntries([
     ["v2", "counterweight_policy.wasm"],
@@ -95,9 +107,9 @@ function publicEvidence(): Plugin {
         ? "application/json"
         : "text/plain; charset=utf-8",
     });
-  for (const name of ["replay-report.json", "demo-local.json", "demo-local-v3.json"])
+  for (const [name, fallback] of [["replay-report.json", undefined], ["demo-local.json", demo], ["demo-local-v3.json", demoV3]] as const)
     assets.set(`reports/${name}`, {
-      source: read(`reports/${name}`),
+      source: fallback && !existsSync(`${root}reports/${name}`) ? JSON.stringify(fallback, null, 2) : read(`reports/${name}`),
       type: "application/json",
     });
   return {

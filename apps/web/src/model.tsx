@@ -109,19 +109,70 @@ export const demoSchema = z.object({
     }),
   ),
   assertions: z.record(z.string(), z.union([z.boolean(), finite])),
+  error: z.string().optional(),
 });
 export type Demo = z.infer<typeof demoSchema>;
 export const v3DemoSchema = z.object({
   status: z.enum(["passed", "failed"]), version: z.literal("v3"), finishedAt: z.string(),
-  policySha256: z.string().regex(/^[a-f0-9]{64}$/),
+  policySha256: z.string().regex(/^([a-f0-9]{64})?$/),
   mocked: z.array(z.string()), boundaries: z.array(z.string()), assertions: z.record(z.string(), z.boolean()),
   cases: z.array(z.object({
     name: z.string(), authorized: z.boolean(), suppliedMarkMicroUsd: z.string().regex(/^\d+$/),
     illustrativeTrueMarkMicroUsd: z.string().regex(/^\d+$/), signedLimitMicroUsd: z.string().regex(/^\d+$/),
     premiumToTrueMarkPct: finite,
   })),
+  error: z.string().optional(),
 });
 export type V3Demo = z.infer<typeof v3DemoSchema>;
+const field = <T,>(schema: z.ZodType<T>, value: unknown, otherwise: NoInfer<T>): T => {
+  const parsed = schema.safeParse(value);
+  return parsed.success ? parsed.data : otherwise;
+};
+const record = (raw: unknown): Record<string, unknown> =>
+  raw !== null && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+const incomplete = (r: Record<string, unknown>) =>
+  typeof r.error === "string" && r.error ? r.error : "Report is incomplete or malformed; the local run did not finish.";
+/**
+ * Build-time loader for reports/demo-local.json. A failed or partial local run must render as failed
+ * (with its error and whatever evidence it recorded) instead of breaking `vite build`.
+ */
+export function normalizeDemo(raw: unknown): Demo {
+  const strict = demoSchema.safeParse(raw);
+  if (strict.success) return strict.data;
+  const r = record(raw);
+  const s = demoSchema.shape;
+  return {
+    status: "failed",
+    startedAt: field(s.startedAt, r.startedAt, ""),
+    finishedAt: field(s.finishedAt, r.finishedAt, field(s.startedAt, r.startedAt, "")),
+    policySha256: field(s.policySha256, r.policySha256, ""),
+    mocked: field(s.mocked, r.mocked, []),
+    boundaries: field(s.boundaries, r.boundaries, []),
+    transcript: field(s.transcript, r.transcript, []),
+    timeline: field(s.timeline, r.timeline, []),
+    rogueAttempts: field(s.rogueAttempts, r.rogueAttempts, []),
+    assertions: field(s.assertions, r.assertions, {}),
+    error: incomplete(r),
+  };
+}
+/** Same contract as normalizeDemo for reports/demo-local-v3.json. */
+export function normalizeV3Demo(raw: unknown): V3Demo {
+  const strict = v3DemoSchema.safeParse(raw);
+  if (strict.success) return strict.data;
+  const r = record(raw);
+  const s = v3DemoSchema.shape;
+  return {
+    status: "failed",
+    version: "v3",
+    finishedAt: field(s.finishedAt, r.finishedAt, field(z.string(), r.startedAt, "")),
+    policySha256: field(s.policySha256, r.policySha256, ""),
+    mocked: field(s.mocked, r.mocked, []),
+    boundaries: field(s.boundaries, r.boundaries, []),
+    assertions: field(s.assertions, r.assertions, {}),
+    cases: field(s.cases, r.cases, []),
+    error: incomplete(r),
+  };
+}
 export function nearTransactionHashes(text: string): string[] {
   return [
     ...new Set(
@@ -191,7 +242,9 @@ export function pct(value: number | null | undefined, digits = 2) {
     : `${formatNumber(value, digits)}%`;
 }
 export function date(value: number | string) {
-  return new Date(value).toLocaleDateString("en-GB", {
+  const parsed = new Date(value);
+  if (value === "" || Number.isNaN(parsed.getTime())) return "Unknown date";
+  return parsed.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",

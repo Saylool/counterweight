@@ -388,7 +388,7 @@ function RiskView({ market }: { market: Market }) {
           <Stat
             label="Stress headroom H"
             value={usd(verdict.metrics.headroom)}
-            note="After +50% price stress, maintenance & reserve"
+            note="Equity − fee reserve − upper-band (+1%) short notional"
           />
           <Stat
             label="Liquidation distance proxy"
@@ -754,6 +754,7 @@ export function V3DemoResults({ demo }: { demo: V3Demo }) {
   return <>
     <h3>V3 local exit authorization</h3>
     <Notice>Local sandbox · {demo.status} · {date(demo.finishedAt)}. Shipped production v3 WASM; MPC, token and marks are mocked. These are signature authorizations, with no venue fills.</Notice>
+    {demo.status !== "passed" && <Notice tone="warning">This local v3 run did not pass: {demo.error ?? "see the report"}. Only evidence it recorded is shown; rerun npm run demo:local:v3.</Notice>}
     <Notice tone="warning">Finding A: exit marks are unauthenticated. A false mark can cost up to the perp margin; wNEAR custody is unaffected. Supplied mark +1% does not guarantee true market +1%.</Notice>
     <div className="table-scroll" role="region" aria-label="V3 local exit results" tabIndex={0}>
       <table><caption>Paused, out-of-band and false-mark cases</caption>
@@ -789,6 +790,12 @@ function DemoPanel() {
             fills, venue margin and route receipts are mocked. This is not a
             live trading demonstration.
           </Notice>
+          {d.status !== "passed" && (
+            <Notice tone="warning">
+              This local v2 run did not pass: {d.error ?? "see the report"}. Only
+              evidence it recorded is shown; rerun npm run demo:local.
+            </Notice>
+          )}
           <div className="stats three">
             <Stat
               label="Keeper close"
@@ -940,6 +947,7 @@ export default function App() {
         <nav aria-label="Main navigation">
           <a href="#lifecycle">Funded lifecycle</a>
           <a href="#live">Live state</a>
+          <a href="#market">Market &amp; risk</a>
           <a href="#evidence">Evidence</a>
           <a href="#results">Results</a>
           <a href="#demo">Local demo</a>

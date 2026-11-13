@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { base58 } from '@scure/base';
 import { getSigningDigest, type SigningInput } from '../packages/hyperliquid/src/index.js';
-import { BASE, decimal, FUNDED_LIMITS, orderPrice, parseMarket, priceBounds, units, withdrawalConfig } from './lifecycle-config.js';
+import { BASE, decimal, FUNDED_LIMITS, orderPrice, parseMarket, priceBounds, units, withdrawalConfig, withdrawalInventory } from './lifecycle-config.js';
 import { buildOrder, withdrawalSetupReady } from './lifecycle.js';
 import { parseAccount, parseFills, parseLifecycleReceipt, parseOrderResponse, parseWithdrawal, verifyFill, type ExpectedCall } from './lifecycle-parsing.js';
 import { deploymentSteps, initialization, spotSteps } from './testnet-plan.js';
@@ -91,6 +91,25 @@ describe('funded testnet config and command planning (offline)', () => {
       per_sale_near: '1', per_withdrawal_usdc: '60000000', min_residual_equity_usdc: '1000000', original_target_usdc: '14539200' });
     expect(BigInt(config.original_target_usdc)).toBeLessThanOrEqual(BigInt(init.reference_price) * 5n);
     expect(() => withdrawalConfig(recipient, '0', init.oracle.min_price, NEXT_POLICY)).toThrow();
+  });
+  it('rechecks the recorded v2 withdrawal config after cleanup returned the spot leg', () => {
+    // Shape and values from docs/evidence/2026-11-12-v2-cleanup-status.json: spot 0, config from 4 NEAR at $2.78456.
+    const cleaned = JSON.parse(readFileSync(new URL('../docs/evidence/2026-11-12-v2-cleanup-status.json', import.meta.url), 'utf8'));
+    const found: { state?: { spot_balance: string }; rebalance?: { initial_inventory: string; limits: Record<string, unknown> } } = {};
+    (function walk(value: unknown) {
+      if (!value || typeof value !== 'object') return;
+      const v = value as Record<string, unknown>;
+      if (typeof v.spot_balance === 'string' && !found.state) found.state = v as never;
+      if (typeof v.initial_inventory === 'string' && !found.rebalance) found.rebalance = v as never;
+      Object.values(v).forEach(walk);
+    })(cleaned);
+    expect(found.state!.spot_balance).toBe('0');
+    const inventory = withdrawalInventory(found.state!.spot_balance, found.rebalance);
+    expect(inventory).toBe((4n * BASE).toString());
+    const limits = found.rebalance!.limits;
+    expect(withdrawalConfig(String(limits.strategy_margin_address), inventory, '2784560', 'policy-v2.counterweight-samet.testnet')).toEqual(limits);
+    expect(withdrawalInventory('7', found.rebalance)).toBe('7');
+    expect(withdrawalInventory('0', null)).toBe('0');
   });
   it('rounds prices exactly as contract and preserves atomic units', () => {
     expect(orderPrice(3634800n, 1, false)).toBe(3598400n);

@@ -2,7 +2,7 @@
 
 The authoritative submission demo script is [apps/video/revised-x-script.md](../apps/video/revised-x-script.md), the revised A1–A7 X-cut narration mirrored in [scenes.json](../apps/video/src/scenes.json). [DEMO-SCRIPT.md](DEMO-SCRIPT.md) is the archived legacy capture/edit table; it does not override the locked narration.
 
-A4 source now pairs the recorded v2 withdrawal with the separate live v3 run on 12 November. Replace `videos/vo/x/04.mp3` with the new exact narration below before rendering; the existing audio and MP4 have not been regenerated.
+A4 pairs the recorded v2 withdrawal with the separate live v3 run on 12 November. `videos/vo/x/04.mp3` was replaced with that exact narration and the MP4 was re-rendered on 13 November.
 
 The existing voiced export is [docs/media/counterweight-demo.mp4](media/counterweight-demo.mp4): **93.7 seconds of H.264 video + AAC audio, -14 LUFS** (A4 re-voiced on 13 Nov). The seven **ElevenLabs Curtis** voiceover files are present at `videos/vo/x/01.mp3` through `07.mp3`; `videos/` is gitignored, so those source recordings do not appear in the repository. The MP4 includes the narration.
 
@@ -30,11 +30,11 @@ Output: `apps/video/build/counterweight-x-v3-subtitles.mp4`, 1920×1080, 30 fps,
 
 ## Narration, subtitles and timing
 
-`src/scenes.json` and `revised-x-script.md` contain the revised A1–A7 narration, with **only A4** changed for the verified v2 arrival and separate live v3 run: **184 whitespace-delimited words**. The unchanged rendered export contains the earlier A4 recording. The new exact A4 voiceover is:
+`src/scenes.json` and `revised-x-script.md` contain the revised A1–A7 narration, with **only A4** changed for the verified v2 arrival and separate live v3 run: **184 whitespace-delimited words**. The 13 November export uses the re-voiced A4 recording. The exact A4 voiceover is:
 
 > The v2 run withdrew nearly forty-seven USDC net, and it arrived. On November twelfth, a separate keyless v3 opened and closed a live testnet short.
 
-The user will replace `videos/vo/x/04.mp3`; the renderer measures its duration on preparation. All seven scenes have ElevenLabs Curtis recordings in `videos/vo/x/`. No paid generation, network evidence capture, keys, chain sends or demo rerun is needed.
+The renderer measures each recording's duration on preparation. All seven scenes have ElevenLabs Curtis recordings in `videos/vo/x/` (A4 replaced on 13 November). No paid generation, network evidence capture, keys, chain sends or demo rerun is needed to re-render.
 
 There is **one bottom text band**. `--subtitles` replaces the bold editorial caption with sentence/clause narration pages, sized for at most two lines. Every X subtitle page holds for **at least 2 seconds**. Word-position boundaries are rebalanced only as needed to meet that minimum; A4 has exactly two balanced pages, one per sentence (withdrawal/arrival, then live v3 run), A6 has the three requested balanced chunks, and A7 has one complete sentence per page. It does not stack captions and subtitles. Protected phrases stay on one page: “what the keeper can sign”, “policy's access keys”, “NEAR HACKATHON” and “testnet evidence”. Evidence labels, source records and the requested A1 headline remain in the main picture. The final voiced export should use `--subtitles` too.
 
@@ -95,7 +95,7 @@ Every supplied sentence is supported in the stated testnet/local scope. No unsup
 
 ## Verification
 
-A4 update (13 November): exact narration, two complete sentence pages, saved arrival/v3 provenance, and five measured-audio duration cases (5s, 8s, 12.615s, 18s, 24s) passed direct checks; claims/caption/timing regressions, all seven legacy video tests and the video TypeScript check passed. The full Remotion suite currently passes 14/17 tests: three stale A4 assertions still require the old narration, verifier/hash and “Separately” cue. Updating that test file is outside this edit’s authorized file list. The updated bundle compiled in a temporary directory; still rendering was blocked by sandbox port/Chromium permissions. Audio and existing exports remain unchanged.
+A4 update (13 November): exact narration, two complete sentence pages, saved arrival/v3 provenance, and five measured-audio duration cases (5s, 8s, 12.615s, 18s, 24s) passed direct checks; claims/caption/timing regressions, all seven legacy video tests and the video TypeScript check passed. The Remotion suite was updated for the new A4 narration; the 13 November clean-clone run passed all 17 `scripts/video/remotion.test.ts` tests. A4 audio was then replaced and the MP4 re-rendered on 13 November.
 
 The video regression suites and workspace TypeScript check cover script correspondence, numerical claim anchors, complete subtitle wording, authentic source-line ordering, silent/audio timing and reveal pacing. A dedicated regression parses the **specific Worst rolling 24h rally CLAIMS row** and compares its close timestamp, four-decimal NEAR price and three-decimal H with the first `reduce-only close` in `reports/demo-local.json`. It also checks selection percentage and candidate count; matching another row cannot hide a stale claim.
 
@@ -105,4 +105,4 @@ The earlier restricted-sandbox still-render attempt stopped with **`Error: No av
 
 V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.
 
-Release-editor note (13 November): the A4 source wording above reflects the verified arrival and the separate live v3 open/close. The existing rendered video and recorded audio are unchanged; their earlier arrival caveat will change in a future render. Do not treat source wording as a description of the unchanged export.
+Release-editor note (13 November): the A4 wording above reflects the verified arrival and the separate live v3 open/close, and the current `docs/media/counterweight-demo.mp4` was rendered with the re-voiced A4 recording.

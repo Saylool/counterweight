@@ -46,12 +46,12 @@ ROGUE non-reduce close        REJECT ERR_OPEN_PRICE_OVERRIDE
 ROGUE withdraw to rogue       REJECT ERR_CALLER_NOT_OWNER
 ROGUE approveAgent            REJECT MethodNotFound
 ROGUE replayed nonce/callback REJECT Method on_signature is private
-WAIT sandbox fast-forward 1/20 | 101s to deadline
+WAIT sandbox fast-forward 1/20 | 102s to deadline
 WAIT sandbox deadline reached
 ROGUE stale price             REJECT ERR_STALE_PRICE
 ROGUE unrelated rogue account REJECT ERR_CALLER_NOT_KEEPER
 DEAD-MAN before timeout REJECT ERR_HEARTBEAT_ACTIVE
-WAIT sandbox fast-forward 1/20 | 600s to deadline
+WAIT sandbox fast-forward 1/20 | 601s to deadline
 WAIT sandbox deadline reached
 DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused
 OWNER AFTER nonce=7000002 balance=99999347412735944600000000 yocto (unchanged)
@@ -72,7 +72,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
 {
   "schemaVersion": 1,
   "status": "passed",
-  "startedAt": "2026-11-10T17:19:39.497Z",
+  "startedAt": "2026-11-13T18:45:23.542Z",
   "offlineGuardActive": true,
   "policySha256": "1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a",
   "mockSha256": "69ba632f36ccaa2d00f73466d617da0a0d1d267a0484624e61abf302201b591f",
@@ -118,12 +118,12 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "ROGUE withdraw to rogue       REJECT ERR_CALLER_NOT_OWNER",
     "ROGUE approveAgent            REJECT MethodNotFound",
     "ROGUE replayed nonce/callback REJECT Method on_signature is private",
-    "WAIT sandbox fast-forward 1/20 | 101s to deadline",
+    "WAIT sandbox fast-forward 1/20 | 102s to deadline",
     "WAIT sandbox deadline reached",
     "ROGUE stale price             REJECT ERR_STALE_PRICE",
     "ROGUE unrelated rogue account REJECT ERR_CALLER_NOT_KEEPER",
     "DEAD-MAN before timeout REJECT ERR_HEARTBEAT_ACTIVE",
-    "WAIT sandbox fast-forward 1/20 | 600s to deadline",
+    "WAIT sandbox fast-forward 1/20 | 601s to deadline",
     "WAIT sandbox deadline reached",
     "DEAD-MAN +601s bystander.testnet -> reduce-only SIGNED mock + event; policy paused",
     "OWNER AFTER nonce=7000002 balance=99999347412735944600000000 yocto (unchanged)",
@@ -138,61 +138,61 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "REPORTS reports/demo-local.md + reports/demo-local.json (timeline, logs, receipts, assertions)"
   ],
   "diagnostics": [
-    "Receipt: FfYVtcvUL8XiJbH2ZSkL2YgETm96TUXrF6MmjQZ9tEn2",
+    "Receipt: B1wUZwz18kNKHaJhVKigqtLhxAGXmhbXTQHZznoLRSqa",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}",
-    "Receipt: 5fhMwqkLGjgfHZzzy8caTkituizzCwwyrTtVXdLPYuuf",
+    "Receipt: 93KgKXBxc2QRKXB89eTkbJSHTBeqCH17Z5ZL949JY222",
     "\tLog [mock-mpc.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}",
-    "Receipts: 4okFdHP4RZ1Aib92LqJqJ9ypsaXjHs5mCqkoZbHyvYN1, 68Vk2LXaAVzWUYwF9LbC7CQ6eUoxgwjptdjVp5pf7ZdG, 96ENKr5Y2Mz4MgaiSXvKF6k8bVsCDvsG7pwbK8WCWGJU",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331203305,\"expiresAfter\":1794331263305},\"digest\":\"aca197707eaf41c945aaf989004d4966a8c3c0e8d2504858359b39e12891deb9\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: 3v2zEZdgKM9mcmqJdAXdKdb992bpWEPdDqCjvRXm63Np",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794331203305\",\"expiresAfter\":\"1794331263305\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: HxjYRb8ZQXhuSJhf9MoZDLDerY6gvWDZSiEcGztuRcYH",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794331206\"}]}",
-    "Receipts: 2evXPHzVyU5Le7gecFUEZzEttFJM3RfsnHx9TtY6qMk7, 6hvDdeANomv8yCth7TLEZqmWRDAZ272zj2afLQP8eacp, CYJEZVMguhJVQ6EPDZvUNcDYu7aX7oJsBdPha5t4BTaH",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331208147,\"expiresAfter\":1794331268147},\"digest\":\"774889d5c5e0c932783ddc587b19a26126288f0fb1515bfbc33224bd0b65df00\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: 5m8f8EzLZ5GJMfmXH1S36UWwNpdqS7hP694bUuXKmomx",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794331208147\",\"expiresAfter\":\"1794331268147\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: DY2SXcRKa1fQPR3DCqXAW8qbow4ippBUSxnSXyJPFhs9",
+    "Receipts: 9uukT3SSJqdfgcoZCzgr5tX1i37QKbzKWEwN3KWDqsWT, Bpyc6tSsPSe75F2VrotNuobt23j4Ca1iL5b4yu6k7XXz, CqWejZWSHaQHJs3fmJyiv7tY1aycnwkpgAvunBoy69X9",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794595547056,\"expiresAfter\":1794595607056},\"digest\":\"e9cb12b8a787247c3c9b134868f470e15286e124131ad492923e675b7dd3a292\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: GKeFwfwdXvqMpM9MTvz3BGAHLggUDpCLY1uLRrdofjDa",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794595547056\",\"expiresAfter\":\"1794595607056\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: HD4Nffvye4RjY1N9tHFQT6CdUZWZTqaGEtuK6WLbK5kW",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794595550\"}]}",
+    "Receipts: GzzmUt2rB3TRBpvoQhYjAFasyTD8DLsUCQgrohsoWmZ7, 4iQJTAoc5Vi9GQ5DLkFDM4nv3P75UXCzRLn4c2o1Lk4o, 6HtNMVLtE8Y7StwS4CvVkm2qcKx2xkKNE5rBWHx8GLpC",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794595551899,\"expiresAfter\":1794595611899},\"digest\":\"f5354f31d64d3b05fa40021ffd7616b53c50230937aa6325ff3bba5e5ed2efad\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: EBLV8eorvxzR5qNvg6Lenkva1fZYhpwfQFZsyY2DxV24",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794595551899\",\"expiresAfter\":\"1794595611899\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: AaVpy8tNur9a86EawxnudFGdhRVuYnbKFkxbLKWG9dVN",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_EXCEEDS_SPOT_HEDGE\"}}}}",
-    "Receipt: 2KpnoAoYFXUtQytm6dEdnL9fbZ3iKcsMYjHYLwc4Lx3M",
+    "Receipt: Fc2j7BwBhek9ZZaHT5ryPUnAXaT1ooXCBCuAmqXzDHGH",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_OPEN_PRICE_OVERRIDE\"}}}}",
-    "Receipt: UywwZ856nTEJizgJ2ocTR4L1SNfGRjyTikiAm4q5knd",
+    "Receipt: G4Nzy3TkhFMjT3VX9xGuFprGPZkxSfA1rbgJKrEoeEmS",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_OWNER\"}}}}",
-    "Receipt: 2GgPuXBZ3sh4MvmDNdYE3r6MzN1Cnm94UKBw25wW2Vec",
+    "Receipt: CSuxHeXWcqVRZghRAmhLWpu3FK9xvm9S948vW4HiBtuz",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"MethodResolveError\":\"MethodNotFound\"}}}}",
-    "Receipt: BSJ1JZg1GUHXwb8GFGrCkT78oDgdLz8KBbzAwCixV5Gx",
+    "Receipt: 2Sgif9j9huPJzf17ZYpvzQ8KSwCJCt963Ennu49FeQ84",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Method on_signature is private\"}}}}",
-    "Receipt: FkZuJGbquNCw2fJVEb49dCzvsdFB6giYsBzKDjPDubjA",
+    "Receipt: h11nE43DragnmXrJ517CjBsuNN84acrSk28DoCyY8ZQ",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_STALE_PRICE\"}}}}",
-    "Receipt: BWqrSgkruqZwBSdeqjEitqdjX2Dq9u7F4PJWBT1qvwnw",
+    "Receipt: 4DCcRiW4w5okFhMfeft7R5whcUQkqTRqXDgj7VStRu5e",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_CALLER_NOT_KEEPER\"}}}}",
-    "Receipt: 7Yj47xjEYHUCqhGUSj2TJvBUme49Xi3YguxQveDwv5SX",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794332519\"}]}",
-    "Receipt: A8834bhjbgQo4ANkdxbZ1fKPZK2142S1EFRxihNa7SS6",
+    "Receipt: nvPeWgsvrHtHAhLXQJjX5o5YGgQUdHPkGajgDYYDsyD",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794596863\"}]}",
+    "Receipt: CMrkJjkKeLQpb5vGfCg2pS1WyQr92YRCmeZgwV7kKZxh",
     "\tFailure [policy.testnet]: Error: {\"index\":0,\"kind\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_HEARTBEAT_ACTIVE\"}}}}",
-    "Receipts: 2ozkoN7t5BdDE9G7m7S7nXfkzfsETisK4ggn3TNZBJ9K, 4u7V4x4UfmsanstD8UHGzNpb8aANRb5pAh5FjUuwaoBz, 77e72svmtoRWyM5wkEXmhC9uHBVvyiDthSSfM4JLQxp3",
+    "Receipts: 5wiPx2SyMPsDJ2hrwdnJP8ub3yJeLpVzRGR2n5DuFzah, EvS4fGjsytGqCuHFKKcfW5dd6tRPTN5egpDejbyTSTFZ, DeXDaCEWsdUipczyPbpAZYq7nkhhozA7w8YHbWdnGJoc",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794333818858,\"expiresAfter\":1794333878858},\"digest\":\"fc48ceb426986e1f62c7afb46e1e6bc81e3fee1537ec818a7817c0978faee4cc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-    "Receipt: 4aBfKxqGMBCGc4GVzKJHEShPDb5867Ew6KzWnjs1nZpX",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794333818858\",\"expiresAfter\":\"1794333878858\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
-    "Receipt: 5CH88JU7bT2RTxgNsfcpp8Hiv2b3WzjsQrW4izHKoiH8",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794598162545,\"expiresAfter\":1794598222545},\"digest\":\"0415fc6afd6eae971fcbda1741560e175dee94716a701212001f161fc6996b47\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+    "Receipt: EYKQpcXj776VPz43m2REEY7PYop7ArriEkPYkBayuKNX",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794598162545\",\"expiresAfter\":\"1794598222545\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}",
+    "Receipt: Fqgh15XxSCULPCUudGaAe4tE2DDru2kfh4uNMnwczD5V",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}",
-    "Receipt: sGTJGAr6JvTm9uLnh3KKc7tdc5JEX5vRH4J7GhJuZYa",
+    "Receipt: 5RzUUzfa9cuzVggaayq9DhZDCiDsrXt43paUpKngd6mh",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
-    "Receipt: 86iqtLAB8nTgmLdpwkK7pLgir7srEiYZhuX1pk7x9rhh",
+    "Receipt: BToXbrkJPX2Z4xGZWHrFWEBpLEHBqToCJAoysfk4R9EM",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}",
-    "Receipt: 9heyqMaiQaGjq1YtW3YgHexWrNYR1Xmz7S6t2KngGzsF",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794335119973\",\"source\":\"owner_finality_attestation\"}]}",
-    "Receipt: 8zapYHhHNe6zivVRnjiYAwnHtQFGzc9vyq8vK5uUh2CT",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794335121788\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
-    "Receipt: Aaoeki8yWJxJvNGv1dDk45QFiR5sFavGpzV8NpZgLzsD",
+    "Receipt: 3TKgaygQHAJkQRqVVsyRnCzaKow2ZxSVMrnvKf9K8HPN",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794599463670\",\"source\":\"owner_finality_attestation\"}]}",
+    "Receipt: xHropzDrR9xYMCXXkjqSwG6qU5YmCVjuA6VcBN1fvYj",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794599465472\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}",
+    "Receipt: AXoQ376w6hHhHemy23L8D74JzDmP9kMMcfLPRU2SWshD",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}",
-    "Receipts: DuaqhWshKAfDtYJx5XPecnJZgSthzNyChTYXe4mC87NM, mQe84y9nixeEbk1nrf1nvZH7rjgemmJuc5cMmYWjb1F, 4yyEUdzsso2qmVYs8tCZf84DB3L62GLN5Zgi1NtHWPpz",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794335125425\",\"deadline_ms\":\"1794335155425\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794338728439\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
-    "Receipt: EAtnrtrR1MuYbKoWr3BbrJ1mfqj1pcxZzLWTb9BtkXBS",
+    "Receipts: 7Zeka8iMpP1FrurAhqpo9cdHgF7885N1a3hiVofGtqFM, MHLQRiLEmdz5dnQzzjNzVmBJiDQJm6g9eYaZNBgdDcH, 4nduyL28SLumVbeFc4EuAbsB7jnNqYhiFmjBPZAF3btV",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794599469119\",\"deadline_ms\":\"1794599499119\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794603072145\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+    "Receipt: 7xkB5dsEnizjJeZLW53UvqHvP9RGG7Ffk4XKS3sujGbz",
     "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}",
-    "Receipt: GFtbNNCmqFTWEhyn8wsobyaYnrF5VGnsTWfFBPMHxqLB",
-    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794335128439\",\"source\":\"owner_finality_attestation\"}]}"
+    "Receipt: 2mse8cy7RuVjE9d3bVLPeZP6QrFsisDe3VhF811RLgGt",
+    "\tLog [policy.testnet]: EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794599472145\",\"source\":\"owner_finality_attestation\"}]}"
   ],
   "mocked": [
     "MPC signature-shaped response (not cryptographic)",
@@ -267,7 +267,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "max_price": "5346000"
         }
       },
-      "transactionHash": "EsgSVHYbzw5W3MtzqdaLYS2X49aDDtG53SnYqjWDYVmr",
+      "transactionHash": "9Lkj1HYH9P3JpgRoRdyK6uNRvJVi9MxAgWCQXUR55276",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"init\",\"data\":[{\"owner\":\"owner.testnet\",\"keeper\":\"keeper.testnet\",\"asset_index\":74,\"size_decimals\":1,\"evm_recipient\":\"0x1111111111111111111111111111111111111111\",\"signer_account\":\"mock-mpc.testnet\",\"wnear_account\":\"mock-mpc.testnet\",\"limits\":{\"max_short_size\":\"9300000000000000000000000\",\"per_order_notional_cap\":\"30000000\",\"per_day_notional_cap\":\"30000000\",\"cooldown_seconds\":60,\"price_band_bps\":100,\"price_max_age_seconds\":120},\"heartbeat_timeout_seconds\":600,\"signing_limits\":{\"keeper_per_block\":2,\"keeper_per_window\":8,\"keeper_outstanding\":8,\"owner_per_window\":16,\"window_ms\":60000,\"max_nonce_ahead_ms\":1000}}]}"
@@ -280,7 +280,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "amount": "9300000000000000000000000"
       },
-      "transactionHash": "FZTJJimR4Y7sCXDe1si57S5PBWXsk947NjfM8VS6Dww4",
+      "transactionHash": "8RcSxKKb9DTREFGsu3rq5brwqEMk24GSdKCtvdCAVg3N",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"amount\":\"9300000000000000000000000\",\"sender_id\":\"owner.testnet\"}]}"
@@ -298,11 +298,11 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": null
         }
       },
-      "transactionHash": "9oiCeKvmx8wHrrHQVVTfinqgY1EFwc9cLC1RGVfbkLzy",
+      "transactionHash": "J2tDjBG4h6dh6CSWRpqRneGGYUs9XmgFjQg8mMrR5ABJ",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331203305,\"expiresAfter\":1794331263305},\"digest\":\"aca197707eaf41c945aaf989004d4966a8c3c0e8d2504858359b39e12891deb9\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794331203305\",\"expiresAfter\":\"1794331263305\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"1\",\"caller\":\"keeper.testnet\",\"kind\":\"Increase\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":false,\"p\":\"2.6462\",\"s\":\"9.3\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794595547056,\"expiresAfter\":1794595607056},\"digest\":\"e9cb12b8a787247c3c9b134868f470e15286e124131ad492923e675b7dd3a292\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"1\",\"nonce\":\"1794595547056\",\"expiresAfter\":\"1794595607056\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -310,10 +310,10 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "7HVcY6gCz3aZs9K9Mz6oTnQhpb7ao1BJ1gWhZCLiuJSR",
+      "transactionHash": "A87ATghjutvkbfSfnUKMtnQqsP7YEzWdYorsxeYZmqDq",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794331206\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794595550\"}]}"
       ],
       "errors": []
     },
@@ -328,11 +328,11 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": "2806200"
         }
       },
-      "transactionHash": "Hf9SUSyJ27AQAstYdgWfPU7fkxwyQA9eFfSw8jJdyxku",
+      "transactionHash": "GKf9PDgjFJyxP4qEdQJWipLV63R9BssTc79DoCC8v9Gp",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794331208147,\"expiresAfter\":1794331268147},\"digest\":\"774889d5c5e0c932783ddc587b19a26126288f0fb1515bfbc33224bd0b65df00\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794331208147\",\"expiresAfter\":\"1794331268147\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"2.8343\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794595551899,\"expiresAfter\":1794595611899},\"digest\":\"f5354f31d64d3b05fa40021ffd7616b53c50230937aa6325ff3bba5e5ed2efad\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794595551899\",\"expiresAfter\":\"1794595611899\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -347,7 +347,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": null
         }
       },
-      "transactionHash": "HxMsfVYmVFfXUVBk26CiNmbCXKQbF99Utz7smEffRSZS",
+      "transactionHash": "2Qqkb1nWThW4aUQHJg3z9sThn6fuzh3MGnf6o7HNw6uC",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -365,7 +365,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "Cvk9idFFpquaGZVCQXnLcZR6ovqMrRU9pFJwu9RRzy2M",
+      "transactionHash": "GRfa5aLX3psAWa7UAMdS8ML2KBtBr1Ld5KekuMoAgbM5",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -379,7 +379,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
         "recipient": "0x2222222222222222222222222222222222222222",
         "amount": "1000000"
       },
-      "transactionHash": "5mdDa9ni1ZXXH42ud5a15pZmocq68aXEj7gbir4bPbK1",
+      "transactionHash": "JD4atd6BbBaS8GLZUKX9sTkLqFy33haovZuLAgwQvhAc",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -392,7 +392,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "agentAddress": "0x2222222222222222222222222222222222222222"
       },
-      "transactionHash": "7NbgGqnThwXeAqozKrMJjPR2d6NPisUkv68aX4W5UjTH",
+      "transactionHash": "D9sviZx3aLTXLHer4aAndTzU9LkBiwa3Wwhifx8DLoMZ",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -404,9 +404,9 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "method": "on_signature",
       "args": {
         "operation_id": "2",
-        "nonce": 1794331208147
+        "nonce": 1794595551899
       },
-      "transactionHash": "7Smf2MjnN8QbW6Nsm6TJsJp3FL6qZiRTJHeu76APz9qq",
+      "transactionHash": "4GA3R7tJDTzkegvC8tbVSFYZ28qdMELujJMJctYwjc1Q",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -424,7 +424,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": null
         }
       },
-      "transactionHash": "Rg5zVxXj4bEMfegin7RK1iztrqVAu2LF7qHQ2HovuB7",
+      "transactionHash": "HNzzGwg7nd36UGn1vkA5DCfNY7Xzj5BkjuNfcGS34Zfg",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -442,7 +442,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "reference_price": "3541700"
         }
       },
-      "transactionHash": "4kpETXnuW4KMrj7PiZC1T2kesDGAcbGhVzo9ioSmx58h",
+      "transactionHash": "8RbWwm2s1iBjayk6FvKLwmwnyaMHuaZp5SMiMvC7hQTe",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -453,10 +453,10 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "actor": "keeper.testnet",
       "method": "heartbeat",
       "args": {},
-      "transactionHash": "7qEQid24CTUGwyPHb9r6TZ6pCqD5NhYCSYNLzu19m7qu",
+      "transactionHash": "5wJJQA3F5egm5YDpL8Ap1orGrMk6t9r2WVAkTUz76YhC",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794332519\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"heartbeat\",\"data\":[{\"timestamp\":\"1794596863\"}]}"
       ],
       "errors": []
     },
@@ -466,7 +466,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "5x1buWQLu7kFzPeA6uHbF599nSS2dEaWtWif6K4HSQeV",
+      "transactionHash": "AzXkE4bvhRRjpNXU5Gva9kGtb18HN7KoVwcawdWavkah",
       "succeeded": false,
       "logs": [],
       "errors": [
@@ -479,12 +479,12 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "FKzr73DTmt1f4jTfnvKifKPqaWTzvmEDXARMhVpYuVsi",
+      "transactionHash": "12JcKUQY7RqWurJ1QUEyjPpBrHQviNcWYDB9fa78fMVj",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":true,\"reason\":\"recovery\",\"complete\":true}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794333818858,\"expiresAfter\":1794333878858},\"digest\":\"fc48ceb426986e1f62c7afb46e1e6bc81e3fee1537ec818a7817c0978faee4cc\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794333818858\",\"expiresAfter\":\"1794333878858\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"3\",\"caller\":\"bystander.testnet\",\"kind\":\"Reduce\",\"payload\":{\"action\":{\"type\":\"order\",\"orders\":[{\"a\":74,\"b\":true,\"p\":\"3.5772\",\"s\":\"9.3\",\"r\":true,\"t\":{\"limit\":{\"tif\":\"Ioc\"}}}],\"grouping\":\"na\"},\"nonce\":1794598162545,\"expiresAfter\":1794598222545},\"digest\":\"0415fc6afd6eae971fcbda1741560e175dee94716a701212001f161fc6996b47\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"3\",\"nonce\":\"1794598162545\",\"expiresAfter\":\"1794598222545\",\"signature\":{\"big_r\":{\"affine_point\":\"021111111111111111111111111111111111111111111111111111111111111111\"},\"s\":{\"scalar\":\"2222222222222222222222222222222222222222222222222222222222222222\"},\"recovery_id\":0}}]}"
       ],
       "errors": []
     },
@@ -494,7 +494,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "paused": false
       },
-      "transactionHash": "J1yA1uqgpeFXy5FgiGJ1UbMiyR3S5vrjhSDdNrFU1WmS",
+      "transactionHash": "5BgviZtGtU6awLQbWjCw4vgHEsj8Gdxj985L1JGQcS3N",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"pause\",\"data\":[{\"paused\":false,\"complete\":true}]}"
@@ -507,7 +507,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "6eXN9PbNX5EV2gaFxWFuZSZYCPJhfCvMs6L48RxBfgi3",
+      "transactionHash": "25UD2uZtwV6EBUfnVvDwNJvXYrHoNUC71pxii71HfLP1",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
@@ -540,7 +540,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "original_target_usdc": "32937810"
         }
       },
-      "transactionHash": "GHqws33zjKAZXdcd8AwHJXEtfVjWXXQ5QPwasvGTWwT4",
+      "transactionHash": "8EPp3ngmCYk4N7VGf1SZA4G9TSyMWU39ZqAbg1nPMqdA",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"rebalance_config\",\"data\":[{\"limits\":{\"adapter\":\"mock-mpc.testnet\",\"strategy_margin_address\":\"0x1111111111111111111111111111111111111111\",\"destination_token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"per_sale_near\":\"9300000000000000000000000\",\"daily_sale_near\":\"9300000000000000000000000\",\"max_fee_usdc\":\"50000\",\"max_impact_bps\":100,\"quote_age_ms\":30000,\"completion_ms\":3600000,\"max_mismatch_near\":\"9300000000000000000000000\",\"per_withdrawal_usdc\":\"10000000\",\"daily_withdrawal_usdc\":\"20000000\",\"min_residual_equity_usdc\":\"1000000\",\"min_headroom_bps\":1000,\"lower_headroom_bps\":3000,\"target_headroom_bps\":6000,\"upper_headroom_bps\":9000,\"fee_reserve_usdc\":\"100000\",\"original_target_usdc\":\"32937810\"},\"source\":\"policy.testnet\",\"source_token\":\"mock-mpc.testnet\",\"destination_chain\":\"hyperliquid\",\"withdrawal_recipient\":\"0x1111111111111111111111111111111111111111\"}]}"
@@ -553,12 +553,12 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "equity_usdc": "28714402",
         "withdrawable_usdc": "0",
-        "observed_at_ms": "1794335119973"
+        "observed_at_ms": "1794599463670"
       },
-      "transactionHash": "Cb8jU2wSDGrFs3tJGcTtvojbZT37FKCxc9zW3RQfFstw",
+      "transactionHash": "D8FQ6AXP88RurLiDLmvEeiniYxnVrt4XaWjBTKGrtZg6",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794335119973\",\"source\":\"owner_finality_attestation\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_observation\",\"data\":[{\"equity_usdc\":\"28714402\",\"withdrawable_usdc\":\"0\",\"observed_at_ms\":\"1794599463670\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     },
@@ -567,12 +567,12 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "method": "settle_position",
       "args": {
         "short_size": "0",
-        "observed_at_ms": "1794335121788"
+        "observed_at_ms": "1794599465472"
       },
-      "transactionHash": "Ghr676He2qdfpUTCQkCtyT16LRfnWqrNGZa455xMC28X",
+      "transactionHash": "6VZrzoxXsLf25gkHG3ePyYgkVAb9pMH6ESSzUruwQqaX",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794335121788\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"position_settlement\",\"data\":[{\"short_size\":\"0\",\"released\":\"9300000000000000000000000\",\"observed_at_ms\":\"1794599465472\",\"source\":\"owner_attestation\",\"daily_budget_released\":false}]}"
       ],
       "errors": []
     },
@@ -582,7 +582,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "args": {
         "price": "3541700"
       },
-      "transactionHash": "4qJgTXQmrR4EbZa2wn6qkb66miN7qvcBMXvWzsKFe6VJ",
+      "transactionHash": "5gQNvJamqFPQjScr8e8fp8b9pfnKrZmJw57EmLXtWgrv",
       "succeeded": true,
       "logs": [
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"reference_price\",\"data\":[{\"price\":\"3541700\"}]}"
@@ -599,14 +599,14 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "min_usdc": "32558432",
           "fee_usdc": "50000",
           "impact_bps": 100,
-          "quoted_at_ms": "1794335125425",
-          "deadline_ms": "1794335155425"
+          "quoted_at_ms": "1794599469119",
+          "deadline_ms": "1794599499119"
         }
       },
-      "transactionHash": "9S2GXcDzWa8FYi7uwp9FLsC3dEaKZWQc9o4jFN1VKks1",
+      "transactionHash": "14C5DV4Yp6fEc7jS4fSAm3oHZkRy8SNaGS8NhYXnmYDx",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794335125425\",\"deadline_ms\":\"1794335155425\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794338728439\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_route\",\"data\":[{\"status\":\"dispatching\",\"route\":{\"id\":\"1\",\"quote\":{\"near_amount\":\"9300000000000000000000000\",\"paired_closed_near\":\"9300000000000000000000000\",\"min_usdc\":\"32558432\",\"fee_usdc\":\"50000\",\"impact_bps\":100,\"quoted_at_ms\":\"1794599469119\",\"deadline_ms\":\"1794599499119\"},\"dispatched_near\":\"9300000000000000000000000\",\"phase\":\"Dispatching\",\"completion_deadline_ms\":\"1794603072145\"},\"source\":\"policy.testnet\",\"destination\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\"}]}",
         "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"sale_dispatch\",\"data\":[{\"route_id\":\"1\",\"used_near\":\"9300000000000000000000000\",\"status\":\"resolved\"}]}"
       ],
       "errors": []
@@ -619,12 +619,12 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
         "refunded_near": "0",
         "credited_usdc": "32558432",
         "receipt_id": "demo-local-mock-finalized-sale-1",
-        "finalized_at_ms": "1794335128439"
+        "finalized_at_ms": "1794599472145"
       },
-      "transactionHash": "48QTAdZpuZVn5tS8RtPYQ2DQs6YRoZt3c9biHxPDzsWU",
+      "transactionHash": "95XMNUQwR5rZUyYsvWoEf2VBvqEhw38yB7qp9CKrckVv",
       "succeeded": true,
       "logs": [
-        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794335128439\",\"source\":\"owner_finality_attestation\"}]}"
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"margin_topup\",\"data\":[{\"route_id\":\"1\",\"sold_near\":\"9300000000000000000000000\",\"refunded_near\":\"0\",\"credited_usdc\":\"32558432\",\"recipient\":\"0x1111111111111111111111111111111111111111\",\"chain\":\"hyperliquid\",\"token\":\"1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054\",\"receipt_id\":\"demo-local-mock-finalized-sale-1\",\"finalized_at_ms\":\"1794599472145\",\"source\":\"owner_finality_attestation\"}]}"
       ],
       "errors": []
     }
@@ -633,7 +633,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "balanceYocto": "99999347412735944600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
+        "publicKey": "ed25519:9mcKukjM5doXyU9zdhwgD955rRrSF5Hod76bmP6ZXzQn",
         "nonce": 7000002
       }
     ]
@@ -934,7 +934,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "balanceYocto": "99999347412735944600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
+        "publicKey": "ed25519:9mcKukjM5doXyU9zdhwgD955rRrSF5Hod76bmP6ZXzQn",
         "nonce": 7000002
       }
     ]
@@ -987,7 +987,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "balanceYocto": "99999347412735944600000000",
     "accessKeys": [
       {
-        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
+        "publicKey": "ed25519:9mcKukjM5doXyU9zdhwgD955rRrSF5Hod76bmP6ZXzQn",
         "nonce": 7000002
       }
     ]
@@ -1025,15 +1025,15 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "spot_balance": "9300000000000000000000000",
     "signed_short_size": "9300000000000000000000000",
     "daily_usage": "25107489",
-    "usage_day": 20767,
+    "usage_day": 20770,
     "operation_id": "3",
     "pending": null,
     "paused": true,
-    "last_keeper_heartbeat": "1794332519",
+    "last_keeper_heartbeat": "1794596863",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "2673000",
-    "reference_price_timestamp": "1794331197",
-    "last_nonce": "1794333818858",
+    "reference_price_timestamp": "1794595541",
+    "last_nonce": "1794598162545",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -1044,8 +1044,8 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     },
     "outstanding": [
       {
-        "nonce": 1794333818858,
-        "expires_after": 1794333878858,
+        "nonce": 1794598162545,
+        "expires_after": 1794598222545,
         "keeper": false,
         "discarded": false,
         "invalidation_requested": false,
@@ -1056,7 +1056,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     ],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794331263305",
+    "last_open_expiry": "1794595607056",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -1110,15 +1110,15 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "spot_balance": "0",
     "signed_short_size": "0",
     "daily_usage": "25107489",
-    "usage_day": 20767,
+    "usage_day": 20770,
     "operation_id": "3",
     "pending": null,
     "paused": false,
-    "last_keeper_heartbeat": "1794332519",
+    "last_keeper_heartbeat": "1794596863",
     "heartbeat_timeout_seconds": 600,
     "reference_price": "3541700",
-    "reference_price_timestamp": "1794335126",
-    "last_nonce": "1794333818858",
+    "reference_price_timestamp": "1794599470",
+    "last_nonce": "1794598162545",
     "signing_limits": {
       "keeper_per_block": 2,
       "keeper_per_window": 8,
@@ -1130,7 +1130,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "outstanding": [],
     "pause_complete": true,
     "lifetime_opened": "9300000000000000000000000",
-    "last_open_expiry": "1794331263305",
+    "last_open_expiry": "1794595607056",
     "keeper_weight_used": "15",
     "keeper_weight_limit": "5000",
     "mpc_fee": "1",
@@ -1171,7 +1171,7 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "reduced_inventory": "0",
       "usable_margin": "28714402",
       "withdrawable": "0",
-      "observed_at_ms": "1794335119973",
+      "observed_at_ms": "1794599463670",
       "next_route_id": "1",
       "route": {
         "id": "1",
@@ -1181,16 +1181,16 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
           "min_usdc": "32558432",
           "fee_usdc": "50000",
           "impact_bps": 100,
-          "quoted_at_ms": "1794335125425",
-          "deadline_ms": "1794335155425"
+          "quoted_at_ms": "1794599469119",
+          "deadline_ms": "1794599499119"
         },
         "dispatched_near": "9300000000000000000000000",
         "phase": "AwaitingReceipt",
-        "completion_deadline_ms": "1794338728439"
+        "completion_deadline_ms": "1794603072145"
       },
       "sales": [
         [
-          1794335128439,
+          1794599472145,
           9.3e+24
         ]
       ],
@@ -1263,12 +1263,12 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
       "reduced_inventory": "0",
       "usable_margin": "61272834",
       "withdrawable": "0",
-      "observed_at_ms": "1794335119973",
+      "observed_at_ms": "1794599463670",
       "next_route_id": "1",
       "route": null,
       "sales": [
         [
-          1794335128439,
+          1794599472145,
           9.3e+24
         ]
       ],
@@ -1280,11 +1280,11 @@ All emitted application lines are above. Full policy logs, receipt hashes, failu
     "balanceYocto": "99696269565908328999999999",
     "accessKeys": [
       {
-        "publicKey": "ed25519:BVBTaHvQ9opyYusQ1quvcmegxLySTr2UCEMaPkF31LLa",
+        "publicKey": "ed25519:9mcKukjM5doXyU9zdhwgD955rRrSF5Hod76bmP6ZXzQn",
         "nonce": 7000010
       }
     ]
   },
-  "finishedAt": "2026-11-10T17:21:03.322Z"
+  "finishedAt": "2026-11-13T18:46:47.114Z"
 }
 ```

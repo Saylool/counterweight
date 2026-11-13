@@ -20,14 +20,14 @@ WEB_BASE_PATH=/counterweight/ npm run web:build
 
 The default base is `./`, suitable for a static directory. Optional build-time environment settings (also supported in `apps/web/.env.local`):
 
-- `VITE_POLICY_ACCOUNT`: defaults to `policy-v2.counterweight-samet.testnet`; the panel can inspect another named testnet account.
+- `VITE_POLICY_ACCOUNT`: defaults to `policy-v3.counterweight-samet.testnet`; the panel can switch to historical v2 or inspect another named testnet account.
 - `VITE_NEAR_RPC`: defaults to `https://rpc.testnet.near.org`; use a public CORS-enabled NEAR testnet RPC when the default rate-limits. CLI commands instead use `NEAR_TESTNET_RPC`; never embed credentials in frontend variables.
 - `VITE_REPO_URL`: source repository link; defaults to `https://github.com/Saylool/counterweight` when unset.
 - `WEB_BASE_PATH`: Vite asset base, defaults to `./`.
 
 `npm test` includes the existing suite and frontend Vitest tests. `npm run typecheck` and `npm run build` include frontend checks; `npm run web:test` runs only frontend tests.
 
-The build validates reports, copies dated evidence and original report downloads, and hashes the committed WASM against its manifest. Smaller presentation JSON is generated from those sources; no performance numbers are hard-coded. The return curve retains extrema per 12-hour bucket. Price and H charts show **recorded strategy events**, because the report does not contain hourly price/H series. Min H in the table is the report's intrabar proxy; chart H is the close-time event value. Periods restart independently and are not additive.
+The build validates the replay report, copies dated evidence and original report downloads, and hashes the committed WASM against its manifest. A failed, partial or missing local demo report does not abort the build; it is rendered as **failed** with its recorded error. Smaller presentation JSON is generated from those sources; no performance numbers are hard-coded. The return curve retains extrema per 12-hour bucket. Price and H charts show **recorded strategy events**, because the report does not contain hourly price/H series. Min H in the table is the report's intrabar proxy; chart H is the close-time event value. Periods restart independently and are not additive.
 
 NEAR account, access-key list, state and public MPC derived key are pinned to one finalized block. Access keys and code mismatches are shown independently; an unknown account cannot appear as a zero-key proof. Address derivation comes from the configured signer's public view; it is not a live signature/fill proof. The funded account panel reads Hyperliquid testnet; the separate market/risk illustration uses mainnet and does not query an account. The isolated short liquidation distance is a maintenance-model proxy, not a venue liquidation quote. Live data refreshes on request; the entry gate checks order-book freshness at render time.
 

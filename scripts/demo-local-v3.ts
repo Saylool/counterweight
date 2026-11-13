@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { createRequire } from 'node:module';
 import { LocalSandbox, BASE, POLICY_V3_SHA256, MOCK_SHA256, assertSigned } from '@counterweight/local-sandbox';
+import { demoReportBase, demoReportLine, writeDemoReports } from './demo-report.js';
 
 const logger = createRequire(import.meta.url)('@near-js/utils').Logger;
 const transcript: string[] = [];
@@ -115,10 +116,12 @@ try {
   report.finishedAt = new Date().toISOString();
   const directory = fileURLToPath(new URL('../reports/', import.meta.url));
   await mkdir(directory, { recursive: true });
-  await writeFile(directory + 'demo-local-v3.json', JSON.stringify(report, null, 2) + '\n');
-  await writeFile(directory + 'demo-local-v3.md', '# V3 offline exit authorization demo\n\n'
+  const target = demoReportBase('demo-local-v3', report.status);
+  if (target !== 'demo-local-v3') emit(demoReportLine('demo-local-v3', report.status));
+  await writeDemoReports(directory, 'demo-local-v3', report.status, JSON.stringify(report, null, 2) + '\n',
+    '# V3 offline exit authorization demo\n\n'
     + `Status: **${report.status}**. Run: \`npm run demo:local:v3\`. Shipped production WASM; mock MPC/token/marks; no venue fills.\n\n`
     + 'The configured scenario opening band is $2.50–$10.00. The illustrative true mark is a scenario assumption, not an authenticated observation.\n\n'
     + '```text\n' + transcript.join('\n') + '\n```\n\n'
-    + 'Full calls, receipt hashes, signed payloads, assertions and diagnostics: [demo-local-v3.json](demo-local-v3.json).\n');
+    + `Full calls, receipt hashes, signed payloads, assertions and diagnostics: [${target}.json](${target}.json).\n`);
 }

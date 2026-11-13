@@ -1,22 +1,32 @@
 # Counterweight
 
-Counterweight is a NEAR policy prototype for wNEAR holders who want a bounded keeper to manage a Hyperliquid short hedge. The contract holds spot and authorizes venue actions through Chain Signatures; the submission combines funded testnet evidence, a local sandbox demo and historical replay.
+**Problem:** automating a short hedge for held wNEAR on Hyperliquid usually means giving a bot a hot key, or an agent key that can open any size.
 
-**Why not a Hyperliquid agent wallet?** An agent key can open any size. Here, opens are capped by held wNEAR, per-order/daily limits and a fresh owner attestation, and funds can only leave to fixed recipients. Exit prices are not authenticated (see Limitations).
-**Owner opens; the keeper can only de-risk on its own:** v3 entries need an owner margin attestation at most 30 seconds old, then a bounded keeper request.
-**Nothing can leave to a new recipient:** withdrawals use immutable recipients; this does not prevent trading losses from false marks, fees or liquidation. See the [claims and limits](docs/CLAIMS.md).
+**Counterweight:** a **keyless NEAR policy contract** (zero access keys) holds the wNEAR and signs only bounded Hyperliquid actions through **NEAR Chain Signatures** (`v1.signer-prod.testnet`). The submission combines funded testnet evidence, local sandbox demos and a historical replay.
+
+- **Owner opens; the keeper can only de-risk on its own.** v3 opens are capped by held wNEAR, per-order/daily limits and an owner margin attestation at most 30 seconds old. The keeper can send reduce-only closes alone (also while paused), and anyone can call `deleverage` after a heartbeat timeout.
+- **Nothing can leave to a new recipient.** Withdrawals use immutable recipients (`withdraw3` to the owner's fixed EVM address). This does not prevent trading losses from false marks, fees or liquidation.
+- **Explicit trust boundary.** Venue state is owner-attested (no on-chain Hyperliquid light client). Exit prices are not authenticated: a false high mark can cost up to the perp margin; wNEAR custody is unaffected. See [Limitations](#limitations) and the [claims and limits](docs/CLAIMS.md).
 
 [Watch the 94-second demo](docs/media/counterweight-demo.mp4) · voiced and subtitled.
 
-For a Rust-free local check (Node >=22.19.0; macOS arm64 or Linux x64):
+**Try it without Rust or keys** (Node >=22.19.0; macOS arm64 or Linux x64). Installation needs internet; tests and demos then run offline with mocked MPC/venue inputs:
 
 ```sh
-npm ci                    # Installed local NEAR sandbox 2.14.0 (...) on fresh install; npm install summary
-npm run test:ts            # Test Files / Tests: passed; two Rust cross-layer tests skipped
-npm run demo:local:v3      # PASS paused opening rejected ERR_PAUSED; PASS malicious high mark while paused
+npm ci                  # Installed local NEAR sandbox 2.14.0 (...); npm install summary
+npm run test:ts         # Test Files / Tests: passed; two Rust cross-layer tests skipped
+npm run demo:local:v3   # shipped v3 WASM: PASS paused/out-of-band exits and the false-mark boundary
+npm run demo:local      # v2 WASM: keeper close, PASS 7/7 rogue attempts rejected, dead-man recovery
+npm run web             # read-only dashboard at http://localhost:5173
 ```
 
-Installation needs internet; tests and the demo then run offline. The v3 demo executes the shipped WASM with mocked MPC/venue inputs. See [Judge quickstart](#judge-quickstart) for setup details and expected output.
+| Version | NEAR testnet account | Access keys | What it shows |
+|---|---|---:|---|
+| **v3 (current)** | [`policy-v3.counterweight-samet.testnet`](https://testnet.nearblocks.io/address/policy-v3.counterweight-samet.testnet) | 0 | 12 Nov: 4 wNEAR custody, keeper 3.6 NEAR short @ 3.3788, reduce-only close @ 3.3796, owner settlement ([summary](docs/evidence/2026-11-12-v3-lifecycle-summary.md)). Removes v2's exit price-band gate. |
+| **v2 (historical)** | [`policy-v2.counterweight-samet.testnet`](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) | 0 | 10 Nov: 4 wNEAR custody, 49 USDC spot→perp, 3.5 NEAR short and close, fixed-recipient withdrawal that arrived on Arbitrum Sepolia ([summary](docs/evidence/2026-11-10-lifecycle-summary.md)). Cleaned up 12 Nov. |
+| **v1 (rehearsal)** | `policy.counterweight-samet.testnet` | 1 | Unfunded signing rehearsal with a key ([proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md)). |
+
+See [Judge quickstart](#judge-quickstart) for setup details and expected output.
 
 ## What is proven
 
@@ -83,7 +93,7 @@ You should see `Offline replay: complete; 4320 hours, 0 gaps`, comparison lines,
 npm run demo:local
 ```
 
-You should see `OFFLINE GUARD active | Node connections restricted to loopback`, `policy access keys: 0` in the setup line, `PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed`, then `OWNER RESUMED` and `REBALANCE rebalance complete`. The owner stays untouched only during the autonomous phase. MPC responses, token handling, venue fills and route receipts are mocks; the policy WASM executes in the local NEAR sandbox.
+You should see `OFFLINE GUARD active | Node connections restricted to loopback`, `policy access keys: 0` in the setup line, `PASS 7/7 rogue attempts rejected | owner untouched | close + dead-man signed`, then `OWNER RESUMED` and `REBALANCE rebalance complete`. The owner stays untouched only during the autonomous phase. MPC responses, token handling, venue fills and route receipts are mocks; the policy WASM executes in the local NEAR sandbox. Sandbox time advances in small calibrated fast-forward steps. A run that does not pass prints `FAIL ...`, exits non-zero and writes `reports/demo-local.failed.json`/`.md` (git-ignored); the committed passing `reports/demo-local.json` is kept, so `npm run web:build` still works.
 
 The separate v3 command is `npm run demo:local:v3`, with output in `reports/demo-local-v3.json` and `.md`. It checks paused and out-of-band exits plus a false-mark case against the shipped v3 WASM; MPC/token/marks are mocked and no venue fills are claimed. It requires a host that permits loopback listeners. The latest saved run **passed** on 2026-11-12, including paused/out-of-band exits and the false-mark boundary case; the deployed WASM hash matches the shipped artifact. The v2 run and saved video inputs are unchanged.
 
@@ -108,7 +118,7 @@ NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify
 NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run lifecycle -- --step=status --relay-tx=9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25
 ```
 
-These commands only read public state. The status recheck should show `public-status-verified`, `relayVerification` and the ledger hash above. It matches 47.957074 gross = 46.957074 net + 1 USDC fee, with the ledger nonce in microseconds and the action time in milliseconds. It queries the saved action's day, rather than a rolling current day. Minimal ledger rows without a nonce use a unique amount/time correlation; this is public-ledger evidence. The v2 payout arrived on Arbitrum Sepolia, independently verified by the 13 November evidence linked below. Never resubmit an uncertain withdrawal. The original failed capture is retained alongside the corrected recheck. In the browser, set build-time `VITE_NEAR_RPC` to a public CORS-enabled endpoint if needed; do not place credentials in frontend variables.
+These commands only read public state and never sign or send; `lifecycle` appends its capture to a dated local `docs/evidence/*-lifecycle-status.md` file. The status recheck should show `public-status-verified`, `relayVerification` and the ledger hash above. It matches 47.957074 gross = 46.957074 net + 1 USDC fee, with the ledger nonce in microseconds and the action time in milliseconds. It queries the saved action's day, rather than a rolling current day. Minimal ledger rows without a nonce use a unique amount/time correlation; this is public-ledger evidence. The v2 payout arrived on Arbitrum Sepolia, independently verified by the 13 November evidence linked below. Never resubmit an uncertain withdrawal. The original failed capture is retained alongside the corrected recheck. In the browser, set build-time `VITE_NEAR_RPC` to a public CORS-enabled endpoint if needed; do not place credentials in frontend variables.
 
 Measured commands, exit codes, startup/HTTP checks and environment: [REPRODUCE](docs/REPRODUCE.md). Additional release checks are `npm run typecheck`, `npm run build`, and `npm run web:build`.
 
@@ -188,11 +198,13 @@ NEAR Chain Signatures is exercised in the funded keyless v2 lifecycle; earlier o
 
 Code, tests and documentation include AI-written work using Claude Code, OpenAI Codex and Google Gemini. The team remains responsible for human review and verification. Local sandbox accounts use library-managed disposable credentials. AI assistance is disclosed rather than presented as unaided human authorship.
 
-Open-source dependencies include `near-sdk`, `near-workspaces`, React, Vite, viem, Zod, Noble/Scure cryptography utilities and MessagePack; exact versions are in the lockfiles. [Claims index](docs/CLAIMS.md) maps the assertions here and in the [demo script](docs/DEMO-SCRIPT.md) to evidence.
+Open-source dependencies include `near-sdk`, `near-workspaces`, React, Vite, viem, Zod, Noble/Scure cryptography utilities and MessagePack; exact versions are in the lockfiles. [Claims index](docs/CLAIMS.md) maps the assertions here and in the [video script](apps/video/revised-x-script.md) (legacy [demo script](docs/DEMO-SCRIPT.md)) to evidence.
 
 ## Limitations
 
 **Finding A — unauthenticated exit marks:** a false high mark supplied by the keeper, or by anyone after heartbeat timeout, can cost up to the perp margin on an adverse reduce-only buyback. wNEAR custody is unaffected. The v3 +1% cap is relative to the supplied mark and does not authenticate the true market price.
+
+**Unfixed v3 contract findings:** the deployed keyless v3 is immutable and retains issues from the final static review: concurrent-exit slot overwrite and open/exit overlap after a spot withdrawal, keeper fallback marks that can understate opening notional or block owner health checks, pause detaching in-flight owner callbacks, a sticky re-entry mode, and zero-deposit public `deleverage` reserve spend after timeout. Details: [KNOWN-ISSUES](docs/KNOWN-ISSUES.md#final-static-review-findings-in-shipped-v3-source-13-november-not-fixed).
 
 Bounded fallback prices and owner-supplied position, equity and finalized-receipt observations are trusted. Pyth-compatible prices are checked for age, confidence and immutable absolute bounds. Compromised or mistaken observations can understate external exposure. Contract reservations bound signed opens, not venue fills or repeated relaying of public signatures. Price bands and reduce-only IOC orders can fail to fill; MPC fees, signer availability, liquidity, venue liquidation/ADL and route delays remain risks.
 

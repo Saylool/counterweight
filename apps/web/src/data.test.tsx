@@ -18,12 +18,16 @@ import {
 } from "./data";
 import {
   comparisonsFor,
+  date,
   demoSchema,
   formatNumber,
   nearTransactionHashes,
+  normalizeDemo,
+  normalizeV3Demo,
   pct,
   reportSchema,
   usd,
+  v3DemoSchema,
 } from "./model";
 import { evaluateRisk } from "../../../packages/domain/src/index";
 
@@ -221,6 +225,36 @@ describe("static data loading", () => {
     expect(demo.timeline.some((t) => t.action === "reduce-only close")).toBe(
       true,
     );
+  });
+  it("renders a failed or partial local run as failed instead of breaking the build", () => {
+    const committed = JSON.parse(
+      readFileSync(new URL("../../../reports/demo-local.json", import.meta.url), "utf8"),
+    );
+    expect(normalizeDemo(committed)).toEqual(demoSchema.parse(committed));
+    // Shape written by scripts/demo-local.ts when the sandbox fails mid-run.
+    const partial = {
+      schemaVersion: 1, status: "failed", startedAt: "2026-11-13T18:00:00.000Z",
+      finishedAt: "2026-11-13T18:09:00.000Z", policySha256: committed.policySha256,
+      mocked: committed.mocked, boundaries: committed.boundaries,
+      transcript: ["ROGUE approveAgent            REJECT MethodNotFound", "FAIL fetch failed"],
+      timeline: committed.timeline, error: "fetch failed",
+    };
+    expect(demoSchema.safeParse(partial).success).toBe(false);
+    const shown = normalizeDemo(partial);
+    expect(demoSchema.parse(shown)).toEqual(shown);
+    expect(shown).toMatchObject({ status: "failed", error: "fetch failed", rogueAttempts: [], assertions: {} });
+    expect(shown.timeline).toHaveLength(committed.timeline.length);
+    // A "passed" label on an incomplete report is not trusted.
+    expect(normalizeDemo({ ...partial, status: "passed" }).status).toBe("failed");
+    for (const broken of [undefined, null, "truncated", []]) {
+      const fallback = normalizeDemo(broken);
+      expect(demoSchema.parse(fallback)).toEqual(fallback);
+      expect(fallback.status).toBe("failed");
+      expect(date(fallback.finishedAt)).toBe("Unknown date");
+    }
+    const v3 = normalizeV3Demo({ status: "failed", version: "v3", startedAt: "2026-11-13T18:00:00.000Z", error: "boom" });
+    expect(v3DemoSchema.parse(v3)).toEqual(v3);
+    expect(v3).toMatchObject({ status: "failed", cases: [], assertions: {}, error: "boom" });
   });
 });
 describe("NEAR public views", () => {

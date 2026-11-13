@@ -59,7 +59,13 @@ interface ActiveOrder {
 export function safeFailure(error: unknown) {
   if (error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST') return 'Policy keeper lock or relay claim already exists; inspect the audit files before restarting';
   if (error instanceof Error && /^(Expected |Policy |NEAR |Hyperliquid |Contract )/.test(error.message)) return error.message.split('\n')[0]!.slice(0, 240);
-  return 'Unavailable or invalid public response; no uncertain signature retried';
+  // Keep the cause class and schema path (field names only, never values) so journals are diagnosable.
+  const name = error && typeof error === 'object' && 'name' in error && typeof error.name === 'string' ? error.name : '';
+  const issues = error && typeof error === 'object' && 'issues' in error && Array.isArray(error.issues) ? error.issues : [];
+  const path = (issues[0] as { path?: unknown } | undefined)?.path;
+  const where = Array.isArray(path) && path.length ? ` at ${path.map(String).join('.').slice(0, 80)}` : '';
+  const detail = /^(\$?ZodError|SyntaxError|TypeError|AbortError|TimeoutError)$/.test(name) ? ` (${name.replace('$', '')}${where})` : '';
+  return `Unavailable or invalid public response${detail}; no uncertain signature retried`;
 }
 export class Keeper {
   readonly client: PublicClient;
@@ -92,6 +98,11 @@ export class Keeper {
       !['near-uncertain', 'relay-claimed', 'verify'].includes(active.phase)) throw new Error('Policy active journal identity invalid');
     if (!active.txHash) { c.decision = 'blocked-uncertain-near-signature'; return false; }
     if (!c.txHashes.includes(active.txHash)) c.txHashes.push(active.txHash);
+    // A crash after the verified record but before journal removal must not count the same order twice.
+    if (await this.store.read(`verified-${active.txHash}.json`)) {
+      await this.store.remove(this.activeName); this.urgentUntil = 0;
+      c.decision = 'already-verified-journal-cleared'; return true;
+    }
     const raw = await this.client.rpc('tx', { tx_hash: active.txHash, sender_account_id: KEEPER, wait_until: 'FINAL' });
     const parsed = parseLifecycleReceipt(raw, active.txHash, active.expected);
     if (active.address !== c.derivedAddress) throw new Error('Policy active order derivation changed');
@@ -156,9 +167,20 @@ export class Keeper {
       equity: null, H: null, thresholdUsd: null, decision: 'monitor', txHashes: [], hyperliquidResponses: {}, commands: [],
       heartbeats: 0, reductions: 0, opens: 0, errors: [], dry: this.options.dry };
     try {
+      // A signing journal that cannot be resolved blocks every new order, including reductions. Withhold the
+      // heartbeat once it is older than half the contract timeout (or unreadable) so the public dead-man
+      // `deleverage` path becomes available instead of being kept off by a stuck keeper.
+      let journalAgeMs = 0;
+      try {
+        const journal = await this.store.read<ActiveOrder>(this.activeName);
+        if (journal) journalAgeMs = this.rt.now() - (Number.isFinite(journal.createdAt) ? journal.createdAt : 0);
+      } catch { journalAgeMs = Number.POSITIVE_INFINITY; }
       let snapshot = await this.client.policy(this.options.policy, undefined, async state => {
         this.heartbeatTimeoutMs = state.heartbeat_timeout_seconds * 1000;
-        if (heartbeatDue(state, this.rt.now()) && !this.stopped()) {
+        if (journalAgeMs > this.heartbeatTimeoutMs / 2) {
+          c.heartbeatWithheld = true;
+          c.errors.push('Policy signing journal unresolved past half the heartbeat timeout; heartbeat withheld so public deleverage can recover');
+        } else if (heartbeatDue(state, this.rt.now()) && !this.stopped()) {
           try { await this.command(c, 'heartbeat', {}); } catch (e) { c.errors.push(safeFailure(e)); }
         }
       });
@@ -209,7 +231,8 @@ export class Keeper {
       const pending: ActiveOrder = { phase: 'near-uncertain', expected, address, codeHash: snapshot.codeHash, before: o.clearinghouseState, createdAt: this.rt.now() };
       // Claim before invoking near-cli-rs. Even a crash before receiving its hash blocks new signatures.
       await this.store.claim(this.activeName, pending);
-      if (this.stopped()) { c.decision = 'stopped-before-signature'; return c; }
+      // Nothing has been sent yet: release the claim so a restart is not blocked as an uncertain signature.
+      if (this.stopped()) { await this.store.remove(this.activeName); c.decision = 'stopped-before-signature'; return c; }
       pending.txHash = await sendNear(this.rt, args); c.txHashes.push(pending.txHash); this.urgentUntil = pending.createdAt + 60000;
       await this.store.write(this.activeName, pending);
       await this.verifyActive(pending, c);

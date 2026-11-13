@@ -71,3 +71,13 @@ export function withdrawalConfig(address: string, spot: string, minPrice: string
     min_residual_equity_usdc: '1000000', min_headroom_bps: 1000, lower_headroom_bps: 3000,
     target_headroom_bps: 6000, upper_headroom_bps: 9000, fee_reserve_usdc: '100000', original_target_usdc: target.toString() };
 }
+/**
+ * Spot amount the one-time v2 withdrawal config was derived from. After the 12 November cleanup returned
+ * the wNEAR, live spot is 0 but the configured limits still encode the recorded initial inventory; without
+ * this fallback the read-only status recheck rejected its own historical configuration.
+ */
+export function withdrawalInventory(spotBalance: string, rebalance: unknown): string {
+  if (BigInt(spotBalance) > 0n) return spotBalance;
+  const recorded = z.object({ initial_inventory: z.string().regex(/^\d+$/) }).safeParse(rebalance);
+  return recorded.success ? recorded.data.initial_inventory : '0';
+}

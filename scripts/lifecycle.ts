@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { assembleRequest, deriveTestnetAddress, recoveredSigner, TESTNET_API } from '../packages/hyperliquid/src/index.js';
 import { stressMetrics } from '../packages/domain/src/index.js';
-import { BASE, decimal, info, liveMarket, orderPrice, units, withdrawalConfig, v3ExitPrice } from './lifecycle-config.js';
+import { BASE, decimal, info, liveMarket, orderPrice, units, withdrawalConfig, withdrawalInventory, v3ExitPrice } from './lifecycle-config.js';
 import { parseAccount, parseFills, parseLifecycleReceipt, parseWithdrawal, verifyFill, spotUsdc, verifyClassTransfer, WITHDRAWAL_WINDOW_MS, type ExpectedCall } from './lifecycle-parsing.js';
 import { callCommand, initialization, V3_MARGIN_LIMITS } from './testnet-plan.js';
 import { committedWasm, KEEPER, NEXT_POLICY, OWNER, parseOptions, PATH, publicCli, V2_BASELINE_SHA256, rpc, stateAt, txHash, V3_POLICY, V3_WASM, policyPlanFile, testnetAccount } from './testnet-common.js';
@@ -206,7 +206,8 @@ export async function lifecycle(argv: string[]) {
       record.outcome = 'spot-owner-commands-printed';
       return;
     }
-    const withdrawalLimits = !v3 && BigInt(state.spot_balance) > 0n ? withdrawalConfig(derived.address, state.spot_balance, plan.init.oracle.min_price, policy) : null;
+    const inventory = withdrawalInventory(state.spot_balance, rebalance);
+    const withdrawalLimits = !v3 && BigInt(inventory) > 0n ? withdrawalConfig(derived.address, inventory, plan.init.oracle.min_price, policy) : null;
     if (rebalance !== null) {
       const configured = z.object({ limits: z.unknown() }).parse(rebalance);
       if (withdrawalLimits === null || !isDeepStrictEqual(configured.limits, withdrawalLimits)) throw new Error('Policy withdrawal configuration differs from bounded lifecycle setup');

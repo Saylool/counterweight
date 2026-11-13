@@ -19,3 +19,7 @@ videos/
 # Live keeper locks are ephemeral; stale-lock-*.json evidence remains trackable.
 reports/keeper-run/*.lock.json
 !reports/keeper-run/stale-lock-*.json
+
+# Non-passing local demo runs; only passing runs replace the committed reports.
+reports/*.failed.json
+reports/*.failed.md

@@ -7,7 +7,8 @@ import { base58 } from '@scure/base';
 import { getSigningDigest } from '../packages/hyperliquid/src/index.js';
 import { DiskStore, PublicClient, commandArgs, extractHash, type Runtime } from '../apps/keeper/src/run-io.js';
 import { KEEPER, assess, heartbeatDue, planOrder, priceNeeded, riskSettings, stateSchema } from '../apps/keeper/src/run-state.js';
-import { Keeper, addCycle, newSummary, parseRunOptions, runKeeper, summaryMarkdown } from '../apps/keeper/src/run.js';
+import { Keeper, addCycle, newSummary, parseRunOptions, runKeeper, safeFailure, summaryMarkdown } from '../apps/keeper/src/run.js';
+import { z } from 'zod';
 
 vi.mock('../packages/hyperliquid/src/index.js', async original => ({
   ...await original<typeof import('../packages/hyperliquid/src/index.js')>(),
@@ -348,5 +349,53 @@ describe('rolling reports, scheduler and shutdown', () => {
     const x = await setup(); await x.store.claim(`${policy}.lock.json`, { pid: 1 });
     await expect(runKeeper(x.options, { store: x.store, rt: x.rt, runId: 'other' })).rejects.toMatchObject({ code: 'EEXIST' });
     expect(x.rt.exec).not.toHaveBeenCalled();
+  });
+});
+
+describe('journal edge cases from the final keeper review', () => {
+  it('releases an unsent signing claim when stopped between claim and send', async () => {
+    const x = await setup(); let stop = false;
+    const claim = x.store.claim.bind(x.store);
+    vi.spyOn(x.store, 'claim').mockImplementation(async (name, value) => {
+      await claim(name, value); if (name === x.keeper.activeName) stop = true;
+    });
+    const c = await new Keeper(x.options, x.store, x.rt, () => stop).cycle();
+    expect(c.decision).toBe('stopped-before-signature');
+    expect(await x.store.read(x.keeper.activeName)).toBeNull();
+    expect(x.rt.exec).not.toHaveBeenCalled();
+    // The restarted keeper is not blocked as if a signature were uncertain.
+    expect((await new Keeper(x.options, x.store, x.rt).cycle()).decision).toBe('reduction-verified');
+  });
+  it('does not count a verified order twice after a crash before journal removal', async () => {
+    const x = await setup();
+    await x.store.write(`verified-${hash}.json`, { phase: 'verify' });
+    await x.store.claim(x.keeper.activeName, { phase: 'verify', txHash: hash, address, createdAt: start,
+      expected: { method: 'request_order_signature', policy, caller: KEEPER, reduceOnly: true } });
+    const c = await x.keeper.cycle();
+    expect(c.decision).toBe('already-verified-journal-cleared'); expect(c.reductions).toBe(0);
+    expect(await x.store.read(x.keeper.activeName)).toBeNull();
+    expect(x.rt.exec).not.toHaveBeenCalled();
+    expect(vi.mocked(x.rt.fetch).mock.calls.some(c => String(c[0]).endsWith('/exchange'))).toBe(false);
+  });
+  it('withholds heartbeats while a signing journal stays unresolved, re-enabling public deleverage', async () => {
+    const x = await setup(); x.setTime(start + 1_800_001);
+    await x.store.claim(x.keeper.activeName, { phase: 'near-uncertain', address, createdAt: start,
+      expected: { method: 'request_order_signature', policy, caller: KEEPER, reduceOnly: true } });
+    const c = await x.keeper.cycle();
+    expect(c.decision).toBe('blocked-uncertain-near-signature');
+    expect(c.heartbeats).toBe(0); expect(c.heartbeatWithheld).toBe(true);
+    expect(c.errors.join(' ')).toContain('heartbeat withheld');
+    expect(x.rt.exec).not.toHaveBeenCalled();
+    // A young journal (normal in-flight order) keeps heartbeats flowing.
+    await x.store.write(x.keeper.activeName, { phase: 'near-uncertain', address, createdAt: start + 1_000_000,
+      expected: { method: 'request_order_signature', policy, caller: KEEPER, reduceOnly: true } });
+    expect((await x.keeper.cycle()).heartbeats).toBe(1);
+  });
+  it('keeps the error class and schema path in journal errors, never values', () => {
+    const invalid = z.object({ result: z.object({ block_hash: z.string() }) }).safeParse({ result: { block_hash: 7 } }).error;
+    expect(safeFailure(invalid)).toBe('Unavailable or invalid public response (ZodError at result.block_hash); no uncertain signature retried');
+    expect(safeFailure(new SyntaxError('Unexpected token s3cr3t'))).toBe('Unavailable or invalid public response (SyntaxError); no uncertain signature retried');
+    expect(safeFailure(new Error('opaque detail'))).toBe('Unavailable or invalid public response; no uncertain signature retried');
+    expect(safeFailure(new Error('Policy relay identity/code/keyless check failed'))).toBe('Policy relay identity/code/keyless check failed');
   });
 });

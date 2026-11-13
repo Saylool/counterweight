@@ -82,6 +82,49 @@ concurrent exits. Avoid treating that sequence as supported. Repair requires
 contract changes, regression tests and a separately deployed successor because
 the keyless v3 deployment is immutable. No deployed fix is claimed here.
 
+## Final static review findings in shipped v3 source (13 November, not fixed)
+
+A last static review of `contracts/policy/src` reported the following. Each was checked
+against the source; none is fixed in the deployed keyless v3, which is immutable. Fixes need
+contract changes, regression tests and a separately deployed successor.
+
+- **Concurrent exit slot (extends the item above):** a keeper `request_order_signature` or a
+  public `deleverage` during a pending spot withdrawal can also overwrite an owner
+  `emergency_reduce` held in `v3:concurrent_exit`. After the spot callback clears `pending`,
+  `assert_idle` checks only `pending`, so a new open, cancel or withdrawal can start while that
+  exit callback is still outstanding.
+- **Keeper fallback price inside the opening band:** with no fresh oracle, `set_keeper_price`
+  accepts any sane mark. A compromised keeper can set the lowest in-band mark, so opening
+  notional caps are computed at that price rather than the true price, or set an extreme mark that
+  fails owner margin-health checks for spot sales and withdrawals until the owner overwrites it.
+- **Pause detaches owner callbacks:** `set_paused(true)` with discarded authorizations requests an
+  invalidation, which detaches an in-flight owner withdrawal/transfer/reduction callback (a
+  `detached_callback` event is emitted and reservations are kept; the signature is not returned).
+- **Sticky re-entry mode:** once a margin withdrawal is reconciled under rebalancing,
+  `reentry_required` is never cleared, so every later open must pass the re-entry headroom and
+  acquisition-budget checks. A definite signer failure on such an open does not restore the
+  re-entry budget.
+- **Public `deleverage` reserve spend:** after the heartbeat timeout any account can call
+  `deleverage` with zero deposit about once per signing window, even when flat. Each call can spend
+  up to 0.01 NEAR of operating reserve (storage stays protected) and re-pauses the policy. The
+  exit path has per-window rate limits but no lifetime subsidy cap.
+- **Low:** rebalance/withdrawal configs accept `max_fee_usdc = 0` (v2's 1 micro-USDC cap is the
+  recorded example); sale and withdrawal capacity checks run before stale usage is pruned; a price
+  fall of more than half before `reconcile_sale_receipt` can make its bounds unsatisfiable; and
+  a perp-to-spot class transfer leaves the last margin observation in place for up to 30 seconds.
+
+## Keeper journal handling (fixed in source 13 November; restart required)
+
+The final keeper review found that an unresolved signing journal blocked every new order,
+including reductions, while heartbeats continued and kept the public `deleverage` fallback off.
+The keeper now withholds its heartbeat once a journal is older than half the contract heartbeat
+timeout (or unreadable), so the dead-man path becomes available. It also releases a claim when
+stopped before anything was sent, does not count an already verified order twice after a crash,
+and records the error class and schema path in journal errors. These changes have regression
+tests and apply only after the running keeper is restarted. Still open: terminal states for
+rejected NEAR receipts, venue errors and expired unfilled orders; one shared clock-skew
+tolerance; automatic recovery of a lock left by a dead process (manual removal is required).
+
 ## Mainnet user-signed actions are unsupported
 
 Although the init enum accepts `Mainnet`, class-transfer and withdrawal builders
@@ -154,11 +197,11 @@ Order proofs expire after 60 seconds; historical transactions cannot be revived.
 
 ## Remaining scope limits
 
-The rendered demo predates the corrected narration in `docs/VIDEO.md` and
-`apps/video/src/scenes.json`: “can authorize” out-of-band exits describes the
-tested boundary; “keeps exits open” overstates fill availability. Re-rendering
-alone cannot correct the existing spoken audio. Replacement narration and a
-matching render remain outside this offline repo edit; no paid voice API was used.
+The demo video was re-rendered on 13 November with a replacement A4 recording matching
+the current `docs/VIDEO.md` and `apps/video/src/scenes.json` narration (v2 arrival plus the
+separate live v3 run). The narration source no longer contains the earlier “keeps exits open”
+wording; the other six recordings are unchanged from 12 November. No paid voice API was used
+in this repository edit.
 
 Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
 no multi-day carry, Intents dry quotes only, no live rebalancing route. The v2 withdrawal arrived on Arbitrum Sepolia.

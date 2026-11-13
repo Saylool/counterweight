@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { LocalSandbox, POLICY_SHA256, MOCK_SHA256, assertSigned } from '@counterweight/local-sandbox';
 import { loadMarket } from '../apps/keeper/src/market.js';
 import { prepareLocalReplay, replayRisk } from '../apps/keeper/src/local-replay.js';
 import { runRogueAttempts } from './demo-rogue.js';
+import { demoReportLine, writeDemoReports } from './demo-report.js';
 
 // near-workspaces uses the CJS SDK. Its legacy declaration re-exports are not NodeNext compatible.
 const cjsLogger = createRequire(import.meta.url)('@near-js/utils').Logger as {
@@ -193,12 +194,11 @@ try {
   cjsLogger.overrideLogger();
   report.finishedAt = new Date().toISOString();
   await mkdir(output, { recursive: true });
-  emit('REPORTS reports/demo-local.md + reports/demo-local.json (timeline, logs, receipts, assertions)');
-  await writeFile(output + 'demo-local.json', JSON.stringify(report, null, 2) + '\n');
+  emit(demoReportLine('demo-local', report.status));
   const markdown = `# Counterweight local demo\n\nStatus: **${report.status}**. Real recorded market data; local policy execution; mock MPC, token and venue fills.\n\n`
     + `Run: \`npm ci && npm run demo:local\`. No runtime network beyond loopback. See [demo boundary](../packages/local-sandbox/README.md) and [known issues](../docs/KNOWN-ISSUES.md).\n\n`
     + '```text\n' + transcript.join('\n') + '\n```\n\n'
     + 'All emitted application lines are above. Full policy logs, receipt hashes, failures, snapshots and raw SDK diagnostics are retained below and in the JSON report.\n\n```json\n'
     + JSON.stringify(report, null, 2) + '\n```\n';
-  await writeFile(output + 'demo-local.md', markdown);
+  await writeDemoReports(output, 'demo-local', report.status, JSON.stringify(report, null, 2) + '\n', markdown);
 }

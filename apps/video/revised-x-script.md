@@ -1,6 +1,6 @@
 # Counterweight — X cut, revised A4 withdrawal and live v3 run
 
-A4 now pairs the verified v2 arrival with the separate 12 November live v3 open/close. The existing export retains its previous recording; all other source narration is unchanged. Script slots total 80 seconds; silent reading and measured audio may extend them. The Judge cut remains archived.
+A4 now pairs the verified v2 arrival with the separate 12 November live v3 open/close. Its recording was replaced and the export re-rendered on 13 November; all other narration is unchanged. Script slots total 80 seconds; silent reading and measured audio may extend them. The Judge cut remains archived.
 
 | Scene ID | Seconds | Visual | Exact Voiceover Words | On-Screen Caption (<= 8 Words) |
 | :--- | :---: | :--- | :--- | :--- |
@@ -12,12 +12,12 @@ A4 now pairs the verified v2 arrival with the separate 12 November live v3 open/
 | **A6** | `57–72 s` (`15 s`) | Keep 7/7 tested cases large. Highlight only increase beyond caps during oversized shorts and withdraw to rogue during rogue withdrawals; dim all other rows. At recovery emphasise the +601s row. Separate the early DEAD-MAN timeout check from the seven requests; preserve original line numbers and mocked-signature scope. | Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked. | **7/7 tested rogue requests rejected.** |
 | **A7** | `72–80 s` (`8 s`) | Code + recorded testnet evidence with enlarged repo URL. Restore npm ci && npm test && npm run demo:local in small type below it. Remove the policy address; retain prototype and trust limitations. Reveal the full card within 0.3s and hold it at least three seconds. Sentence-per-page subtitles. | Counterweight is a supervised testnet prototype, built at NEAR HACKATHON. Run the local demo and check the testnet evidence yourself. | **Run local demo. Check testnet evidence.** |
 
-A4 requires the user’s replacement recording at `videos/vo/x/04.mp3` before the next render. A4 has exactly two subtitle pages, one per sentence; its full-width picture switches with the second page at “On November twelfth,” using the measured audio duration. Subtitles replace the editorial caption in the single bottom band. Balanced pages preserve protected phrases, use at most two lines and hold for at least two seconds. All picture beats derive from scene narration word positions; measured audio replaces the silent estimate without fixed-second beat offsets.
+A4 uses the replacement recording at `videos/vo/x/04.mp3` (13 November). A4 has exactly two subtitle pages, one per sentence; its full-width picture switches with the second page at “On November twelfth,” using the measured audio duration. Subtitles replace the editorial caption in the single bottom band. Balanced pages preserve protected phrases, use at most two lines and hold for at least two seconds. All picture beats derive from scene narration word positions; measured audio replaces the silent estimate without fixed-second beat offsets.
 
 Revised source narration: 184 whitespace-delimited words. See docs/VIDEO.md for effective timings and the sentence audit.
 
 V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](../../docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.
 
-Release-editor note (13 November): the source wording above reflects the verified arrival and the separate live v3 run. The existing rendered video and recorded audio are unchanged; their earlier arrival caveat will change in a future render. Do not treat source wording as a description of the unchanged export.
+Release-editor note (13 November): the wording above reflects the verified arrival and the separate live v3 run, and `docs/media/counterweight-demo.mp4` was rendered with the re-voiced A4 recording.
 
 A4 v3 provenance: [12 November lifecycle summary](../../docs/evidence/2026-11-12-v3-lifecycle-summary.md) — short 3.6 NEAR @ 3.3788 (`5ckMPU…`), reduce-only close 3.6 @ 3.3796 (`3cvncG…`), owner settlement (`CYFZdH…`), zero access keys at order receipt blocks. Supervised testnet: opening needs a fresh owner margin attestation; settlement is an owner attestation. This live close occurred inside the opening band.
