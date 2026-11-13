@@ -5,7 +5,6 @@ import {hookHeadline, hookBeatTimes, keeperStage, lifecycleSummaries, lifecycleT
 const green='#b6df7c', muted='#a6b4aa', amber='#efbd67';
 const mono='"SFMono-Regular", Consolas, monospace';
 const v2='1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a';
-const v3='052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c';
 const refs=['H4ecuH…Q1vnt ↗','FnEqLs…LDmp3 ↗','DGcGa5…sS8eT ↗','2ZHrq1…DcFNd ↗','65WWr7…eL8JW ↗'];
 export const lifecycleBeats=[
   {title:'Owner funded',detail:'4 wNEAR deposited',sub:'Owner-only 49 USDC · spot → perp'},
@@ -71,27 +70,36 @@ export const XProof:React.FC<{scene:Scene;seconds:number}>=({scene,seconds})=>{
  </div>;
 };
 export const XWithdrawal:React.FC<{seconds:number}>=({seconds})=>{
- const f=useCurrentFrame(),{fps}=useVideoConfig(),v3Beat=f/fps>=narrationAt('A4','Separately,',seconds);
- return <div style={{position:'absolute',left:90,top:150,width:1740,height:688,padding:'24px 32px',boxSizing:'border-box',border:`2px solid ${amber}`,borderRadius:18,background:'#17201b'}}>
+ const f=useCurrentFrame(),{fps}=useVideoConfig(),v3Beat=f/fps>=narrationAt('A4','On November twelfth,',seconds);
+ return <div data-a4-beat={v3Beat?'v3':'withdrawal'} style={{position:'absolute',left:90,top:150,width:1740,height:688,padding:'24px 32px',boxSizing:'border-box',border:`2px solid ${amber}`,borderRadius:18,background:'#17201b'}}>
   {!v3Beat?<>
-   <div style={{fontSize:35,fontWeight:650,marginBottom:10}}>Recorded funded run</div>
-   <div style={{fontSize:22,color:muted,marginBottom:18}}>RECORDED V2 · HYPURRSCAN · ORIGINAL WITHDRAWAL ROW · 0xdf68992e…</div>
-   <div style={{display:'flex',gap:36,alignItems:'start',marginBottom:24}}>
-    <div><div style={{fontSize:20,color:muted,marginBottom:8}}>METHOD · SOURCE EXCERPT</div><SourceCrop asset="captures/hl-fills.png" rect={[310,294,240,92]} width={600}/></div>
-    <div><div style={{fontSize:20,color:muted,marginBottom:8}}>AMOUNT / TOKEN · SOURCE EXCERPT</div><SourceCrop asset="captures/hl-fills.png" rect={[1228,294,310,92]} width={775}/></div>
+   <div style={{fontSize:44,fontWeight:650,marginBottom:12}}>Recorded v2 withdrawal</div>
+   <div style={{fontSize:22,color:muted,marginBottom:18}}>HYPURRSCAN · ORIGINAL WITHDRAW ROW · ENLARGED EXCERPTS</div>
+   <div style={{display:'flex',gap:36,alignItems:'start',marginBottom:28}}>
+    <SourceCrop asset="captures/hl-fills.png" rect={[92,294,462,92]} width={828}/>
+    <SourceCrop asset="captures/hl-fills.png" rect={[1080,294,440,92]} width={789}/>
    </div>
-   <div style={{fontSize:64,color:green,lineHeight:1.16,marginBottom:10}}>46.957074 USDC net</div>
-   <div style={{fontSize:23,color:muted,marginBottom:16}}>Exact amount from saved lifecycle status · explorer rounds to 46.96</div>
-   <div style={{fontSize:42,color:amber,marginBottom:16}}>Arrived on Arbitrum Sepolia</div>
-   <div style={{fontSize:25,color:muted}}>47.957074 USDC gross · 1 USDC fee · fixed recipient 0xb1af…f36a</div>
-   <div style={{fontSize:20,color:muted,marginTop:16}}>docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json</div>
+   <div style={{fontSize:64,color:green,lineHeight:1.16,marginBottom:12}}>46.957074 USDC net</div>
+   <div style={{fontSize:23,color:muted,marginBottom:20}}>47.957074 USDC gross · 1 USDC fee · explorer rounds net to 46.96</div>
+   <div style={{fontSize:46,color:amber,marginBottom:22}}>Arrived on Arbitrum Sepolia</div>
+   <div style={{fontSize:25,color:muted,fontFamily:mono}}>Arrival tx 0xdf68…01c0 · fixed recipient 0xb1af…f36a</div>
+   <div style={{fontSize:20,color:muted,marginTop:22}}>docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json</div>
   </>:<>
-   <div style={{fontSize:35,fontWeight:650,marginBottom:10}}>Separate keyless v3 deployment</div>
-   <div style={{fontSize:22,color:muted,marginBottom:18}}>V3 · FINALIZED VERIFIER · ORIGINAL CAPTURE</div>
-   <SourceCrop asset="captures/v3-proof.png" rect={[80,138,1040,245]} width={1248}/>
-   <div style={{fontSize:42,color:green,marginTop:22}}>Reduce-only exits outside the opening price band</div>
-   <div style={{fontSize:29,color:amber,marginTop:16}}>Signature authorization · IOC fill not guaranteed</div>
-   <div style={{fontFamily:mono,fontSize:20,color:muted,marginTop:26}}>Committed WASM SHA-256 · {v3}</div>
+   <div style={{fontSize:44,fontWeight:650,marginBottom:12}}>Live v3 run · 12 Nov</div>
+   <div style={{fontSize:22,color:muted,marginBottom:22}}>SEPARATE KEYLESS V3 · SUPERVISED HYPERLIQUID TESTNET</div>
+   <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    {[
+     {label:'SHORT FILLED',result:'3.6 NEAR @ 3.3788'},
+     {label:'↓ REDUCE-ONLY CLOSE',result:'3.6 @ 3.3796'},
+     {label:'↓ OWNER SETTLED',result:'Flat · 0 access keys'},
+    ].map(row=><div key={row.label} style={{display:'flex',alignItems:'center',gap:30,minHeight:98,padding:'8px 24px',boxSizing:'border-box',border:`1px solid ${green}`,borderRadius:14,background:'#0c1510'}}>
+     <div style={{width:420,fontSize:29,color:amber}}>{row.label}</div>
+     <div style={{fontSize:52,color:green,fontWeight:650}}>{row.result}</div>
+    </div>)}
+   </div>
+   <div style={{fontSize:23,color:muted,marginTop:20}}>0 keys at open/close receipt blocks · owner margin & settlement are attestations</div>
+   <div style={{fontSize:20,color:muted,marginTop:24}}>docs/evidence/2026-11-12-v3-lifecycle-summary.md</div>
+   <div style={{fontFamily:mono,fontSize:21,color:muted,marginTop:10}}>Open 5ckMPU… → Close 3cvncG… → Settlement CYFZdH…</div>
   </>}
  </div>;
 };

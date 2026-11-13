@@ -6,7 +6,7 @@ Counterweight is a NEAR policy prototype for wNEAR holders who want a bounded ke
 **Owner opens; the keeper can only de-risk on its own:** v3 entries need an owner margin attestation at most 30 seconds old, then a bounded keeper request.
 **Nothing can leave to a new recipient:** withdrawals use immutable recipients; this does not prevent trading losses from false marks, fees or liquidation. See the [claims and limits](docs/CLAIMS.md).
 
-[Watch the 98-second demo](docs/media/counterweight-demo.mp4) · voiced and subtitled.
+[Watch the 94-second demo](docs/media/counterweight-demo.mp4) · voiced and subtitled.
 
 For a Rust-free local check (Node >=22.19.0; macOS arm64 or Linux x64):
 

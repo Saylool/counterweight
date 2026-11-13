@@ -163,7 +163,7 @@ describe('Remotion production tables and evidence',()=>{
     expect(keeper.find(r=>r.number===16)!.text).toContain('2.281');
     expect(keeper.some(r=>r.text.includes('$3.2299'))).toBe(false);
   });
-  it('backs the v3 exit claim with named regressions and preserves the real verifier hash',()=>{
+  it('backs the v3 exit claim with named regressions and A4 arrival and live-run provenance',()=>{
     for(const name of ['exits_far_outside_opening_band_all_authorities_and_exact_slippage_cap','oracle_outside_band_can_close_but_cannot_open']){
       expect(claims).toContain(name);
       expect(read('contracts/policy/src/tests/v3.rs')).toContain('fn '+name+'(');
@@ -171,9 +171,13 @@ describe('Remotion production tables and evidence',()=>{
     expect(claims).toContain('sandbox_v3_keyless_timelock_and_out_of_band_exits');
     expect(read('contracts/policy/tests/sandbox.rs')).toContain('async fn sandbox_v3_keyless_timelock_and_out_of_band_exits(');
     expect(claims).toContain('POLICY-V3.md#protective-exits');
-    expect(read('apps/video/src/XEvidence.tsx')).toContain('052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c');
-    expect(scenes.find(s=>s.id==='A4')!.shots).toHaveLength(2);
-    expect(scenes.find(s=>s.id==='A4')!.shots[1]!.panels[0]!.crop).toEqual([80,138,1040,245]);
+    const evidence=read('apps/video/src/XEvidence.tsx');
+    expect(evidence).toContain('docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json');
+    expect(evidence).toContain('docs/evidence/2026-11-12-v3-lifecycle-summary.md');
+    const a4=scenes.find(s=>s.id==='A4')!;
+    expect(a4.shots).toHaveLength(1);
+    expect(a4.shots[0]!.panels[0]).toMatchObject({asset:'captures/hl-fills.png',crop:[76,230,1768,337]});
+    expect(a4.claims).toEqual(['withdraw','versions','a4Arrival','a4LiveV3']);
   });
   it('checks narrated replay quantities against the committed report fields',()=>{
     const report=JSON.parse(read('reports/replay-report.json'));
@@ -211,7 +215,7 @@ describe('Remotion production tables and evidence',()=>{
       "A1": "Counterweight hedges NEAR holdings with a short, and a keyless NEAR policy limits what the keeper can sign. Recorded on Hyperliquid testnet.",
       "A2": "Counterweight puts a keyless NEAR policy contract between the keeper and the exchange. The keeper proposes an order, the contract checks its bounds, and NEAR Chain Signatures sign it for Hyperliquid.",
       "A3": "The owner funded the account, then deleted the policy's access keys. The keeper opened a 3.5 NEAR short and closed it reduce-only. The position is flat.",
-      "A4": "The recorded v2 run withdrew nearly forty-seven USDC net; it arrived on Arbitrum Sepolia. Separately, keyless v3 can authorize reduce-only exits outside the opening price band.",
+      "A4": "The v2 run withdrew nearly forty-seven USDC net, and it arrived. On November twelfth, a separate keyless v3 opened and closed a live testnet short.",
       "A5": "In a local simulation with the real policy WASM and mocked signatures, NEAR rallied thirty-two and a half percent in a day. The keeper closed the hedge reduce-only, and the owner's nonce and balance stayed unchanged.",
       "A6": "Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked.",
       "A7": "Counterweight is a supervised testnet prototype, built at NEAR HACKATHON. Run the local demo and check the testnet evidence yourself."
@@ -221,7 +225,7 @@ describe('Remotion production tables and evidence',()=>{
       for(const scene of scenes.filter(s=>s.cut==='x'&&s.voiceover.includes(phrase)))expect(subtitleCues(scene.voiceover).some(c=>c.includes(phrase))).toBe(true);
     }
   });
-  it('advances architecture once and switches the full-width v3 beat at Separately',()=>{
+  it('advances architecture once and switches the full-width v3 beat at On November twelfth',()=>{
     const seconds=13;
     const stages=Array.from({length:seconds*30},(_,f)=>architectureStage(f/30,seconds));
     expect([...new Set(stages)]).toEqual([0,1,2,3]);
@@ -229,10 +233,10 @@ describe('Remotion production tables and evidence',()=>{
     expect(architectureStage(narrationAt('A2','The keeper proposes',seconds),seconds)).toBe(1);
     expect(architectureStage(narrationAt('A2','the contract checks',seconds),seconds)).toBe(2);
     expect(architectureStage(narrationAt('A2','and NEAR Chain',seconds),seconds)).toBe(3);
-    const at=narrationAt('A4','Separately,',seconds);
+    const at=narrationAt('A4','On November twelfth,',seconds);
     const a4=scenes.find(s=>s.id==='A4')!;
-    expect(textBand(a4,true,at-.001,seconds)).toBe('it arrived on Arbitrum Sepolia.');
-    expect(textBand(a4,true,at+.001,seconds)).toMatch(/^Separately,/);
+    expect(textBand(a4,true,at-.001,seconds)).toBe('The v2 run withdrew nearly forty-seven USDC net, and it arrived.');
+    expect(textBand(a4,true,at+.001,seconds)).toBe('On November twelfth, a separate keyless v3 opened and closed a live testnet short.');
   });
   it('shows authentic verification fills and flat with provenance',()=>{
     const records=JSON.parse(read('apps/video/src/recorded-fills.json'));

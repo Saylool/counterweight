@@ -68,15 +68,15 @@
       "id": "A4",
       "cut": "x",
       "number": 4,
-      "title": "Recorded withdrawal / separate exit-policy proof",
+      "title": "Recorded v2 withdrawal / live v3 run",
       "start": 30,
       "end": 43,
       "seconds": 13,
-      "visual": "Recorded withdrawal / separate exit-policy proof. Two sequential full-width cards headed Recorded funded run and Separate keyless v3 deployment. First: authentic readable Hypurrscan excerpts, 46.957074 USDC net and arrived on Arbitrum Sepolia. At Separately switch to the unclipped keyless v3 verifier; keep Signature authorization · IOC fill not guaranteed visible throughout. Versions and hash stay in provenance.",
-      "voiceover": "The recorded v2 run withdrew nearly forty-seven USDC net; it arrived on Arbitrum Sepolia. Separately, keyless v3 can authorize reduce-only exits outside the opening price band.",
-      "caption": "Withdrawal recorded. Arrived on Arbitrum Sepolia.",
+      "visual": "Two sequential full-width beats: Recorded v2 withdrawal shows readable original Hypurrscan withdraw-row excerpts, 46.957074 USDC net and Arrived on Arbitrum Sepolia, tx 0xdf68…01c0, sourced to docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json. At On November twelfth switch to Live v3 run · 12 Nov: short 3.6 NEAR @ 3.3788 → reduce-only close 3.6 @ 3.3796 → owner settled, 0 access keys. Small provenance footer: docs/evidence/2026-11-12-v3-lifecycle-summary.md; open 5ckMPU…, close 3cvncG…, settlement CYFZdH…. Keep supervised testnet scope and owner-attestation limits visible. Both beats and the two sentence-per-page subtitles follow the measured narration duration.",
+      "voiceover": "The v2 run withdrew nearly forty-seven USDC net, and it arrived. On November twelfth, a separate keyless v3 opened and closed a live testnet short.",
+      "caption": "V2 withdrawal arrived. V3 testnet short closed.",
       "kind": "withdrawal",
-      "badge": "v2 funded run / v3 separate keyless deployment",
+      "badge": "RECORDED V2 WITHDRAWAL / SEPARATE LIVE V3 · TESTNET",
       "shots": [
         {
           "at": 0,
@@ -109,45 +109,13 @@
               ]
             }
           ]
-        },
-        {
-          "at": 6.552,
-          "panels": [
-            {
-              "asset": "captures/v3-proof.png",
-              "box": [
-                0,
-                0,
-                1,
-                1
-              ],
-              "label": "SEPARATE FINALIZED V3 VERIFIER",
-              "camera": [
-                {
-                  "at": 0,
-                  "rect": [
-                    80,
-                    138,
-                    1040,
-                    245
-                  ]
-                }
-              ],
-              "crop": [
-                80,
-                138,
-                1040,
-                245
-              ]
-            }
-          ]
         }
       ],
       "claims": [
         "withdraw",
-        "keys",
         "versions",
-        "exits"
+        "a4Arrival",
+        "a4LiveV3"
       ]
     },
     {
@@ -1024,6 +992,24 @@
       "anchor": "v3 reduce-only exits are not blocked outside the price band",
       "evidence": "docs/evidence/policy-v3-tests.txt",
       "spoken": []
+    },
+    "a4Arrival": {
+      "anchor": "arrived on Arbitrum Sepolia",
+      "evidence": "docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json",
+      "spoken": [
+        "46.957074"
+      ]
+    },
+    "a4LiveV3": {
+      "anchor": "v3 keeper short 3.6 @ 3.3788",
+      "evidence": "docs/evidence/2026-11-12-v3-lifecycle-summary.md",
+      "spoken": [
+        "November twelfth",
+        "3.6",
+        "3.3788",
+        "3.3796",
+        "zero"
+      ]
     }
   },
   "editorialDeviations": [
