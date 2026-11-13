@@ -35,12 +35,17 @@ describe("read-only presentation", () => {
     const html = renderToStaticMarkup(<ContractPanel artifact={artifacts} />);
     expect(html).toContain('aria-pressed="true">v2');
     expect(html).toContain('v3 · separate keyless deployment');
+    expect(html).toContain('Public Hyperliquid testnet reads for <code>0x3e72c8963761c3f436710df9b891d8e3a74b5390</code>');
     vi.stubEnv("VITE_POLICY_ACCOUNT", "policy-v3.counterweight-samet.testnet");
     try {
       const v3 = renderToStaticMarkup(<ContractPanel artifact={artifacts} />);
       expect(v3).toContain('supplied mark +1%');
       expect(v3).toContain('malicious caller can submit a false high mark');
-      expect(v3).toContain('No live v3 exit fill is claimed');
+      expect(v3).toContain('3.6 NEAR reduce-only to flat on testnet inside the opening band');
+      expect(v3).toContain('out-of-band exit authorization is locally tested');
+      expect(v3).toContain('IOC fills are not guaranteed');
+      expect(v3).toContain('Public Hyperliquid testnet reads for <code>0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5</code>');
+      expect(v3).not.toContain('0x3e72c8963761c3f436710df9b891d8e3a74b5390');
     } finally { vi.unstubAllEnvs(); }
   });
   it("renders each architecture actor with an accessible description", () => {
@@ -112,6 +117,24 @@ describe("read-only presentation", () => {
       renderToStaticMarkup(<Chart title="Empty" note="" lines={[]} />),
     ).toContain("No comparable observations");
   });
+});
+
+it("renders v3's supervised open/close without borrowing v2 withdrawal or settlement claims", () => {
+  const summary = lifecycleSchema.parse(JSON.parse(readFileSync(new URL("../../../docs/evidence/2026-11-12-v3-lifecycle-summary.json", import.meta.url), "utf8")));
+  const html = renderToStaticMarkup(<LifecycleTable summary={summary} />);
+  for (const row of summary.steps) {
+    expect(html).toContain(row.step);
+    if (row.tx) expect(html).toContain(`https://testnet.nearblocks.io/txns/${row.tx}`);
+    expect(html).toContain(`evidence/${row.evidence}`);
+  }
+  for (const text of ['3.6 NEAR @ 3.3788', '3.6 NEAR @ 3.3796', '48.986173', 'Owner-assisted open', 'keeper-only close', 'locally tested', 'no completed owner settlement or withdrawal'])
+    expect(html).toContain(text);
+  expect(html).not.toContain('Withdrawal ledger:');
+  expect(html).not.toContain('preceded key removal');
+  expect(html).toContain('evidence/2026-11-12-v3-lifecycle-summary.md');
+  const app = renderToStaticMarkup(<App />);
+  expect(app).toContain('12 November · keyless v3 open/close');
+  expect(app).toContain('10 November · historical keyless v2 lifecycle');
 });
 
 

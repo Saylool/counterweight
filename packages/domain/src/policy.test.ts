@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { expect, it } from 'vitest';
 import { stressMetrics } from './index.js';
 import { policyDecision, policyUpperNotional, type PolicyScenario } from './policy.js';
-it('feeds the same cap, headroom, reduce and open-short withdrawal scenarios through TS and real contract methods', () => {
+it.skipIf(process.env.COUNTERWEIGHT_TS_ONLY === '1')('feeds the same cap, headroom, reduce and open-short withdrawal scenarios through TS and real contract methods', () => {
   const scenarios = JSON.parse(readFileSync('contracts/policy/fixtures/policy-scenarios.json', 'utf8')) as PolicyScenario[];
   const cargoEnv = { ...process.env };
   const localCargo = `${process.cwd()}/contracts/policy/.cargo-home`;

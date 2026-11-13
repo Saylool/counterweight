@@ -2,7 +2,7 @@
 
 The saved public evidence verifies 4 wNEAR custody on `policy-v3.counterweight-samet.testnet`, a keeper IOC short of 3.6 NEAR at 3.3788, and a keeper reduce-only buy of 3.6 at 3.3796, leaving the Hyperliquid position flat. Both successful order requests have zero policy access keys at their request/signature receipt blocks and signatures recovering the policy-derived address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`.
 
-This was supervised: **v3 opens require an owner margin attestation no more than 30 seconds old**. The keeper cannot open alone; it can reduce alone. Owner settlement is still pending after the opening authorization expires. Venue flatness does not release the contract's reserved short automatically.
+This was supervised: **v3 opens require an owner margin attestation no more than 30 seconds old**. The keeper cannot open alone; it can reduce alone. Owner settlement is not recorded in this saved lifecycle; the close capture still reserves the short. Venue flatness does not release the contract's reserved short automatically.
 
 ## Transactions
 
@@ -18,7 +18,17 @@ This was supervised: **v3 opens require an owner margin attestation no more than
 | Second keeper v3 open — filled | [5ckMPUyA…](https://testnet.nearblocks.io/txns/5ckMPUyA87VycWs2HFyBBQiWvuAJTJbFUA6ZpMuUCwwM) | Sell 3.6 NEAR @ 3.3788; [fill 0x53ce4698…0224c9](https://app.hyperliquid-testnet.xyz/explorer/tx/0x53ce46989e0e4adf5548042dfb724b0101005e7e390169b1f796f1eb5d0224c9) |
 | Keeper v3 reduce-only close — filled | [3cvncGKs…](https://testnet.nearblocks.io/txns/3cvncGKshNgXQop5p438o8Qh1vWZBm4U5mrP5u3xxaUu) | Buy 3.6 NEAR @ 3.3796; [fill 0x1888a834…88dc45](https://app.hyperliquid-testnet.xyz/explorer/tx/0x1888a8348885025b1a02042dfb73c5010700c01a2388212dbc5153874788dc45); flat |
 
-The cleanup transaction hashes and successful `v2:cleanup --step=status` result come from the operator's 12 November release record: `paused`, `expired`, `abandoned`, `spotReturned`, and `ownerIncreaseVerified` were all true. The checked-in [pre-withdrawal baseline](v2-cleanup-withdraw-before.json) records owner token balance `"0"` and policy contract/token balances `"4000000000000000000000000"`; that baseline alone does not prove the later return. Cleanup does not prove destination-chain arrival of the earlier USDC withdrawal.
+The cleanup transaction hashes come from the operator's 12 November release record.
+The archived [final public status](2026-11-12-v2-cleanup-status.json) records
+`paused`, `expired`, `abandoned`, `spotReturned`, and `ownerIncreaseVerified` all true
+at finalized block `Bw3XwWFYpFymET4zXZKKaXKRgkha8M9kNvuJhqTKdNmH`
+(17:35:10.437 UTC). The [pre-withdrawal baseline](v2-cleanup-withdraw-before.json)
+records owner token balance `"0"`; final policy internal/token balances are zero
+and owner balance is `"4000000000000000000000000"` (4 wNEAR).
+The [cleanup record](../V2-CLEANUP.md) links every archived stage output, copied
+byte-for-byte from local release JSON. Earlier stage outputs print proposed commands;
+the final status supplies the later balance checks. Cleanup does not prove
+destination-chain arrival of the earlier USDC withdrawal.
 
 ## What the saved v3 evidence verifies
 
@@ -35,6 +45,6 @@ The successful relay records contain venue responses and matching public fills b
 
 ## Remaining boundary
 
-The close evidence still records `signed_short_size: "3600000000000000000000000"` and `last_open_expiry: "1794505157899"` (12 November 2026, 17:39:17.899 UTC). Owner `settle_position` remains pending and must follow that expiry with a fresh flat/no-open-orders observation. No completed v3 settlement or withdrawal is claimed. The 4 wNEAR remain in v3 custody and directional after the venue close.
+The close evidence still records `signed_short_size: "3600000000000000000000000"` and `last_open_expiry: "1794505157899"` (12 November 2026, 17:39:17.899 UTC). Owner `settle_position` was not documented in this lifecycle capture; it requires a fresh flat/no-open-orders observation after that expiry. This describes the dated close capture, not a current settlement-status check. No completed v3 settlement or withdrawal is claimed. The 4 wNEAR remain in v3 custody and directional after the venue close.
 
 This live close occurred inside the opening bounds; it does not establish a live out-of-band or paused exit fill. Those authorization cases have separate local evidence. These public captures establish a brief supervised testnet open/close, not continuous keeper uptime, autonomous opening, multi-day carry, live Intents execution or destination-chain arrival. Owner margin and settlement observations remain attestations, without an on-chain venue verifier.

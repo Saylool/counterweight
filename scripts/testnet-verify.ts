@@ -32,7 +32,7 @@ export async function verifyTestnet(argv: string[]) {
   const options = parseOptions(argv, ['owner-evm', 'before-key-removal', 'policy', 'plan']);
   if (options['before-key-removal'] !== undefined && options['before-key-removal'] !== 'true') throw new Error('Expected --before-key-removal=true');
   if (options['owner-evm']) z.string().regex(/^0x[0-9a-fA-F]{40}$/).parse(options['owner-evm']);
-  const policy = testnetAccount(options.policy ?? NEXT_POLICY);
+  const policy = testnetAccount(options.policy ?? V3_POLICY);
   const planFile = options.plan ?? policyPlanFile(policy);
   if (policy !== POLICY && !planFile) throw new Error('Policy verification requires --plan for a custom account');
   const artifact = await committedWasm(policy === V3_POLICY ? V3_WASM : undefined);

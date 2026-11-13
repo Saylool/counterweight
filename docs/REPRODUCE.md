@@ -1,61 +1,101 @@
-# Release reproduction — funded keyless lifecycle, 2026-11-10
+# Release reproduction — keyless v2/v3 evidence, 2026-11-12
 
-Start with the [funded lifecycle summary and exact transaction table](evidence/2026-11-10-lifecycle-summary.md),
-[NEAR v2 policy](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) and
-[derived Hyperliquid testnet address](https://app.hyperliquid-testnet.xyz/explorer/address/0x3e72c8963761c3f436710df9b891d8e3a74b5390).
-This evidence establishes the supervised testnet custody/transfer/open/close/settlement/withdrawal lifecycle;
-it does not establish mainnet, multi-day carry, a live Intents route or destination-chain arrival.
-The 4 wNEAR remains in spot custody after closing. UI Send lands in spot; the owner separately moves margin to perps.
-Owner funding and the spot→perp transfer preceded key deletion; the keeper open, close and withdrawal records
-show zero keys at their receipt blocks. The original v1 account remains a rehearsal with an access key.
+Start with the [12 November v3 lifecycle and transaction table](evidence/2026-11-12-v3-lifecycle-summary.md)
+and the [10 November v2 lifecycle](evidence/2026-11-10-lifecycle-summary.md).
+V3 records 4 wNEAR custody, a 3.6 NEAR short @ 3.3788 and an in-band reduce-only
+close @ 3.3796 to flat. Opening required an owner margin attestation ≤30 seconds
+old; closing used keeper-only commands. The close capture retains reserved
+exposure and does not establish completed owner settlement. The spot leg remains
+directional after closing. V2 cleanup returned its 4 wNEAR on 12 November;
+[archived final status](evidence/2026-11-12-v2-cleanup-status.json) verifies the owner
+balance increase. The [v3 code/key proof](evidence/2026-11-11-v3-proof.json) is now
+archived here too. V1 remains a rehearsal with an access key.
 
-## Current working-checkout validation
+## Current working-checkout validation — 12 November
 
-This release pass used the existing checkout and dependencies on macOS arm64; no git commands, real private keys,
-wallet/keychain access or testnet sends were used. No fresh install, clean clone, local demo rerun or full Rust
-native/sandbox rerun is claimed here. `npm test` includes the focused Rust cross-layer regression.
+This offline release pass used the existing checkout and dependencies on macOS
+arm64, Node v26.9.0 and npm 12.1.0. No git commands, real private keys,
+wallet/keychain access, paid APIs or chain sends were used. No fresh install,
+clean clone, public RPC revalidation, local demo rerun or full native/sandbox Rust
+rerun is claimed. `CARGO_NET_OFFLINE=true npm test` ran both focused Rust
+cross-layer regressions from cached dependencies. The live keeper source,
+process, journals, reports and `.tmp/` were left untouched.
 
 | Command | Result |
 |---|---|
-| `npm test` | PASS: 425 tests / 20 root files, 30 tests / 2 frontend files; **455 total** |
+| `npm test` (Cargo offline) | PASS: 546 tests / 28 root files + 33 tests / 2 frontend files; **579 total**, exit 0 |
+| `npm run test:ts` | PASS: 544 root tests, 2 Rust cross-layer tests explicitly skipped, plus 33 frontend tests; **577 passed**, exit 0 |
 | `npm run typecheck` | PASS, exit 0 |
-| `npm run build` | PASS, exit 0; includes web build |
-| `npm run web:build` | PASS, exit 0 |
-| `npm run web` | Vite ready; port 5173 occupied, served on 5174; HTTP 200 for page, lifecycle table JSON, artifact JSON, evidence index and app module |
-| Public v2 verifier below | PASS, exit 0; all four named checks true |
-| Public withdrawal status below | PASS, exit 0; `public-status-verified` and exact recorded ledger match |
+| `npm run web:build` | PASS, exit 0; emits both lifecycle JSONs and archived evidence |
 
-README replay-number drift tests passed in the root suite. Frontend checks cover the funded table, exact explorer
-links, v2 default, and testnet position/margin/ledger parsing. Interactive visual inspection was unavailable because
-the browser access host was unavailable; the HTTP smoke checks and server rendering tests are not a visual browser test.
-The initial gross/net matcher regression was fixed; the final suite above is green.
+The tests verify the v3 table's transactions, keyless receipts, recovered signer
+and fill data against the saved relay JSON; v2 cleanup checks use the archived
+status and pre-withdrawal baseline. Frontend tests cover both tables, the dated
+in-band/out-of-band distinction and selected v2/v3 venue addresses. README replay
+numbers remain drift-checked. This pass used server-rendered frontend checks;
+no interactive visual browser test or new dev-server HTTP check is claimed.
 
-## Recheck the real evidence without sending
+## Quickstart and local demos
 
-Public RPCs can rate-limit parallel reads. `NEAR_TESTNET_RPC` is shared by CLI RPC and public Chain Signatures
-derivation (`packages/hyperliquid/src/chainsig.ts`). No credential is required for this public endpoint:
+For a new machine, follow the [README quickstart](../README.md#judge-quickstart):
+
+```sh
+git clone https://github.com/Saylool/counterweight && cd counterweight
+npm ci
+npm run test:ts
+npm run demo:local
+npm run demo:local:v3
+npm run web:build
+```
+
+Node ≥22.19.0 is required. Installation needs internet for dependencies and the
+local NEAR sandbox binary. After installation, `test:ts`, replay and both demos
+use local fixtures; the sandbox demos need loopback listeners. No Rust is needed
+for these commands: both demos execute the committed WASMs. `test:ts` explicitly
+skips only the two Cargo cross-layer tests, not all v3 TypeScript checks.
+Use Rust 1.95+ and `npm test` for the full cross-layer suite; use `npm run test:all`
+for the full native library suite. Prime Cargo dependencies online as documented
+in the [contract instructions](../contracts/policy/README.md).
+
+`demo:local` checks seven unauthorized requests and public timeout recovery;
+`demo:local:v3` checks paused/out-of-band exit authorization and the false-mark
+boundary. Saved passing v3 outputs are [JSON](../reports/demo-local-v3.json) and
+[transcript](../reports/demo-local-v3.md), dated 12 November. They are prior saved
+runs, not newly executed by this release pass. MPC, tokens, venue fills and route
+receipts are mocks. Local signatures do not prove live out-of-band fills.
+
+## Optional public rechecks without sending
+
+These commands are documented for judges; they were not run during this offline
+pass. Public services can rate-limit or change. `NEAR_TESTNET_RPC` is shared by
+CLI RPC reads and public Chain Signatures derivation:
 
 ```sh
 NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify
+NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify -- --policy=policy-v3.counterweight-samet.testnet
+NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet
 NEAR_TESTNET_RPC=https://test.rpc.fastnear.com npm run lifecycle -- --step=status --relay-tx=9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25
 ```
 
-The verifier defaults to `policy-v2.counterweight-samet.testnet` and `docs/evidence/policy-v2-plan.json`.
-You should see `ok: true` for code hash, access keys (zero), config/current state, and derived address.
-[Saved successful verifier JSON](evidence/2026-11-10-release-testnet-verify.json).
+The verifier now defaults to **v3**, automatically selecting
+`docs/evidence/policy-v3-plan.json` and the pinned v3 WASM. Expect five checks:
+code hash, zero access keys, config/current state, adapter-free margin limits,
+and derived address. Explicit v2 selects its preserved plan/artifact and four
+checks. Exit 0 requires every check to pass; unavailable reads or baseline drift
+fail closed. Current snapshots do not prove prior fills.
+The [saved v2 verifier](evidence/2026-11-10-release-testnet-verify.json) is historical,
+not a result for the new v3 default.
 
-The status command should show `relayVerification.verification.hash` equal to
-[0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0).
-[Saved successful status JSON](evidence/2026-11-10-release-lifecycle-recheck.json).
-The original failed relay record is retained: it compared signed gross 47.957074 to ledger net 46.957074 USDC.
-The corrected match adds the ledger fee `1.0`, checks the ledger microsecond nonce 1794331863418000 against
-signed millisecond time 1794331863418, queries the saved action's bounded day and rejects ambiguous matches.
-Formatting variants normalize using integer micro-USDC. Minimal rows without nonce use unique amount/time correlation;
-without fee they use the documented 1 USDC testnet fee. No match proves destination-chain arrival.
-
-These commands perform public reads and write local evidence only. They never relay a signature.
-RPC outages or baseline drift fail closed; do not resubmit an uncertain withdrawal.
-The browser uses `VITE_NEAR_RPC` instead, with a public CORS-enabled endpoint.
+The withdrawal status command should match
+[0xdf68992e…0501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0).
+The [saved successful status](evidence/2026-11-10-release-lifecycle-recheck.json)
+records 47.957074 gross = 46.957074 net + 1 USDC fee. Matching converts the ledger
+microsecond nonce to signed milliseconds, queries the saved action's bounded
+day and rejects ambiguous rows. Minimal rows use unique amount/time correlation;
+missing fee uses the documented 1 USDC testnet fee. No match proves bridge arrival.
+Never resubmit an uncertain withdrawal. These commands read public state and may
+write local evidence; they never relay a signature. The browser uses a public
+CORS-enabled `VITE_NEAR_RPC` endpoint instead.
 
 ---
 
@@ -74,7 +114,7 @@ The release-overlay discussion in the earlier record is obsolete: those release 
 
 ## Exact quickstart and timings
 
-The historical clone/setup block used the then-current README (the current quickstart uses the working checkout):
+The historical clone/setup block used the then-current README (the current quickstart uses the public GitHub URL):
 
 ```sh
 REPRO_DIR="$(mktemp -d /tmp/counterweight-judge.XXXXXX)"

@@ -13,14 +13,14 @@ contract gates and adds independent exit rate capacity, adapter-free partial
 withdrawals with post-withdrawal H checks, and cancellable 24h owner opening-bound updates.
 V3 is **deployed keyless** as `policy-v3.counterweight-samet.testnet`, derived
 address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`. The
-[saved code/key proof](../videos/build/captures/v3-proof.json) records zero keys and
+[saved code/key proof](evidence/2026-11-11-v3-proof.json) records zero keys and
 WASM SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
 [12 November lifecycle evidence](evidence/2026-11-12-v3-lifecycle-summary.md) verifies
 4 wNEAR custody, a keeper IOC short of 3.6 NEAR @ 3.3788 and a reduce-only buy
 of 3.6 @ 3.3796, leaving the venue flat with 48.986173 USDC equity. Both successful
 requests have zero policy keys at their request/signature receipt blocks and recovered
-signers matching the derived address. Owner settlement remains pending after open expiry;
-the contract still reserves 3.6 NEAR. Out-of-band exit authorization is locally tested;
+signers matching the derived address. The close capture reserves 3.6 NEAR;
+no owner settlement receipt is retained in the saved lifecycle. Out-of-band exit authorization is locally tested;
 this live close occurred inside the opening band and proves no live paused/out-of-band fill.
 These changes do not repair v2; its historical WASM remains separately pinned.
 
@@ -43,8 +43,8 @@ All sandbox fixtures execute the shipped optimized production artifact. See
 [build, reserve and staged funding details](POLICY-V3.md).
 
 V2 cleanup **completed on 12 November**: pause, expiry, abandonment, owner wrap.testnet
-registration and return of 4 wNEAR to the fixed owner. The operator's status run
-verified paused, expired, abandoned, spotReturned and ownerIncreaseVerified=true;
+registration and return of 4 wNEAR to the fixed owner. The archived [final status](evidence/2026-11-12-v2-cleanup-status.json)
+verifies paused, expired, abandoned, spotReturned and ownerIncreaseVerified=true;
 see the [transaction table, provenance and baseline](evidence/2026-11-12-v3-lifecycle-summary.md).
 Those 4 wNEAR were then deposited into v3. The historical v2 fee-cap mismatch
 (1 micro-USDC configured versus the actual 1 USDC fee) still prevents truthful
@@ -60,6 +60,44 @@ venue, gas and fee availability still matter. See the explicit trust boundary in
 [POLICY-V3](POLICY-V3.md).
 
 ## Keeper monitoring has interruptions; no autonomous trading proof
+
+The current keeper's opt-in opening planner does not check the age of v3's owner
+margin attestation before claiming its signature journal. A rejected
+`ERR_REBALANCE_STALE` opening can therefore leave a blocking `.active.json`.
+Keep openings disabled for unattended operation. Preserve and reconcile any
+journal before recovery; restarting or deleting it is not proof that no signature
+exists. The live keeper source, process, locks and journals were left untouched
+in this offline release edit. See [the supervised-entry warning](KEEPER-RUN.md#running-the-keeper).
+
+## V3 pause, concurrent callbacks and governance boundaries
+
+Pause intentionally blocks additions/cancels while allowing reduce-only exits.
+It does **not** revoke a compromised keeper's closing authority. Combined with
+unauthenticated marks, that keeper can request adverse buybacks while paused;
+rotate the keeper through owner `set_config` to remove its authority to request
+new signatures. Already issued signatures retain their original venue validity.
+The 24h timelock covers opening price bounds only: `set_config` changes to the
+keeper, caps and configurable opening band take effect immediately.
+
+The jury identified an untested multiple-exit edge case in the shipped v3 source:
+while a spot withdrawal is pending, another exit writes the same
+`v3:concurrent_exit` slot, overwriting its predecessor; timeout expiry removes that
+slot without the normal uncertain-operation bookkeeping. The existing
+single-exit/token-callback ordering tests do not establish safety for repeated
+concurrent exits. Avoid treating that sequence as supported. Repair requires
+contract changes, regression tests and a separately deployed successor because
+the keyless v3 deployment is immutable. No deployed fix is claimed here.
+
+## Mainnet user-signed actions are unsupported
+
+Although the init enum accepts `Mainnet`, class-transfer and withdrawal builders
+and their digest validation hardcode signature chain ID `0x66eee` / `421614`
+in `contracts/policy/src/lib.rs` and `hl_digest.rs`. They do not select the
+mainnet domain. Do not deploy or operate this artifact on mainnet. Correcting and
+validating those domains belongs to a future artifact; both frozen testnet WASMs
+and their manifests remain unchanged. No mainnet compatibility is claimed.
+
+## Recorded monitoring limits
 
 The [recorded-run table](KEEPER-RUN.md#recorded-runs-through-12-november-2026)
 links each Markdown summary and raw JSONL. It reports heartbeats and price updates
@@ -122,9 +160,15 @@ Order proofs expire after 60 seconds; historical transactions cannot be revived.
 
 ## Remaining scope limits
 
+The rendered demo predates the corrected narration in `docs/VIDEO.md` and
+`apps/video/src/scenes.json`: “can authorize” out-of-band exits describes the
+tested boundary; “keeps exits open” overstates fill availability. Re-rendering
+alone cannot correct the existing spoken audio. Replacement narration and a
+matching render remain outside this offline repo edit; no paid voice API was used.
+
 Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
 no multi-day carry, Intents dry quotes only, no live rebalancing route, and no destination-chain arrival verification.
-The 4 wNEAR spot leg is now in v3 custody and remains directional after the venue close; owner settlement is pending. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
+The 4 wNEAR spot leg is now in v3 custody and remains directional after the venue close; owner settlement is not recorded in the saved lifecycle. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
 signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
 
 ## 3. Demo attack semantics and owner boundary

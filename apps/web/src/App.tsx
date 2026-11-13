@@ -89,7 +89,10 @@ export function ContractPanel({ artifact }: { artifact: Artifacts }) {
         IOC orders can partially fill or fail to fill; fees are additional.
         <strong> The mark is unauthenticated: a malicious caller can submit a false high mark</strong>
         {" "}within the sanity range and authorize an adverse buyback up to that mark +1%.
-        The cap does not guarantee 1% against the true market. No live v3 exit fill is claimed.
+        The cap does not guarantee 1% against the true market. On 12 November, v3 closed
+        3.6 NEAR reduce-only to flat on testnet inside the opening band.
+        Paused and out-of-band exit authorization is locally tested; IOC fills are not guaranteed.
+        Opens require an owner margin attestation at most 30 seconds old; the keeper can reduce alone.
       </Notice>}
       <ResourceState {...result} />
       {data && (
@@ -222,6 +225,10 @@ export function ContractPanel({ artifact }: { artifact: Artifacts }) {
           </div>
         </>
       )}
+      {(account === V3_ACCOUNT || account === DEFAULT_ACCOUNT) && <VenuePanel
+        address={account === V3_ACCOUNT ? "0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5" : "0x3e72c8963761c3f436710df9b891d8e3a74b5390"}
+        startTime={account === V3_ACCOUNT ? 1794504000000 : 1794330000000}
+      />}
       <p className="source-note">
         Public <a href={sourceDocs.near}>NEAR RPC view calls</a> only. Account,
         keys, state and derived key are pinned to one finalized block. Refresh
@@ -231,6 +238,7 @@ export function ContractPanel({ artifact }: { artifact: Artifacts }) {
   );
 }
 export function LifecycleTable({ summary }: { summary: LifecycleSummary }) {
+  const isV3 = summary.policy === V3_ACCOUNT;
   return <>
     <p><strong>{summary.policy}</strong> · zero access keys verified in dated evidence · {summary.date}.</p>
     <p><a href={`https://app.hyperliquid-testnet.xyz/explorer/address/${summary.address}`} target="_blank" rel="noreferrer">
@@ -245,14 +253,17 @@ export function LifecycleTable({ summary }: { summary: LifecycleSummary }) {
         </tr>)}</tbody>
       </table>
     </div>
-    <p>Withdrawal ledger: <a href={`https://app.hyperliquid-testnet.xyz/explorer/tx/${summary.withdrawalHash}`}><code>{summary.withdrawalHash}</code> ↗</a>.
-      Fixed recipient: <code>{summary.recipient}</code>. Destination-chain arrival is unverified.</p>
-    <p>Owner funding and the 49 USDC spot→perp transfer preceded key removal. Keeper trading and withdrawal
-      were checked with zero keys at their receipt blocks.</p>
+    {summary.withdrawalHash && <p>Withdrawal ledger: <a href={`https://app.hyperliquid-testnet.xyz/explorer/tx/${summary.withdrawalHash}`}><code>{summary.withdrawalHash}</code> ↗</a>.
+      Fixed recipient: <code>{summary.recipient}</code>. Destination-chain arrival is unverified.</p>}
+    {isV3 ? <p>Owner-assisted open · keeper-only close. Zero keys at both order receipt blocks.
+      The close capture retains reserved exposure; no completed owner settlement or withdrawal is proven here.
+      This live close was in-band; paused and out-of-band authorization is locally tested. IOC fills are not guaranteed.</p>
+      : <p>Owner funding and the 49 USDC spot→perp transfer preceded key removal. Keeper trading and withdrawal
+      were checked with zero keys at their receipt blocks.</p>}
     <Notice tone="warning">Testnet only; supervised owner funding, observations, settlement and withdrawal approval.
       UI Send lands in spot. Intents has only dry quotes. No multi-day carry or live rebalancing route is proven.
       The contract does not verify venue fills on-chain; the 4 wNEAR spot leg remains directional after closing.</Notice>
-    <p><a href={assetUrl("evidence/2026-11-10-lifecycle-summary.md")}>Read the full lifecycle summary ↗</a></p>
+    <p><a href={assetUrl(`evidence/${isV3 ? "2026-11-12-v3" : "2026-11-10"}-lifecycle-summary.md`)}>Read the full lifecycle summary ↗</a></p>
   </>;
 }
 export function VenuePanel({ address, startTime }: { address: string; startTime: number }) {
@@ -282,11 +293,10 @@ export function VenuePanel({ address, startTime }: { address: string; startTime:
     </>}
   </>;
 }
-function FundedLifecycle() {
-  const result = useResource(() => loadJson("data/lifecycle.json", lifecycleSchema));
+function FundedLifecycle({ file }: { file: string }) {
+  const result = useResource(() => loadJson(file, lifecycleSchema), [file]);
   return <><ResourceState {...result} />{result.data && <>
     <LifecycleTable summary={result.data} />
-    <VenuePanel address={result.data.address} startTime={result.data.ledgerStartTime} />
   </>}</>;
 }
 function RiskView({ market }: { market: Market }) {
@@ -924,7 +934,8 @@ export default function App() {
             <p className="hero-description">
               After owner funding and key removal, a NEAR policy holding 4 wNEAR
               authorized a keeper short and reduce-only close on Hyperliquid testnet.
-              The fixed-recipient withdrawal appears in the public ledger.
+              V2 records a fixed-recipient withdrawal; on 12 November, v3 opened
+              and closed a 3.6 NEAR short. Owner-assisted open; keeper-only close.
             </p>
             <a className="primary-link" href="#lifecycle">
               Inspect the funded lifecycle <span>↓</span>
@@ -943,8 +954,9 @@ export default function App() {
           </p>
         </section>
         <section id="lifecycle" className="section">
-          <SectionHead number="01" label="2026-11-10 · keyless v2" title="Funded testnet lifecycle" />
-          <div className="panel"><FundedLifecycle /></div>
+          <SectionHead number="01" label="2026-11-12 v3 · 2026-11-10 v2" title="Funded testnet lifecycle" />
+          <div className="panel"><h3>12 November · keyless v3 open/close</h3><FundedLifecycle file="data/lifecycle-v3.json" /></div>
+          <div className="panel"><h3>10 November · historical keyless v2 lifecycle</h3><FundedLifecycle file="data/lifecycle.json" /></div>
         </section>
         <section id="live" className="section">
           <SectionHead

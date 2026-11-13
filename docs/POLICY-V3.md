@@ -4,11 +4,14 @@
 path `counterweight-1`, signer `v1.signer-prod.testnet`. Its derived EVM address is
 **`0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`**, locally derived from the
 public root and cross-checked against the signer's public view at block 277102080.
-The [11 November code/key capture](../videos/build/captures/v3-proof.json)
-records zero access keys and matching v3 code. The [funding relay](evidence/lifecycle-relay-AEk3mDFkuVnVowPzfXRfPBBkk7ympuSR6cZfXk7eNN5s.json)
-and [keeper observations](KEEPER-RUN.md#recorded-runs-through-12-november-2026)
-record 49 USDC in perps, no spot deposit and no position. This is separate from
-v2's completed funded trading lifecycle; no live v3 exit fill is claimed.
+The [11 November code/key capture](evidence/2026-11-11-v3-proof.json)
+records zero access keys and matching v3 code. The earlier [funding relay](evidence/lifecycle-relay-AEk3mDFkuVnVowPzfXRfPBBkk7ympuSR6cZfXk7eNN5s.json)
+recorded 49 USDC in perps before spot funding. The [12 November lifecycle](evidence/2026-11-12-v3-lifecycle-summary.md)
+then verified 4 wNEAR custody, a keeper short of 3.6 NEAR @ 3.3788 and a
+reduce-only close @ 3.3796 to flat, with zero keys at both order receipt blocks.
+Opening required a fresh owner margin attestation; the keeper closed alone.
+The saved lifecycle does not document owner settlement. This live close was in-band; paused and
+out-of-band exit authorization remains locally tested, with no guaranteed fill.
 The [saved plan](evidence/policy-v3-plan.json) and
 [printed commands](evidence/policy-v3-plan.txt) are deployment history, not
 instructions to redeploy this keyless account. This release edit used local
@@ -189,14 +192,14 @@ public request digest/signature and venue result, then owner-attest actual equit
 with fresh `observe_margin`. Use the v3 plan's 50 USDC per-request/100 USDC per-day
 caps, $1 residual, $0.10 fee reserve, 10% H floor, and **$1 max fee**.
 
-The existing `lifecycle` CLI targets historical v2; do not use it for v3 signatures.
+The `lifecycle` CLI defaults to historical v2; select `--policy=policy-v3.counterweight-samet.testnet` explicitly for v3.
 All v3 calls/relays must specify v3, its new derived address, fresh observations,
 and canonical public request digest checks. Delete the temporary key only after
 venue funding/config validation. Owner spot deposits can follow key deletion.
 Final verification uses `--policy=policy-v3.counterweight-samet.testnet
 --plan=docs/evidence/policy-v3-plan.json`. The CLI rejects `--upgrade-v2`; the
 historical exported upgrade builder remains only for existing rehearsal tests.
-See [V2-CLEANUP](V2-CLEANUP.md) for the separate unsent legacy cleanup procedure.
+See [V2-CLEANUP](V2-CLEANUP.md) for the cleanup executed on 12 November and its archived proof.
 
 For the later spot stage, print commands without RPC, deployment or saved-plan
 changes:
@@ -205,8 +208,10 @@ changes:
 npm run testnet:plan -- --spot-only=true --spot-near=4
 ```
 
-The expected **4 wNEAR** comes from v2 cleanup **after 2026-11-12 17:31:03.419 UTC**;
-cleanup is still unsent. It is already wrapped. `--spot-near` accepts any positive
+The **4 wNEAR** was returned by v2 cleanup on **12 November**, after the
+2026-11-12 17:31:03.419 UTC horizon, and deposited into v3 in
+[6Y8MaKav…](https://testnet.nearblocks.io/txns/6Y8MaKavd49GAc7pTCSTzKf39qA5LmjKhPaC5SD6p4ia).
+Do not repeat that completed funding stage. It was already wrapped. `--spot-near` accepts any positive
 amount with up to 24 decimals, independently of the 5-NEAR signed-short ceiling.
 Use `--wrap-spot=true` only when intentionally wrapping additional native NEAR.
 A fresh full plan can also select `--spot-near=AMOUNT`; by default it prints an

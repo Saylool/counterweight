@@ -145,6 +145,17 @@ describe('funded lifecycle relay (offline public API fixtures)', () => {
     expect(report.account).toBe(policy);
   });
 
+  it('defaults read-only verification to the v3 plan, artifact and margin policy', async () => {
+    await setup('open', false, false, false, V3_POLICY);
+    await verifyTestnet(['--before-key-removal=true']);
+    const output = JSON.parse(String(vi.mocked(console.log).mock.calls.at(-1)?.[0]));
+    expect(output.account).toBe(V3_POLICY);
+    expect(output.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ check: 'code hash', ok: true }),
+      expect.objectContaining({ check: 'v3 adapter-free margin policy', ok: true }),
+    ]));
+  });
+
   it.each(['open', 'close', 'withdraw', 'to-perp'] as const)('uses v3 artifact, address and adapter-free setup for %s', async step => {
     const fetcher = await setup(step, false, false, false, V3_POLICY);
     await lifecycle([`--policy=${V3_POLICY}`, `--step=${step}`, ...(step === 'to-perp' ? ['--amount=49'] : [])]);

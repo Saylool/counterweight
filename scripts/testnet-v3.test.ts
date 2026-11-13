@@ -7,7 +7,7 @@ import { deriveEvmAddress } from '../packages/hyperliquid/src/index.js';
 import { freshV3Steps, initialization, testnetPlan, v3CreationBudget, v3SpotSteps } from './testnet-plan.js';
 import { V3_POLICY, PATH, OWNER, PROBE_ADDRESS } from './testnet-common.js';
 
-it('v3 open-short withdrawals match TS engine post-withdrawal integer health including micro boundaries', () => {
+it.skipIf(process.env.COUNTERWEIGHT_TS_ONLY === '1')('v3 open-short withdrawals match TS engine post-withdrawal integer health including micro boundaries', () => {
   const env: NodeJS.ProcessEnv = { ...process.env, CARGO_HOME: `${process.cwd()}/contracts/policy/.cargo-home`, RUSTUP_HOME: `${process.cwd()}/contracts/policy/.rustup` };
   if (!existsSync(env.CARGO_HOME!)) delete (env as Record<string, unknown>).CARGO_HOME;
   if (existsSync(`${env.RUSTUP_HOME}/toolchains`)) env.RUSTUP_TOOLCHAIN ??= readdirSync(`${env.RUSTUP_HOME}/toolchains`).find(n => n.startsWith('stable-'));

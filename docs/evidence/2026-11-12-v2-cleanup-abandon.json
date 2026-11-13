@@ -1,0 +1,166 @@
+{
+  "account": "policy-v2.counterweight-samet.testnet",
+  "derived": {
+    "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+    "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277394415,
+    "derivedBlockHeight": 277394415
+  },
+  "block": {
+    "hash": "8vx1HSEmmhwQFPhi7NJtH4GUb7Rjtm7w9M4vFRJ79oHw",
+    "timestamp_nanosec": "1794504853878649132"
+  },
+  "step": "abandon",
+  "earliestAllowedMs": 1794504663420,
+  "earliestAllowedUtc": "2026-11-12T17:31:03.420Z",
+  "recommendedUtc": "2026-11-12T17:31:04.000Z",
+  "ready": true,
+  "reasons": [],
+  "commands": [
+    "near contract call-function as-transaction policy-v2.counterweight-samet.testnet abandon_margin_withdrawal json-args '{}' prepaid-gas '30 Tgas' attached-deposit '0 NEAR' sign-as counterweight-samet.testnet network-config testnet sign-with-keychain send"
+  ],
+  "verified": {
+    "paused": true,
+    "expired": true,
+    "abandoned": false,
+    "spotReturned": false
+  },
+  "note": "Commands only; never signs or sends. Pause uses 30 Tgas without MPC invalidation. Expiry/abandonment creates no margin credit and asserts no bridge arrival.",
+  "ownerIncreaseVerified": null,
+  "snapshot": {
+    "blockTimeMs": 1794504853878,
+    "state": {
+      "network": "Testnet",
+      "oracle": {
+        "account_id": null,
+        "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+        "max_age_seconds": 60,
+        "max_confidence_bps": 100,
+        "min_price": "2784560",
+        "max_price": "4176840"
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "owner": "counterweight-samet.testnet",
+      "keeper": "keeper.counterweight-samet.testnet",
+      "coin": "NEAR",
+      "asset_index": 54,
+      "size_decimals": 1,
+      "derivation_path": "counterweight-1",
+      "near_recipient": "counterweight-samet.testnet",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "signer_account": "v1.signer-prod.testnet",
+      "wnear_account": "wrap.testnet",
+      "limits": {
+        "max_short_size": "5000000000000000000000000",
+        "per_order_notional_cap": "20000000",
+        "per_day_notional_cap": "40000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "spot_balance": "4000000000000000000000000",
+      "signed_short_size": "0",
+      "daily_usage": "0",
+      "usage_day": 20767,
+      "operation_id": "4",
+      "pending": null,
+      "paused": true,
+      "last_keeper_heartbeat": "1794331679",
+      "heartbeat_timeout_seconds": 3600,
+      "reference_price": "3528000",
+      "reference_price_timestamp": "1794331854",
+      "last_nonce": "1794331863418",
+      "signing_limits": {
+        "keeper_per_block": 2,
+        "keeper_per_window": 8,
+        "keeper_outstanding": 8,
+        "owner_per_window": 16,
+        "window_ms": 60000,
+        "max_nonce_ahead_ms": 1000
+      },
+      "outstanding": [],
+      "pause_complete": true,
+      "lifetime_opened": "3500000000000000000000000",
+      "last_open_expiry": "1794331682790",
+      "keeper_weight_used": "10",
+      "keeper_weight_limit": "5000",
+      "mpc_fee": "1",
+      "signer_gas_tgas": 230,
+      "callback_gas_tgas": 30
+    },
+    "rebalance": {
+      "processed_receipts": [],
+      "withdrawal": {
+        "nonce": "1794331863418",
+        "amount": "47957074"
+      },
+      "acquisition_budget_usdc": "0",
+      "acquired_near": "0",
+      "reentry_required": false,
+      "limits": {
+        "adapter": "disabled-routes.policy-v2.counterweight-samet.testnet",
+        "strategy_margin_address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+        "destination_token": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+        "per_sale_near": "1",
+        "daily_sale_near": "1",
+        "max_fee_usdc": "1",
+        "max_impact_bps": 0,
+        "quote_age_ms": 30000,
+        "completion_ms": 60000,
+        "max_mismatch_near": "1",
+        "per_withdrawal_usdc": "60000000",
+        "daily_withdrawal_usdc": "60000000",
+        "min_residual_equity_usdc": "1000000",
+        "min_headroom_bps": 1000,
+        "lower_headroom_bps": 3000,
+        "target_headroom_bps": 6000,
+        "upper_headroom_bps": 9000,
+        "fee_reserve_usdc": "100000",
+        "original_target_usdc": "11138240"
+      },
+      "initial_inventory": "4000000000000000000000000",
+      "sold_inventory": "0",
+      "reduced_inventory": "0",
+      "usable_margin": "1000000",
+      "withdrawable": "1000000",
+      "observed_at_ms": "1794331852657",
+      "next_route_id": "0",
+      "route": null,
+      "sales": [],
+      "withdrawals": [
+        [
+          1794331863418,
+          47957074
+        ]
+      ]
+    },
+    "keys": {
+      "block_hash": "8vx1HSEmmhwQFPhi7NJtH4GUb7Rjtm7w9M4vFRJ79oHw",
+      "block_height": 277394410,
+      "keys": []
+    },
+    "token": "4000000000000000000000000",
+    "ownerToken": "0",
+    "account": {
+      "marginSummary": {
+        "accountValue": "1.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "1.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "1.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "1.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "1.0",
+      "assetPositions": [],
+      "time": 1794504862486
+    },
+    "openOrders": []
+  }
+}

@@ -204,7 +204,7 @@ it('bounds the funded keeper debit at the immutable maximum mark', () => {
 });
 
 
-it('defaults public verification to the funded v2 policy and saved plan', async () => {
+it('explicitly verifies the historical funded v2 policy and saved plan', async () => {
   const plan = JSON.parse(readFileSync(new URL('../docs/evidence/policy-v2-plan.json', import.meta.url), 'utf8'));
   const root = JSON.parse(readFileSync(new URL('../fixtures/chainsig-public-derivation.json', import.meta.url), 'utf8')).root.value as string;
   const derived = deriveEvmAddress(root, NEXT_POLICY, PATH);
@@ -226,7 +226,7 @@ it('defaults public verification to the funded v2 policy and saved plan', async 
   });
   vi.stubGlobal('fetch', fetcher);
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  await verifyTestnet([]);
+  await verifyTestnet([`--policy=${NEXT_POLICY}`]);
   const result = JSON.parse(String(log.mock.calls[0]![0]));
   expect(result.account).toBe(NEXT_POLICY);
   const requests = fetcher.mock.calls.length;

@@ -45,7 +45,8 @@
     "video:script": "tsx scripts/video/script.ts",
     "video:test": "vitest run scripts/video/video.test.ts",
     "video:remotion": "tsx scripts/video/remotion.ts",
-    "video:remotion:test": "vitest run scripts/video/remotion.test.ts"
+    "video:remotion:test": "vitest run scripts/video/remotion.test.ts",
+    "test:ts": "COUNTERWEIGHT_TS_ONLY=1 vitest run && npm run web:test"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",

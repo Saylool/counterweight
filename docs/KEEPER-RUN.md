@@ -2,12 +2,14 @@
 
 ## Recorded runs through 12 November 2026
 
-These are saved report snapshots, not a current liveness check. All four runs
-used keyless v3 on testnet with **opening disabled**. JSONL observations show
+These are saved report snapshots, not a current liveness check. All five runs
+used keyless v3 on testnet with **opening disabled**. The first four JSONL snapshots show
 heartbeats and fallback-price updates, 49 USDC perp equity, zero spot custody and
 no position where venue data is available. No verified opens or reductions were
 recorded. This establishes unattended monitoring, not multi-day carry or a live
-protective-exit fill.
+protective-exit fill. Separately, the [supervised 12 November lifecycle](evidence/2026-11-12-v3-lifecycle-summary.md)
+verified 4 wNEAR custody and an in-band 3.6 NEAR open/close; owner-assisted
+opening is distinct from these unattended monitoring runs.
 
 | Run (UTC) | Saved cycles | Confirmed heartbeats | Errors | Estimated missing intervals | Maximum cycle-start gap |
 |---|---:|---:|---:|---:|---:|
@@ -15,6 +17,7 @@ protective-exit fill.
 | [11 Nov 12:16–22:22](../reports/keeper-run/2026-11-11T12-16-04-347Z-9654a6dd.md) · [JSONL](../reports/keeper-run/2026-11-11T12-16-04-347Z-9654a6dd.jsonl) | 80 | 18 | 6 | 41 | 8415.541 s |
 | [12 Nov restart 08:46; snapshot 08:47](../reports/keeper-run/2026-11-12T08-46-45-868Z-4c251f05.md) · [JSONL](../reports/keeper-run/2026-11-12T08-46-45-868Z-4c251f05.jsonl) | 1 | 1 | 1 | 0 | 0 s (one cycle) |
 | [12 Nov restart 08:52; snapshot 08:57](../reports/keeper-run/2026-11-12T08-52-39-345Z-9fe1df24.md) · [JSONL](../reports/keeper-run/2026-11-12T08-52-39-345Z-9fe1df24.jsonl) | 2 | 0 | 0 | 0 | 276.597 s |
+| [12 Nov restart 17:38; snapshot 18:49](../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.md) · [JSONL](../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl) | 15 | 3 | 1 | 0 | 316.72 s |
 
 The release handoff reports that the 11 November host process exited around
 22:21 UTC; the last saved cycle began at 22:21:46 and finished at 22:22:06.
@@ -22,17 +25,24 @@ Its rolling summary still says `running`, so that label is not evidence of
 continued uptime. A [preserved stale lock](../reports/keeper-run/stale-lock-2026-11-11T12-16-04-347Z-9654a6dd.json)
 identifies the previous run; the new report starts at 08:46:45 UTC on 12 November.
 The logs do not independently establish the host-exit cause or exact time.
-The newest saved summary was updated at **12 November 08:57:36 UTC**: two
+The fourth saved summary was updated at **12 November 08:57:36 UTC**: two
 cycles over 297.359 seconds, no errors, no missing intervals and no cycles
 without risk data. It confirms no new heartbeat, open or reduction in that
 snapshot. Its `running` label does not establish current process liveness.
+
+The fifth summary was updated at **12 November 18:49:49 UTC**: 15 cycles,
+3 heartbeats, 1 error, no missing intervals or cycles without risk data, and
+zero verified opens/reductions over 4251.34 seconds. This is a dated snapshot;
+its `running` label does not establish current liveness. The live process,
+lock and journals were not changed during this offline release edit.
 
 The 11 November snapshot has four cycles without risk data and includes public
 RPC failures and uncertain NEAR submissions. The restart snapshot has one
 confirmed heartbeat, one cycle without risk data, and a rejected future-dated
 Hyperliquid book timestamp. Errors and gaps are retained; later uninterrupted
-operation cannot be inferred from these snapshots. Spot funding remains pending,
-so these records do not exercise opening or reducing a live v3 position.
+operation cannot be inferred from these snapshots. Spot funding was pending in
+the first four snapshots; it completed later on 12 November. Monitoring action
+counts do not include the separately captured supervised v3 open/close.
 
 ## Running the keeper
 
@@ -42,11 +52,18 @@ From the repository root, with dependencies installed and Node >=22.19:
 caffeinate -i npm run keeper:run -- --policy=policy-v3.counterweight-samet.testnet --hours=48
 ```
 
-This starts the deployed v3 keeper for 48 hours on macOS and keeps the machine awake. Run after the 49 USDC transfer is publicly verified and the policy key is removed. It monitors and reduces existing shorts; opening is disabled. After spot custody is verified, permit bounded entries with this exact command (stop any existing keeper first):
+This starts the deployed v3 keeper for 48 hours on macOS and keeps the machine awake. Run after funding and key removal are publicly verified. It monitors and reduces existing shorts; opening is disabled. V3 cannot open autonomously: an owner must attest margin with `observe_margin` at most 30 seconds before an opening request, in addition to verified spot custody and the other bounds. The opt-in entry command is retained for supervised operation only (stop any existing keeper first):
 
 ```sh
 caffeinate -i npm run keeper:run -- --policy=policy-v3.counterweight-samet.testnet --hours=48 --allow-open
 ```
+
+`--allow-open` does not supply that owner attestation. The current planner does
+not precheck its age and may hit `ERR_REBALANCE_STALE`; because the signature
+journal is claimed before the CLI call, a failed request can leave a blocking
+`.active.json`. Preserve it and reconcile the original operation before recovery.
+Do not enable openings on an unattended v3 run. This release leaves the running
+keeper implementation and journals untouched.
 
 A live run requires an explicit `--policy`; it does not deploy/migrate contracts. The policy must designate `keeper.counterweight-samet.testnet` and the testnet MPC signer, and expose `get_state`, `get_rebalance`, heartbeat, keeper-price and order-signature methods. The known v3 account selects v3 exit semantics. Unknown or incompatible public responses block trading and are logged.
 
@@ -80,7 +97,7 @@ Hyperliquid reads and relays are fixed to **TESTNET**. The keeper locally derive
 
 The v3 keeper refreshes stale or changed fallback prices across the contract's sanity range ($0.00001–$1,000,000); opening still requires the configured opening bounds. Historical policies retain the immutable-band cache restriction. Observations must be at most 30 seconds old. It respects fresh public-oracle precedence when constructing the expected contract price. It submits an IOC buy with the venue's **reduce-only** flag for a low-headroom short, bounded by actual quantity and contract reduction authorization. V3 exits include `observed_at` in seconds and use a fixed mark +1% cap rounded down to the venue tick, independently of opening bounds and the configured opening price band. V3 can reduce while paused. Pending state, open orders, unexpected long/other-coin positions, stale data, incompatible metadata, or policy access keys block new orders; pauses block opening and historical-policy reductions. It never sells spot, withdraws, settles exposure, changes limits, or calls owner methods.
 
-Opening is off by default. `--allow-open` permits an entry only from a reconciled flat account with zero reserved exposure, after prior authorizations expire and cooldown elapses. Size stays within owned spot, max short, per-order and remaining daily caps; funding history, current positive funding, depth, minimum venue order, equity and headroom checks must pass. Contract checks remain authoritative. Reductions do not release contract reservations; owner settlement remains separate. Restarting without `--allow-open` will not relay an unsent opening signature.
+Opening is off by default. `--allow-open` permits an entry only from a reconciled flat account with zero reserved exposure, after prior authorizations expire and cooldown elapses. On v3 it additionally requires the fresh owner margin attestation above; the keeper never calls that owner method. Size stays within owned spot, max short, per-order and remaining daily caps; funding history, current positive funding, depth, minimum venue order, equity and headroom checks must pass. Contract checks remain authoritative. Reductions do not release contract reservations; owner settlement remains separate. Restarting without `--allow-open` will not relay an unsent opening signature.
 
 ## Audit files and recovery
 

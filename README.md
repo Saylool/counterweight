@@ -2,6 +2,10 @@
 
 Counterweight is a NEAR policy prototype for wNEAR holders who want a bounded keeper to manage a Hyperliquid short hedge. The contract holds spot and authorizes venue actions through Chain Signatures; the submission combines funded testnet evidence, a local sandbox demo and historical replay.
 
+**Why not a Hyperliquid API/agent wallet?** An agent wallet delegates trading; this prototype adds contract-enforced wNEAR backing, order caps and fixed withdrawal recipients.
+**Owner opens; the keeper can only de-risk on its own:** v3 entries need an owner margin attestation at most 30 seconds old, then a bounded keeper request.
+**Nothing can leave to a new recipient:** withdrawals use immutable recipients; this does not prevent trading losses from false marks, fees or liquidation. See the [claims and limits](docs/CLAIMS.md).
+
 [Watch the 98-second demo](docs/media/counterweight-demo.mp4) · voiced and subtitled.
 
 ## What is proven
@@ -20,28 +24,27 @@ Counterweight is a NEAR policy prototype for wNEAR holders who want a bounded ke
 | Owner settles reserved exposure | [FDepMaKN…](https://testnet.nearblocks.io/txns/FDepMaKNUmLZP8g6DzXzVcUsqV91V6Borv9Rh8uKNob8) |
 | Fixed-recipient withdraw3 | [9cWjW9vY…](https://testnet.nearblocks.io/txns/9cWjW9vYfWvWgrvPAk2EZNrhWxxdfFZ52EoMou5PKK25); signed gross 47.957074 USDC |
 | Withdrawal ledger | [0xdf68992e…0501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0); 46.957074 USDC net + 1 USDC fee |
-| v3 live open/close, 12 November | 4 wNEAR custody; keeper short 3.6 @ 3.3788 and reduce-only buy 3.6 @ 3.3796, flat; zero keys at order receipt blocks. [Transactions and verification](docs/evidence/2026-11-12-v3-lifecycle-summary.md). Owner settlement pending. |
+| v3 live open/close, 12 November | 4 wNEAR custody; keeper short 3.6 @ 3.3788 and reduce-only buy 3.6 @ 3.3796, flat; zero keys at order receipt blocks. [Transactions and verification](docs/evidence/2026-11-12-v3-lifecycle-summary.md). Owner settlement is not recorded in the saved lifecycle. |
 
 The fills and withdrawal ledger are testnet evidence. Owner observations, settlement and withdrawal approval were required; venue state is not verified on-chain. Destination-chain arrival, live Intents routes and multi-day carry remain unproved. v2 cleanup completed on 12 November: paused, expired authorizations, abandoned withdrawal reservation and 4 wNEAR returned to the owner, with the status run verifying the owner balance increase. Those 4 wNEAR are now in v3 custody and directional after its close; see the [12 November summary](docs/evidence/2026-11-12-v3-lifecycle-summary.md). v1 remains a rehearsal with an access key.
 
 ## v3 and the keeper loop
 
-[v3](docs/POLICY-V3.md) is a **separate keyless deployment** at `policy-v3.counterweight-samet.testnet`, derived address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`, WASM `052d4d87…838c`. The [12 November live run](docs/evidence/2026-11-12-v3-lifecycle-summary.md) verifies 4 wNEAR custody, a 3.6 NEAR short @ 3.3788 and reduce-only close @ 3.3796, with zero keys at both order receipt blocks. The venue ended flat with 48.986173 USDC equity; owner settlement remains pending after open expiry. The first open failed with `ERR_REBALANCE_STALE`: v3 opens need an owner margin attestation at most 30 seconds old, so the keeper cannot open alone; it can reduce alone. Local tests establish out-of-band exit authorization; this live close was inside the band and future fills remain unguaranteed. v2 retains its band-exit bug; its cleanup is complete.
+[v3](docs/POLICY-V3.md) is a **separate keyless deployment** at `policy-v3.counterweight-samet.testnet`, derived address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`, WASM `052d4d87…838c`. The [12 November live run](docs/evidence/2026-11-12-v3-lifecycle-summary.md) verifies 4 wNEAR custody, a 3.6 NEAR short @ 3.3788 and reduce-only close @ 3.3796, with zero keys at both order receipt blocks. The venue ended flat with 48.986173 USDC equity; the saved lifecycle does not document owner settlement after open expiry. The first open failed with `ERR_REBALANCE_STALE`: v3 opens need an owner margin attestation at most 30 seconds old, so the keeper cannot open alone; it can reduce alone. Local tests establish out-of-band exit authorization; this live close was inside the band and future fills remain unguaranteed. v2 retains its band-exit bug; its cleanup is complete.
 
-The historical [keeper reports](docs/KEEPER-RUN.md#recorded-runs-through-12-november-2026) show heartbeats and price updates since 10–11 November, with opening disabled and no verified opens or reductions in those monitoring snapshots. The 11 November run stopped around 22:21 UTC when its host process exited (release handoff); the last cycle finished at 22:22 UTC. A new run started **12 November, 08:46 UTC**. Saved reports contain errors and gaps; they establish monitoring, not continuous uptime. The separately recorded live v3 open/close above was supervised and does not prove autonomous opening or uninterrupted trading.
+The historical [keeper reports](docs/KEEPER-RUN.md#recorded-runs-through-12-november-2026) show heartbeats and price updates since 10–11 November, with opening disabled and no verified opens or reductions in those monitoring snapshots. The 11 November run stopped around 22:21 UTC when its host process exited (release handoff); the last cycle finished at 22:22 UTC. Later runs started **12 November at 08:46, 08:52 and 17:38 UTC**. Saved reports contain errors and gaps; they establish monitoring, not continuous uptime. The separately recorded live v3 open/close above was supervised and does not prove autonomous opening or uninterrupted trading.
 
 ## Judge quickstart
 
 Requires Node **>=22.19.0**, npm, curl and tar on **macOS arm64 or Linux x64**. Install needs internet for packages and the sandbox binary; tests, replay and the local demo then run offline. The web page makes public market/RPC reads, and the last command needs public testnet services. No wallet credentials are needed. The sandbox library manages disposable localhost accounts; do not supply real keys. Rust 1.95+ is required for the cross-layer regression. The standalone local demo uses the included WASM and does not need Rust.
 
-From the current checkout (on another machine, use its local path):
+Start from a clone, or use your existing checkout:
 
 ```sh
-cd /Users/samet/Desktop/counterweight
-export npm_config_cache="$PWD/.tmp/npm-cache"
+git clone https://github.com/Saylool/counterweight && cd counterweight
 ```
 
-You should be in the repository containing this README. The cache setting keeps install writes inside the checkout. Current working-tree verification and historical reproduction limits are recorded in [REPRODUCE](docs/REPRODUCE.md).
+You should be in the repository containing this README. Current working-tree verification and historical reproduction limits are recorded in [REPRODUCE](docs/REPRODUCE.md).
 
 ```sh
 npm ci
@@ -57,6 +60,8 @@ npm test
 ```
 
 You should see passing `Test Files` and `Tests` summaries for both the root suite and frontend suite. This runs TypeScript/frontend tests and the focused cross-layer Cargo regression. Rust 1.95+ is required for that regression; full native/sandbox validation is recorded separately below. Run `npm run test:all` to run `npm test` plus the full native Rust library suite (with the Rust toolchain/cache environment above configured).
+
+Without Rust, run `npm run test:ts` instead of the Cargo prime and `npm test` commands. It runs the TypeScript/frontend suite and explicitly skips the two Rust cross-layer tests; it does not validate the Rust contract. Replay, both local demos (using committed WASM), and `npm run web:build` also need no Rust.
 
 ```sh
 npm run replay
@@ -78,13 +83,13 @@ Computed cost sensitivities, a same-capital cash benchmark and the intended cust
 npm run web
 ```
 
-You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Funded testnet lifecycle**, its transaction table, derived-address explorer link and live testnet position/margin/ledger. The contract panel defaults to v2; v3 is selectable as a separate keyless deployment with its own artifact, and v1 as a rehearsal with a key. V3 exit limits are relative to an unauthenticated mark; the adjacent warning explains the false-mark risk. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
+You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Funded testnet lifecycle**, showing the 12 November v3 open/close beside the historical v2 table. The contract panel defaults to v2; selecting v3 switches its artifact and live testnet position/margin/ledger to the separate v3 address. V1 is a rehearsal with a key. V3 exit limits are relative to an unauthenticated mark; the adjacent warning explains the false-mark risk. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
 
 ```sh
 npm run testnet:verify
 ```
 
-You should see JSON for `policy-v2.counterweight-samet.testnet` with `ok: true` for `code hash`, `access keys` (zero keys), `get_state config and current state`, and `policy-derived Hyperliquid address`; expected exit **0** while public services and the saved baseline remain available. The default plan is `docs/evidence/policy-v2-plan.json`. An RPC outage or changed state fails closed; an unavailable read is not custody proof. To inspect the historical v1 rehearsal explicitly use `--policy=policy.counterweight-samet.testnet` (its code/key checks fail).
+The verifier now defaults to `policy-v3.counterweight-samet.testnet` and `docs/evidence/policy-v3-plan.json`. Expect `ok: true` for code hash, zero access keys, config/current state, v3 adapter-free margin policy and derived address, with exit **0** while public services and the baseline remain available. Recheck historical v2 explicitly with `npm run testnet:verify -- --policy=policy-v2.counterweight-samet.testnet`. An RPC outage or changed state fails closed; an unavailable read is not custody proof. To inspect the historical v1 rehearsal explicitly use `--policy=policy.counterweight-samet.testnet` (its code/key checks fail).
 
 Public NEAR RPCs can rate-limit parallel reads (HTTP 429). All CLI NEAR reads, including public derivation in `packages/hyperliquid/src/chainsig.ts`, use `NEAR_TESTNET_RPC`. For example:
 
@@ -114,7 +119,7 @@ The Rust contract builds typed MessagePack/EIP-712 payloads and reserves signed 
 | Caller | Authority | Boundary |
 |---|---|---|
 | Owner | Configure limits/resources, supply bounded fallback prices and position/equity/finality attestations, pause, emergency reduce, approve exact sales and withdrawals | Fixed recipients; withdrawals require resolved exposure and pending operations. Owner attestations are trusted. |
-| Keeper | Bounded non-reduce opens, reduce-only closes, cancels and heartbeat | Opens require held wNEAR backing, fresh oracle or bounded fallback prices, notional caps and cooldown. No withdrawal or recipient override. The system permits opens; it is not entirely reduce-only. |
+| Keeper | Bounded non-reduce opens, reduce-only closes, cancels and heartbeat | V3 opens also require an owner margin attestation ≤30 seconds old, held wNEAR backing, fresh oracle or bounded fallback prices, notional caps and cooldown. The keeper can de-risk alone, but cannot open alone on v3. No withdrawal or recipient override. |
 | Public | `deleverage` after heartbeat timeout | Signs a reduce-only close and pauses keeper signing; does not prove a venue fill or sell the spot leg. |
 | No exported method | Arbitrary digest signing, agent registration, recipient changes or upgrades | Zero account access keys are also required: a remaining full-access key bypasses the intended custody boundary. |
 
@@ -128,7 +133,7 @@ For v2, keeper maximum direct execution debit: let K = floor(5,000 / 5) = 1,000 
 |---|---|
 | Keyless funded lifecycle | **Completed on testnet**, with supervised owner steps. [Summary](docs/evidence/2026-11-10-lifecycle-summary.md), [open](docs/evidence/2026-11-10-lifecycle-open.md), [close](docs/evidence/2026-11-10-lifecycle-close.md), [withdrawal/status](docs/evidence/2026-11-10-lifecycle-status.md). |
 | v2 code / custody | Committed WASM `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`; zero account access keys verified after deletion. [Manifest](contracts/policy/artifacts/SHA256SUMS). No upgrade export; key deletion freezes the code under this ABI. |
-| v3 code / live open-close | **Separate keyless deployment**; 4 wNEAR custody, keeper 3.6 NEAR short @ 3.3788 and reduce-only close @ 3.3796; venue flat, 48.986173 USDC equity. [12 Nov evidence](docs/evidence/2026-11-12-v3-lifecycle-summary.md), [code/key capture](videos/build/captures/v3-proof.json). Fresh owner margin attestation required to open; owner settlement pending. |
+| v3 code / live open-close | **Separate keyless deployment**; 4 wNEAR custody, keeper 3.6 NEAR short @ 3.3788 and reduce-only close @ 3.3796; venue flat, 48.986173 USDC equity. [12 Nov evidence](docs/evidence/2026-11-12-v3-lifecycle-summary.md), [code/key capture](docs/evidence/2026-11-11-v3-proof.json). Fresh owner margin attestation required to open; owner settlement is not recorded in the saved lifecycle. |
 | v1 contract signing | **REHEARSAL with a key** on `policy.counterweight-samet.testnet`, old WASM `698195e3…2d289`. [Historical proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md). |
 | Owner signing / old preflight | Earlier identity-only [owner proof](docs/evidence/2026-11-10-signing-proof.md) and [pre-account-creation preflight](docs/evidence/2026-11-10-testnet-preflight.md); superseded for deployment status by the funded v2 evidence. |
 | Intents | Expired mainnet `dry: true` quote; no route execution or funds moved. [Request/response](docs/evidence/2026-11-10-oneclick-dry-quote.json). |

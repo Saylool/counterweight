@@ -1,11 +1,38 @@
-# V2 cleanup — printed procedure, not executed
+# V2 cleanup — executed 12 November 2026
 
 Account: `policy-v2.counterweight-samet.testnet`; owner/fixed NEAR recipient:
-`counterweight-samet.testnet`. Keyless v2 cannot be upgraded. No commands below
-were executed during the v3 work. They use the owner's existing keychain, never
-private-key arguments. Review the public snapshot in
+`counterweight-samet.testnet`. Keyless v2 cannot be upgraded. Cleanup completed:
+paused, expired authorizations, abandoned the withdrawal reservation and returned
+4 wNEAR to the fixed owner. The archived [final status](evidence/2026-11-12-v2-cleanup-status.json)
+records `paused`, `expired`, `abandoned`, `spotReturned` and
+`ownerIncreaseVerified` all true. Its finalized block time is 17:35:10.437 UTC.
+The [pre-withdrawal baseline](evidence/v2-cleanup-withdraw-before.json) records
+owner balance zero; final policy custody is zero and owner balance is 4 wNEAR.
+
+| Executed stage | NEAR testnet transaction |
+|---|---|
+| Pause | [4fuycLxY…](https://testnet.nearblocks.io/txns/4fuycLxY8Gip3dYr4rGkU48FkjEDJ1PSEzcDwvGk3ejA) |
+| Expire | [G6SwBn4g…](https://testnet.nearblocks.io/txns/G6SwBn4gR3CvCcAdUqZMX1Nm6UB2EWHpqUWH5aJ6pDjE) |
+| Abandon | [DcC7Gvmz…](https://testnet.nearblocks.io/txns/DcC7GvmzzbDnLBhEzdRJec4p9EhunkqNK1bipEoRU4cx) |
+| Owner wrap.testnet registration | [BV7V3j72…](https://testnet.nearblocks.io/txns/BV7V3j72ECMnbDaWKvFnh5D2j3qTCbjPwy4puKebhUFf) |
+| Return 4 wNEAR | [6KjWtjWV…](https://testnet.nearblocks.io/txns/6KjWtjWVsBZ28EekTp2FXutkV4nnY39jufEX6ASbU4PU) |
+
+Stage snapshots: [pause](evidence/2026-11-12-v2-cleanup-pause.json),
+[expire](evidence/2026-11-12-v2-cleanup-expire.json),
+[abandon](evidence/2026-11-12-v2-cleanup-abandon.json),
+[withdraw-spot](evidence/2026-11-12-v2-cleanup-withdraw-spot.json).
+These are read-only command-printer snapshots taken before each stage; they are
+not transaction receipts. Transaction hashes come from the operator's
+[release record](evidence/2026-11-12-v3-lifecycle-summary.md); final status supplies
+the later public balance checks. Files were copied byte-for-byte from the local
+release outputs without rerunning any command. No USDC bridge arrival is inferred.
+
+## Historical procedure — do not repeat completed stages
+
+The commands below document the executed flow. They use the owner's existing
+keychain, never private-key arguments. The earlier public snapshot is in
 [evidence/v2-cleanup-preflight.json](evidence/v2-cleanup-preflight.json), then
-refresh state, Hyperliquid position and actual wrap.testnet balance before acting.
+that preflight; it is superseded for cleanup status by the final status above.
 
 The command printer/verifier performs public reads only:
 
@@ -65,7 +92,7 @@ entry also does not prove destination-chain arrival. v2 has no fee-limit setter.
 venue-confirmed invalidation; it is not a generic nonce-delete API. No new
 withdrawal signature, noop relay, or settlement is needed for the expiry route.
 
-## Executable owner procedure after the horizon
+## Archived owner procedure after the horizon
 
 1. After verifying the zero-short snapshot, stop new keeper openings by pausing
    with only 30 Tgas. This commits the pause without requesting an MPC noop; a
