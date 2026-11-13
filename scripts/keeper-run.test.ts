@@ -35,6 +35,7 @@ async function setup(dry = false) {
   const store = new DiskStore(dir), state = makeState();
   let now = start, size = '-4', equity = '13', submitted = false, receipt: unknown;
   let exchangeFailure = false, nearFailure = false, venueFailure = false, fillVisible = true;
+  let margin: unknown = { observed_at_ms: String(start) };
   const options = { ...parseRunOptions([`--policy=${policy}`]), dry };
   const rt: Runtime = { now: () => now, random: () => 0.5, print: vi.fn(), sleep: vi.fn(async ms => { now += ms; }),
     exec: vi.fn(async args => {
@@ -76,13 +77,13 @@ async function setup(dry = false) {
       if (body.method === 'tx') return json({ result: receipt });
       if (body.params.request_type === 'view_account') return json({ result: { block_hash: body.params.block_id, code_hash: 'code-v3' } });
       if (body.params.request_type === 'view_access_key_list') return json({ result: { block_hash: body.params.block_id, keys: [] } });
-      if (body.params.request_type === 'call_function') return json({ result: { block_hash: body.params.block_id ?? 'final', result: [...Buffer.from(JSON.stringify(body.params.method_name === 'get_state' ? state : null))] } });
+      if (body.params.request_type === 'call_function') return json({ result: { block_hash: body.params.block_id ?? 'final', result: [...Buffer.from(JSON.stringify(body.params.method_name === 'get_state' ? state : body.params.method_name === 'get_margin' ? margin : null))] } });
       throw new Error('Unexpected mock request');
     }),
   };
   vi.spyOn(PublicClient.prototype, 'derive').mockResolvedValue(address);
   const keeper = new Keeper(options, store, rt);
-  return { store, state, rt, keeper, options, dir, setTime: (n: number) => { now = n; }, setSize: (s: string) => { size = s; }, setEquity: (e: string) => { equity = e; },
+  return { store, state, rt, keeper, options, dir, setMargin: (value: unknown) => { margin = value; }, setTime: (n: number) => { now = n; }, setSize: (s: string) => { size = s; }, setEquity: (e: string) => { equity = e; },
     failExchange: () => { exchangeFailure = true; }, failNear: () => { nearFailure = true; }, failVenue: () => { venueFailure = true; }, hideFill: () => { fillVisible = false; }, showFill: () => { fillVisible = true; } };
 }
 afterEach(async () => { vi.restoreAllMocks(); await Promise.all(dirs.splice(0).map(dir => rm(dir, { recursive: true, force: true }))); });
@@ -179,6 +180,40 @@ describe('public RPC backoff', () => {
 });
 
 describe('keychain-only signing and durable relay safety', () => {
+  it.each([null, {}, { observed_at_ms: 'bad' }, { observed_at_ms: '0' },
+    { observed_at_ms: String(start - 30001) }, { observed_at_ms: String(start + 1) }])(
+    'skips an opening with invalid/stale owner margin %j without bricking subsequent cycles', async margin => {
+      const x = await setup(); x.options.allowOpen = true;
+      x.setSize('0'); x.setEquity('100'); x.state.signed_short_size = '0'; x.setMargin(margin);
+      for (let i = 0; i < 2; i++) {
+        const c = await x.keeper.cycle();
+        expect(c.decision).toBe('blocked-owner-margin-stale'); expect(c.errors).toEqual([]);
+        expect(await x.store.read(x.keeper.activeName)).toBeNull();
+      }
+      expect(x.rt.exec).not.toHaveBeenCalled();
+      expect(vi.mocked(x.rt.fetch).mock.calls.some(c => String(c[0]).endsWith('/exchange'))).toBe(false);
+      x.setMargin({ observed_at_ms: String(start) }); x.failNear();
+      await x.keeper.cycle();
+      expect(x.rt.exec).toHaveBeenCalledTimes(1);
+      expect(await x.store.read(x.keeper.activeName)).toMatchObject({ phase: 'near-uncertain' });
+    });
+  it.each([0, 30000])('allows a v3 opening attestation aged %i ms, pinned to the policy block', async age => {
+    const x = await setup(true); x.options.allowOpen = true;
+    x.setSize('0'); x.setEquity('100'); x.state.signed_short_size = '0';
+    x.setMargin({ observed_at_ms: String(start - age) });
+    const c = await x.keeper.cycle();
+    expect(c.decision).toBe('would-open-within-caps');
+    const calls = vi.mocked(x.rt.fetch).mock.calls.map(([, init]) => JSON.parse(String(init?.body)));
+    expect(calls.find(b => b.params?.method_name === 'get_margin').params).toMatchObject({ block_id: 'final' });
+    expect(await x.store.read(x.keeper.activeName)).toBeNull();
+  });
+  it('does not read owner margin when opening is disabled or when reducing', async () => {
+    const x = await setup(true); x.setMargin(null);
+    expect((await x.keeper.cycle()).decision).toBe('would-reduce-only-close');
+    x.setSize('0'); x.setEquity('100'); x.state.signed_short_size = '0';
+    expect((await x.keeper.cycle()).decision).toBe('monitor');
+    expect(vi.mocked(x.rt.fetch).mock.calls.some(([, init]) => JSON.parse(String(init?.body)).params?.method_name === 'get_margin')).toBe(false);
+  });
   it('dry-run prints exact keychain commands with no CLI, exchange or signing journal', async () => {
     const x = await setup(true); x.state.last_keeper_heartbeat = '0'; x.state.reference_price_timestamp = '0';
     const c = await x.keeper.cycle();

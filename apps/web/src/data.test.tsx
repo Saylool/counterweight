@@ -4,6 +4,7 @@ import { base58 } from "@scure/base";
 import { z } from "zod";
 import {
   DEFAULT_ACCOUNT,
+  V2_ACCOUNT,
   V3_ACCOUNT,
   HL_TESTNET_API,
   readVenue,
@@ -238,7 +239,7 @@ describe("NEAR public views", () => {
   });
   it("pins every follow-up to the account block and only uses query", async () => {
     const fetcher = contractFetch([{ public_key: "public" }]);
-    const data = await readContract(DEFAULT_ACCOUNT, artifact, fetcher);
+    const data = await readContract(V2_ACCOUNT, artifact, fetcher);
     expect(data.keyCount).toBe(1);
     expect(data.codeMatches).toBe(true);
     expect(data.address).toBe("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf");
@@ -251,13 +252,13 @@ describe("NEAR public views", () => {
     ).toBe(true);
     expect(calls.at(-1).params.account_id).toBe(state.signer_account);
     expect(JSON.parse(atob(calls.at(-1).params.args_base64))).toEqual({
-      predecessor: DEFAULT_ACCOUNT,
+      predecessor: V2_ACCOUNT,
       path: state.derivation_path,
       domain_id: 0,
     });
   });
   it("compares v3 with its own artifact and leaves unknown accounts unconfigured", async () => {
-    const v3 = await readContract(V3_ACCOUNT, artifact, contractFetch([], "v3-code"));
+    const v3 = await readContract(DEFAULT_ACCOUNT, artifact, contractFetch([], "v3-code"));
     expect(v3.codeMatches).toBe(true);
     expect(v3.expectedArtifact).toEqual(artifact.v3);
     expect((await readContract(V3_ACCOUNT, artifact, contractFetch([], "expected"))).codeMatches).toBe(false);
@@ -364,7 +365,7 @@ it("reads the derived account position, margin and exact withdrawal ledger on te
       withdrawable: "1.0", assetPositions: [] } : [entry]);
   });
   const data = await readVenue(address, 1794330000000, fetcher);
-  expect(DEFAULT_ACCOUNT).toBe("policy-v2.counterweight-samet.testnet");
+  expect(DEFAULT_ACCOUNT).toBe("policy-v3.counterweight-samet.testnet");
   expect(data.account.assetPositions).toEqual([]);
   expect(data.account.marginSummary.accountValue).toBe(1);
   expect(data.ledger).toEqual([entry]);

@@ -33,13 +33,15 @@ The historical automated check failed because it compared the signed gross amoun
 it also queried only a rolling day. The corrected status recheck queries the saved nonce's bounded day,
 checks the microsecond nonce when present and net + fee = gross, and requires a unique match.
 The ledger hash is a Hyperliquid hash, not the NEAR tx hash or signing digest. Original failed captures are
-retained; a [successful read-only recheck](2026-11-10-release-lifecycle-recheck.json) is recorded separately. Destination-chain arrival is **unverified**.
+retained; a [successful read-only recheck](2026-11-10-release-lifecycle-recheck.json) is recorded separately. Arrived on Arbitrum Sepolia.
 
 Proven: funded testnet contract custody, contract-signed owner transfer, keeper open and reduce-only close,
 public fills and flat position, owner settlement, fixed-recipient withdrawal ledger observation.
 This was a **supervised run** with owner funding, price/margin observations, settlement and withdrawal approval.
 The contract does not verify Hyperliquid state on-chain; 4 wNEAR remains directional after the perp close.
 Not established: mainnet operation, multi-day carry, NEAR Intents settlement (only `dry: true` quotes),
-live rebalancing routes or destination-chain withdrawal arrival.
+live rebalancing routes. The v2 withdrawal arrived on Arbitrum Sepolia.
 
 [Structured table used by the web app](2026-11-10-lifecycle-summary.json).
+
+V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.

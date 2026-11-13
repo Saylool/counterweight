@@ -4,12 +4,18 @@ Start with the [12 November v3 lifecycle and transaction table](evidence/2026-11
 and the [10 November v2 lifecycle](evidence/2026-11-10-lifecycle-summary.md).
 V3 records 4 wNEAR custody, a 3.6 NEAR short @ 3.3788 and an in-band reduce-only
 close @ 3.3796 to flat. Opening required an owner margin attestation ≤30 seconds
-old; closing used keeper-only commands. The close capture retains reserved
-exposure and does not establish completed owner settlement. The spot leg remains
+old; closing used keeper-only commands. The close capture retains pre-settlement reserved
+exposure. Owner settled on-chain ([CYFZdHDe…](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93)); finalized `signed_short_size: "0"` is recorded at block `6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi` in [keeper journal, line 16](../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl) ([archived extract](evidence/2026-11-12-v3-post-settlement.json)). The spot leg remains
 directional after closing. V2 cleanup returned its 4 wNEAR on 12 November;
 [archived final status](evidence/2026-11-12-v2-cleanup-status.json) verifies the owner
 balance increase. The [v3 code/key proof](evidence/2026-11-11-v3-proof.json) is now
 archived here too. V1 remains a rehearsal with an access key.
+
+## Round-2 fixes — 13 November 2026
+
+`CARGO_NET_OFFLINE=true npm test` passed: **555 root tests in 28 files + 34 frontend tests in 2 files = 589 tests**, exit 0. This includes the two focused Rust cross-layer regressions using cached dependencies, nine new keeper freshness cases, the finalized journal/extract check and the v3 demo presentation check. `npm run web:build` passed, emitting both lifecycle datasets, the v3 local demo and the archived post-settlement read. `npm run typecheck` passed.
+
+No install, fresh clone, public RPC revalidation, mainnet action, keychain access or chain send was performed. The keeper source freshness guard applies on the operator's next restart. The running keeper process, `reports/keeper-run/*` and `.tmp/*` were not modified by this work. The post-settlement extract is copied from the existing finalized journal read, not a new RPC observation. Main X: **278/280** with URL weight 23; idea: **1,516/2,000** including paragraph breaks. Video audio/render replacement and upstream sandbox archive checksum pinning remain outside this offline fix: corrected narration and trusted platform archive checksums are not available as verified local inputs. Existing video caveats remain in KNOWN-ISSUES.
 
 ## Current working-checkout validation — 12 November
 

@@ -138,7 +138,7 @@ the actual pinned SDK Exchange path, with no signing keys.
    npm run lifecycle -- --step=status
    ```
 
-   Withdrawal verification requires successful exchange response **and a matching public withdrawal ledger entry**, plus the post-submission account snapshot. The evidence labels destination bridge arrival **unverified** until a separate destination-chain receipt is supplied; a bridge request or debit is not an arrival proof. Venue fees/testnet bridge availability may reject the withdrawal. Keep that response as evidence; never claim success from a rejection. The contract retains $1 equity; the venue's bridge fee reduces the payout separately.
+   Withdrawal verification requires successful exchange response **and a matching public withdrawal ledger entry**, plus the post-submission account snapshot. The v2 withdrawal arrived on Arbitrum Sepolia, verified separately on 13 November; a bridge request or debit is not an arrival proof. Venue fees/testnet bridge availability may reject the withdrawal. Keep that response as evidence; never claim success from a rejection. The contract retains $1 equity; the venue's bridge fee reduces the payout separately.
 
    The relay polls six times without resubmitting. If public indexing is slower (bridge processing can take minutes), keep the exclusive relay claim and recheck later:
 
@@ -155,3 +155,5 @@ At plan time `POST https://api.hyperliquid-testnet.xyz/info` with `{"type":"meta
 The public oracle account is null. `set_keeper_price` accepts only the keeper's <=60-second-old, nondecreasing observation inside the fixed bounds; opens cannot override it. Reductions use the bounded fallback hint. A mark outside bounds stops the script. No previous-price ratchet is possible. Status uses the shared `stressMetrics` engine for H in USDC, and records live equity, margin, cumulative funding, actual funding payments and current rate separately. The model's maintenance assumptions are explicitly labeled.
 
 Each invocation appends public responses, commands, hashes, outcome and explorer links to `docs/evidence/<UTC-date>-lifecycle-<step>.md`. Repeated invocations retain earlier attempts. `lifecycle-relay-<NEAR-hash>.json` is the exclusive relay claim; its existence prevents another submission even if the previous process crashed. Rejections and uncertain outcomes are evidence, not successful fills. Source API documentation: [info](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint), [exchange and withdrawal](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint).
+
+V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.

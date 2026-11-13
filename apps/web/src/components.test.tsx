@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import App, { ContractPanel, LifecycleTable } from "./App";
+import App, { ContractPanel, LifecycleTable, V3DemoResults } from "./App";
 import { readFileSync } from "node:fs";
-import { lifecycleSchema } from "./model";
+import { lifecycleSchema, v3DemoSchema } from "./model";
 import { Architecture, Chart, ContractLimit, Notice, ResourceState, Stat } from "./components";
 
 describe("read-only presentation", () => {
@@ -30,12 +30,12 @@ describe("read-only presentation", () => {
       "Testnet prototype. Not a fund, not investment advice.",
     );
   });
-  it("keeps v2 as default and puts the false-mark warning beside the v3 exit cap", () => {
+  it("keeps v3 as default and puts the false-mark warning beside the v3 exit cap", () => {
     const artifacts = { v2: { sha256: "a".repeat(64), codeHash: "v2" }, v3: { sha256: "b".repeat(64), codeHash: "v3" } };
     const html = renderToStaticMarkup(<ContractPanel artifact={artifacts} />);
-    expect(html).toContain('aria-pressed="true">v2');
+    expect(html).toContain('aria-pressed="true">v3');
     expect(html).toContain('v3 · separate keyless deployment');
-    expect(html).toContain('Public Hyperliquid testnet reads for <code>0x3e72c8963761c3f436710df9b891d8e3a74b5390</code>');
+    expect(html).toContain('Public Hyperliquid testnet reads for <code>0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5</code>');
     vi.stubEnv("VITE_POLICY_ACCOUNT", "policy-v3.counterweight-samet.testnet");
     try {
       const v3 = renderToStaticMarkup(<ContractPanel artifact={artifacts} />);
@@ -127,7 +127,7 @@ it("renders v3's supervised open/close/settlement without borrowing v2 withdrawa
     if (row.tx) expect(html).toContain(`https://testnet.nearblocks.io/txns/${row.tx}`);
     expect(html).toContain(`evidence/${row.evidence}`);
   }
-  for (const text of ['3.6 NEAR @ 3.3788', '3.6 NEAR @ 3.3796', '48.986173', 'Owner-assisted open', 'keeper-only close', 'locally tested', 'Owner-reported settlement succeeded after open expiry', 'current state not re-read', '4 wNEAR remain in v3 custody and directional', 'No v3 withdrawal is claimed'])
+  for (const text of ['3.6 NEAR @ 3.3788', '3.6 NEAR @ 3.3796', '48.986173', 'Owner-assisted open', 'keeper-only close', 'locally tested', 'Owner settled after open expiry', 'finalized signed_short_size is 0', '6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi', '4 wNEAR remain in v3 custody and directional', 'No v3 withdrawal is claimed'])
     expect(html).toContain(text);
   expect(html).not.toContain('Withdrawal ledger:');
   expect(html).not.toContain('preceded key removal');
@@ -146,8 +146,19 @@ it("renders the recorded lifecycle and exact explorer links before simulated res
     if (row.tx) expect(html).toContain(`https://testnet.nearblocks.io/txns/${row.tx}`);
   }
   expect(html).toContain(`https://app.hyperliquid-testnet.xyz/explorer/address/${summary.address}`);
-  for (const limit of ["46.957074", "47.957074", "Destination-chain arrival is unverified", "dry quotes", "No multi-day carry"])
+  for (const limit of ["46.957074", "47.957074", "Arrived on Arbitrum Sepolia", "dry quotes", "No multi-day carry"])
     expect(html).toContain(limit);
+  expect(html).toContain(summary.arrival!.explorer);
+  expect(html).toContain(`evidence/${summary.arrival!.evidence}`);
   const app = renderToStaticMarkup(<App />);
   expect(app.indexOf('id="lifecycle"')).toBeLessThan(app.indexOf('id="results"'));
+});
+
+
+it("renders the v3 false-mark case with its measured price premium and custody boundary", () => {
+  const demo = v3DemoSchema.parse(JSON.parse(readFileSync(new URL("../../../reports/demo-local-v3.json", import.meta.url), "utf8")));
+  const html = renderToStaticMarkup(<V3DemoResults demo={demo} />);
+  for (const c of demo.cases) expect(html).toContain(c.name);
+  for (const text of ["$101.00", "$50.00", "102.00%", "up to the perp margin", "wNEAR custody is unaffected", "no venue fills", "reports/demo-local-v3.json"])
+    expect(html).toContain(text);
 });

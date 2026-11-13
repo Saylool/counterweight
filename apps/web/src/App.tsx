@@ -16,6 +16,8 @@ import {
   comparisonsFor,
   date,
   demoSchema,
+  v3DemoSchema,
+  type V3Demo,
   evidenceSchema,
   formatNumber,
   pct,
@@ -28,6 +30,7 @@ import {
 import {
   assetUrl,
   DEFAULT_ACCOUNT,
+  V2_ACCOUNT,
   REHEARSAL_ACCOUNT,
   V3_ACCOUNT,
   readVenue,
@@ -77,7 +80,7 @@ export function ContractPanel({ artifact }: { artifact: Artifacts }) {
         </div>
       </form>
       <div className="segmented" aria-label="Deployment selection">
-        {[{ value: DEFAULT_ACCOUNT, label: "v2 · funded keyless lifecycle" },
+        {[{ value: V2_ACCOUNT, label: "v2 · funded keyless lifecycle" },
           { value: V3_ACCOUNT, label: "v3 · separate keyless deployment" },
           { value: REHEARSAL_ACCOUNT, label: "v1 · rehearsal with an access key" }].map(({ value, label }) => (
           <button key={value} aria-pressed={account === value} onClick={() => { setDraft(value); setAccount(value); }}>{label}</button>
@@ -89,7 +92,7 @@ export function ContractPanel({ artifact }: { artifact: Artifacts }) {
         IOC orders can partially fill or fail to fill; fees are additional.
         <strong> The mark is unauthenticated: a malicious caller can submit a false high mark</strong>
         {" "}within the sanity range and authorize an adverse buyback up to that mark +1%.
-        The cap does not guarantee 1% against the true market. On 12 November, v3 closed
+        A false mark can cost up to the perp margin; wNEAR custody is unaffected. The cap does not guarantee 1% against the true market. On 12 November, v3 closed
         3.6 NEAR reduce-only to flat on testnet inside the opening band.
         Paused and out-of-band exit authorization is locally tested; IOC fills are not guaranteed.
         Opens require an owner margin attestation at most 30 seconds old; the keeper can reduce alone.
@@ -225,7 +228,7 @@ export function ContractPanel({ artifact }: { artifact: Artifacts }) {
           </div>
         </>
       )}
-      {(account === V3_ACCOUNT || account === DEFAULT_ACCOUNT) && <VenuePanel
+      {(account === V3_ACCOUNT || account === V2_ACCOUNT) && <VenuePanel
         address={account === V3_ACCOUNT ? "0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5" : "0x3e72c8963761c3f436710df9b891d8e3a74b5390"}
         startTime={account === V3_ACCOUNT ? 1794504000000 : 1794330000000}
       />}
@@ -254,10 +257,14 @@ export function LifecycleTable({ summary }: { summary: LifecycleSummary }) {
       </table>
     </div>
     {summary.withdrawalHash && <p>Withdrawal ledger: <a href={`https://app.hyperliquid-testnet.xyz/explorer/tx/${summary.withdrawalHash}`}><code>{summary.withdrawalHash}</code> ↗</a>.
-      Fixed recipient: <code>{summary.recipient}</code>. Destination-chain arrival is unverified.</p>}
+      Fixed recipient: <code>{summary.recipient}</code>.
+      {summary.arrival && <> <a href={summary.arrival.explorer}>Arrived on Arbitrum Sepolia</a> ·
+        {" "}<a href={assetUrl(`evidence/${summary.arrival.evidence}`)}>13 November public RPC evidence</a> ·
+        {" "}{summary.arrival.amountUsdc} HL-testnet USDC; block {summary.arrival.blockNumber}.</>}</p>}
     {isV3 ? <p>Owner-assisted open · keeper-only close. Zero keys at both order receipt blocks.
-      Owner-reported settlement succeeded after open expiry; current state not re-read.
-      The archived status precedes settlement. No v3 withdrawal is claimed; 4 wNEAR remain in v3 custody and directional.
+      Owner settled after open expiry; finalized signed_short_size is 0 at block
+      {" "}<code>6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi</code>.
+      {" "}<a href={assetUrl("evidence/2026-11-12-v3-post-settlement.json")}>Archived keeper read (journal line 16)</a>. No v3 withdrawal is claimed; 4 wNEAR remain in v3 custody and directional.
       This live close was in-band; paused and out-of-band authorization is locally tested. IOC fills are not guaranteed.</p>
       : <p>Owner funding and the 49 USDC spot→perp transfer preceded key removal. Keeper trading and withdrawal
       were checked with zero keys at their receipt blocks.</p>}
@@ -743,11 +750,37 @@ function ResultsPanel() {
     </>
   );
 }
+export function V3DemoResults({ demo }: { demo: V3Demo }) {
+  return <>
+    <h3>V3 local exit authorization</h3>
+    <Notice>Local sandbox · {demo.status} · {date(demo.finishedAt)}. Shipped production v3 WASM; MPC, token and marks are mocked. These are signature authorizations, with no venue fills.</Notice>
+    <Notice tone="warning">Finding A: exit marks are unauthenticated. A false mark can cost up to the perp margin; wNEAR custody is unaffected. Supplied mark +1% does not guarantee true market +1%.</Notice>
+    <div className="table-scroll" role="region" aria-label="V3 local exit results" tabIndex={0}>
+      <table><caption>Paused, out-of-band and false-mark cases</caption>
+        <thead><tr><th scope="col">Case</th><th scope="col">Authorization</th><th scope="col">Supplied mark</th><th scope="col">Illustrative true mark</th><th scope="col">Signed buy limit</th><th scope="col">Premium to true mark</th></tr></thead>
+        <tbody>{demo.cases.map(c => <tr key={c.name}>
+          <th scope="row">{c.name}</th><td>{c.authorized ? "Authorized" : "Rejected"}</td>
+          <td>{usd(Number(c.suppliedMarkMicroUsd) / 1e6)}</td><td>{usd(Number(c.illustrativeTrueMarkMicroUsd) / 1e6)}</td>
+          <td>{usd(Number(c.signedLimitMicroUsd) / 1e6)}</td><td>{pct(c.premiumToTrueMarkPct)}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <details><summary>V3 assertions & mock boundaries</summary>
+      <ul>{[...demo.mocked, ...demo.boundaries].map(s => <li key={s}>{s}</li>)}</ul>
+      <dl className="key-values">{Object.entries(demo.assertions).map(([key, value]) => <div className="definition-row" key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl>
+    </details>
+    <p className="source-note"><a href={assetUrl("reports/demo-local-v3.json")}>Original demo-local-v3.json ↗</a> · Sandbox results; no public explorer transactions.</p>
+  </>;
+}
 function DemoPanel() {
+  const v3 = useResource(() => loadJson("data/demo-v3.json", v3DemoSchema));
   const result = useResource(() => loadJson("data/demo.json", demoSchema));
   const d = result.data;
   return (
     <>
+      <ResourceState {...v3} />
+      {v3.data && <V3DemoResults demo={v3.data} />}
+      <h3>V2 local lifecycle</h3>
       <ResourceState {...result} />
       {d && (
         <>
@@ -936,7 +969,7 @@ export default function App() {
               After owner funding and key removal, a NEAR policy holding 4 wNEAR
               authorized a keeper short and reduce-only close on Hyperliquid testnet.
               V2 records a fixed-recipient withdrawal; on 12 November, v3 opened
-              and closed a 3.6 NEAR short, followed by owner-reported settlement. Owner-assisted open; keeper-only close.
+              and closed a 3.6 NEAR short, followed by owner settlement, verified by a finalized keeper read. Owner-assisted open; keeper-only close.
             </p>
             <a className="primary-link" href="#lifecycle">
               Inspect the funded lifecycle <span>↓</span>

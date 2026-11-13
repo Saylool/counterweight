@@ -1,0 +1,52 @@
+{
+  "source": "reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl",
+  "sourceLine": 16,
+  "timestamp": "2026-11-12T18:54:56.074Z",
+  "finishedAt": "2026-11-12T18:55:16.834Z",
+  "finality": "final",
+  "note": "Extracted policyState from the keeper finalized public read; not a settlement transaction receipt or an on-chain venue proof.",
+  "policy": "policy-v3.counterweight-samet.testnet",
+  "settlementTx": "CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93",
+  "policyState": {
+    "state": {
+      "network": "Testnet",
+      "keeper": "keeper.counterweight-samet.testnet",
+      "coin": "NEAR",
+      "signer_account": "v1.signer-prod.testnet",
+      "derivation_path": "counterweight-1",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "asset_index": 54,
+      "size_decimals": 1,
+      "limits": {
+        "max_short_size": "5000000000000000000000000",
+        "per_order_notional_cap": "20000000",
+        "per_day_notional_cap": "40000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "oracle": {
+        "min_price": "2840800",
+        "max_price": "4261200",
+        "max_age_seconds": 60
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "reference_price": "3415500",
+      "reference_price_timestamp": "1794509372",
+      "last_keeper_heartbeat": "1794509089",
+      "heartbeat_timeout_seconds": 3600,
+      "paused": false,
+      "pending": null,
+      "spot_balance": "4000000000000000000000000",
+      "signed_short_size": "0",
+      "daily_usage": "12313314",
+      "last_nonce": "1794505123294",
+      "last_open_expiry": "1794505157899"
+    },
+    "block": "6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi",
+    "codeHash": "MD74j7DDmMa2zMHNiCZBbhe1AdQuDZGGxP3d5HfzzKm",
+    "keyless": true,
+    "rebalance": null
+  }
+}

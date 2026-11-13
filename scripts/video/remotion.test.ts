@@ -211,7 +211,7 @@ describe('Remotion production tables and evidence',()=>{
       "A1": "Counterweight hedges NEAR holdings with a short, and a keyless NEAR policy limits what the keeper can sign. Recorded on Hyperliquid testnet.",
       "A2": "Counterweight puts a keyless NEAR policy contract between the keeper and the exchange. The keeper proposes an order, the contract checks its bounds, and NEAR Chain Signatures sign it for Hyperliquid.",
       "A3": "The owner funded the account, then deleted the policy's access keys. The keeper opened a 3.5 NEAR short and closed it reduce-only. The position is flat.",
-      "A4": "The recorded v2 run withdrew nearly forty-seven USDC net; destination arrival is unverified. Separately, keyless v3 can authorize reduce-only exits outside the opening price band.",
+      "A4": "The recorded v2 run withdrew nearly forty-seven USDC net; it arrived on Arbitrum Sepolia. Separately, keyless v3 can authorize reduce-only exits outside the opening price band.",
       "A5": "In a local simulation with the real policy WASM and mocked signatures, NEAR rallied thirty-two and a half percent in a day. The keeper closed the hedge reduce-only, and the owner's nonce and balance stayed unchanged.",
       "A6": "Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked.",
       "A7": "Counterweight is a supervised testnet prototype, built at NEAR HACKATHON. Run the local demo and check the testnet evidence yourself."
@@ -231,7 +231,7 @@ describe('Remotion production tables and evidence',()=>{
     expect(architectureStage(narrationAt('A2','and NEAR Chain',seconds),seconds)).toBe(3);
     const at=narrationAt('A4','Separately,',seconds);
     const a4=scenes.find(s=>s.id==='A4')!;
-    expect(textBand(a4,true,at-.001,seconds)).toBe('destination arrival is unverified.');
+    expect(textBand(a4,true,at-.001,seconds)).toBe('it arrived on Arbitrum Sepolia.');
     expect(textBand(a4,true,at+.001,seconds)).toMatch(/^Separately,/);
   });
   it('shows authentic verification fills and flat with provenance',()=>{

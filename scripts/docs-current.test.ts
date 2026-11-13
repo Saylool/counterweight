@@ -23,3 +23,17 @@ it('keeps documentation free of obsolete v3 deployment and local-demo status', (
     expect(text, relative(root, path)).not.toMatch(/(?:failed|blocked) before deployment|successful rerun remains pending|signed payloads in the blocked run/i);
   }
 });
+
+
+it('keeps v2 arrival documentation current after the destination receipt', () => {
+  for (const path of markdown(root)) {
+    const text = readFileSync(path, 'utf8').replace(/[*_`]/g, '').replace(/\s+/g, ' ');
+    // Sentences, table rows and bullet lists may place the qualifier after other limitations.
+    const arrival = /(?:destination(?:[- ]chain)?|bridge|withdrawal)[- ]arrival/;
+    const stale = /\b(?:unverified|unproved|unproven|not (?:yet )?(?:verified|proved|proven))\b/;
+    for (const sentence of text.split(/[.!?\n]/)) {
+      expect(arrival.test(sentence.toLowerCase()) && stale.test(sentence.toLowerCase()), relative(root, path)).toBe(false);
+    }
+    expect(text, relative(root, path)).not.toMatch(/(?:not established|no proof of)[^.]{0,250}(?:destination(?:-chain)?|bridge)[- ](?:withdrawal )?arrival/i);
+  }
+});

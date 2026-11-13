@@ -4,8 +4,8 @@
 Use `artifacts/counterweight_policy_v3.wasm` and the
 [POLICY-V3 guide](../../docs/POLICY-V3.md). `artifacts/counterweight_policy.wasm`
 is the retained historical v2 binary for existing demo pins. Deployed keyless v2
-has the immutable-band exit bug and cannot be upgraded; its cleanup is printed in
-[V2-CLEANUP](../../docs/V2-CLEANUP.md). The v3 guide supersedes historical behavior
+has the immutable-band exit bug and cannot be upgraded; its cleanup completed on 12 November
+([V2-CLEANUP](../../docs/V2-CLEANUP.md)). V3 completed a supervised live 3.6 NEAR open/close and owner settlement on 12 November. The finalized keeper read records `signed_short_size: "0"` at block `6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi` in [journal, line 16](../../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl) ([extract](../../docs/evidence/2026-11-12-v3-post-settlement.json)). The v3 guide supersedes historical behavior
 and in-place deployment instructions below.
 
 Implements DESIGN Part B custody tiers and the owner-approved rebalancing revision
@@ -90,7 +90,7 @@ interoperability fixtures and have no controller signing entry point.
 
 Initialization fixes owner, market/precision, signer, wNEAR, derivation path and
 EVM withdrawal recipient, network and oracle feed config. Opening bounds require
-a cancellable 24h owner proposal to change; exits do not wait for it. The immutable network selects Testnet/Mainnet account guards and EIP-712 source/domain; mainnet operation is unverified;
+a cancellable 24h owner proposal to change; exits do not wait for it. The immutable network selects Testnet/Mainnet account guards and L1 order EIP-712 source `a`/`b`. User-signed class transfers and withdrawals hardcode the testnet signature chain ID `0x66eee` / `421614`, so mainnet domain separation for those actions is unsupported; no mainnet compatibility is claimed ([known issue](../../docs/KNOWN-ISSUES.md#mainnet-user-signed-actions-are-unsupported));
 `.test.near` is enabled solely by test-utils. Verify NEAR metadata before funding:
 read-only venue metadata on 2026-11-10 Istanbul time reported testnet index 54,
 mainnet index 74, `szDecimals=1` ([captured metadata](fixtures/near-market-meta.json)). Historical index 4 / precision 2 tests are mocks.

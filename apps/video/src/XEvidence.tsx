@@ -82,9 +82,9 @@ export const XWithdrawal:React.FC<{seconds:number}>=({seconds})=>{
    </div>
    <div style={{fontSize:64,color:green,lineHeight:1.16,marginBottom:10}}>46.957074 USDC net</div>
    <div style={{fontSize:23,color:muted,marginBottom:16}}>Exact amount from saved lifecycle status · explorer rounds to 46.96</div>
-   <div style={{fontSize:42,color:amber,marginBottom:16}}>Destination arrival unverified</div>
+   <div style={{fontSize:42,color:amber,marginBottom:16}}>Arrived on Arbitrum Sepolia</div>
    <div style={{fontSize:25,color:muted}}>47.957074 USDC gross · 1 USDC fee · fixed recipient 0xb1af…f36a</div>
-   <div style={{fontSize:20,color:muted,marginTop:16}}>docs/evidence/2026-11-10-lifecycle-status.md</div>
+   <div style={{fontSize:20,color:muted,marginTop:16}}>docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json</div>
   </>:<>
    <div style={{fontSize:35,fontWeight:650,marginBottom:10}}>Separate keyless v3 deployment</div>
    <div style={{fontSize:22,color:muted,marginBottom:18}}>V3 · FINALIZED VERIFIER · ORIGINAL CAPTURE</div>

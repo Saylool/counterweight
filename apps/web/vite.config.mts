@@ -7,6 +7,7 @@ import {
   lifecycleSchema,
   reportSchema,
   demoSchema,
+  v3DemoSchema,
   policies,
   nearTransactionHashes,
 } from "./src/model";
@@ -48,6 +49,7 @@ function publicEvidence(): Plugin {
     "data/demo.json",
     demoSchema.parse(JSON.parse(read("reports/demo-local.json"))),
   );
+  add("data/demo-v3.json", v3DemoSchema.parse(JSON.parse(read("reports/demo-local-v3.json"))));
   const manifest = read("contracts/policy/artifacts/SHA256SUMS").trim().split("\n");
   const artifacts = Object.fromEntries([
     ["v2", "counterweight_policy.wasm"],
@@ -93,7 +95,7 @@ function publicEvidence(): Plugin {
         ? "application/json"
         : "text/plain; charset=utf-8",
     });
-  for (const name of ["replay-report.json", "demo-local.json"])
+  for (const name of ["replay-report.json", "demo-local.json", "demo-local-v3.json"])
     assets.set(`reports/${name}`, {
       source: read(`reports/${name}`),
       type: "application/json",

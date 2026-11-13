@@ -10,7 +10,7 @@ recorded 49 USDC in perps before spot funding. The [12 November lifecycle](evide
 then verified 4 wNEAR custody, a keeper short of 3.6 NEAR @ 3.3788 and a
 reduce-only close @ 3.3796 to flat, with zero keys at both order receipt blocks.
 Opening required a fresh owner margin attestation; the keeper closed alone.
-The saved lifecycle does not document owner settlement. This live close was in-band; paused and
+Owner settled on-chain ([CYFZdHDe…](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93)); finalized `signed_short_size: "0"` is recorded at block `6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi` in [keeper journal, line 16](../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl) ([archived extract](evidence/2026-11-12-v3-post-settlement.json)). This live close was in-band; paused and
 out-of-band exit authorization remains locally tested, with no guaranteed fill.
 The [saved plan](evidence/policy-v3-plan.json) and
 [printed commands](evidence/policy-v3-plan.txt) are deployment history, not
@@ -217,3 +217,5 @@ Use `--wrap-spot=true` only when intentionally wrapping additional native NEAR.
 A fresh full plan can also select `--spot-near=AMOUNT`; by default it prints an
 explicit amount placeholder and no wrapping command. Match contract `spot_balance`
 to token custody before trading. Fresh price/equity observations remain required.
+
+The historical v2 fixed-recipient withdraw3 payout **arrived on Arbitrum Sepolia**: 46.957074 HL-testnet USDC (46,957,074 raw), block 327938892; recipient balance 46,957,074 raw. See the [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0) and [13 November public RPC evidence](evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). This is testnet evidence for v2; IOC fills are not guaranteed in general. No v3 withdrawal is claimed.

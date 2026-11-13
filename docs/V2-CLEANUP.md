@@ -27,6 +27,8 @@ not transaction receipts. Transaction hashes come from the operator's
 the later public balance checks. Files were copied byte-for-byte from the local
 release outputs without rerunning any command. No USDC bridge arrival is inferred.
 
+The returned 4 wNEAR were deposited into v3, which completed its supervised open/close and owner settlement on 12 November. Owner settled on-chain ([CYFZdHDe…](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93)); finalized `signed_short_size: "0"` is recorded at block `6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi` in [keeper journal, line 16](../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl) ([archived extract](evidence/2026-11-12-v3-post-settlement.json)). The spot leg remains in v3 custody and directional.
+
 ## Historical procedure — do not repeat completed stages
 
 The commands below document the executed flow. They use the owner's existing

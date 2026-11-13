@@ -20,11 +20,7 @@ WASM SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
 of 3.6 @ 3.3796, leaving the venue flat with 48.986173 USDC equity. Both successful
 requests have zero policy keys at their request/signature receipt blocks and recovered
 signers matching the derived address. The historical close capture reserves 3.6 NEAR;
-the owner subsequently reports [successful settlement](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93)
-after open expiry on 12 November with `short_size: "0"` and
-`observed_at_ms: "1794509677914"`. The [archived status](evidence/2026-11-12-v3-settle-status.json)
-prints the command and records the pre-settlement reservation, not a settlement receipt.
-Current state: **not re-read** (sandbox public RPC DNS failure). Out-of-band exit authorization is locally tested;
+Owner settled on-chain ([CYFZdHDe…](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93)); finalized `signed_short_size: "0"` is recorded at block `6PtEDXrjezjp5oCNcyZV4okL4LJwtBoV2Q98JLFkF3oi` in [keeper journal, line 16](../reports/keeper-run/2026-11-12T17-38-58-147Z-c3b1b13b.jsonl) ([archived extract](evidence/2026-11-12-v3-post-settlement.json)). The earlier archived status records the pre-settlement command and reservation. Out-of-band exit authorization is locally tested;
 this live close occurred inside the opening band and proves no live paused/out-of-band fill.
 These changes do not repair v2; its historical WASM remains separately pinned.
 
@@ -53,7 +49,7 @@ see the [transaction table, provenance and baseline](evidence/2026-11-12-v3-life
 Those 4 wNEAR were then deposited into v3. The historical v2 fee-cap mismatch
 (1 micro-USDC configured versus the actual 1 USDC fee) still prevents truthful
 `reconcile_margin_withdrawal`; cleanup instead abandoned its expired reservation
-without margin credit or any claim of destination-chain arrival.
+without margin credit. Separately, the earlier v2 payout [arrived on Arbitrum Sepolia](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0); see [13 November evidence](evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json).
 
 V3's exit IOC guarantees at most 1% above its fresh **reported** mark (fees extra),
 rounded down. With no authenticated oracle, callers can lie about price or timestamp;
@@ -65,13 +61,7 @@ venue, gas and fee availability still matter. See the explicit trust boundary in
 
 ## Keeper monitoring has interruptions; no autonomous trading proof
 
-The current keeper's opt-in opening planner does not check the age of v3's owner
-margin attestation before claiming its signature journal. A rejected
-`ERR_REBALANCE_STALE` opening can therefore leave a blocking `.active.json`.
-Keep openings disabled for unattended operation. Preserve and reconcile any
-journal before recovery; restarting or deleting it is not proof that no signature
-exists. The live keeper source, process, locks and journals were left untouched
-in this offline release edit. See [the supervised-entry warning](KEEPER-RUN.md#running-the-keeper).
+The opt-in v3 opening planner now reads owner margin at the policy's finalized block and rejects missing, malformed, zero, future or >30-second-old attestations before writing an opening journal. Regression tests cover repeated stale cycles and a subsequent fresh attestation. Opening-disabled monitoring and reductions do not make this additional read. The contract remains authoritative: a margin observation can expire while a transaction is in flight. Any uncertain send still retains its journal and must be reconciled before recovery; deleting a journal is not proof that no signature exists. The running process is not restarted by this release edit. See [the supervised-entry warning](KEEPER-RUN.md#running-the-keeper).
 
 ## V3 pause, concurrent callbacks and governance boundaries
 
@@ -128,7 +118,7 @@ The original `policy.counterweight-samet.testnet` retains a key and old WASM; it
 The earlier v2 upgrade/key-removal instructions are historical. Do not redeploy, reinitialize or rerun the funded run.
 Deleting all keys freezes this policy's code under the current ABI.
 
-## Withdrawal status matching — fixed; destination-chain arrival unverified
+## Withdrawal status matching — fixed; arrived on Arbitrum Sepolia
 
 The signed `withdraw3` amount was 47.957074 USDC; public ledger `delta.usdc` is 46.957074 **net**,
 with `fee: "1.0"`. The old matcher compared net against gross. The ledger also encodes nonce
@@ -139,7 +129,7 @@ so a recheck after a day does not silently omit the event. Minimal rows without 
 1 USDC testnet fee and unique amount/time correlation; they provide weaker identity evidence.
 The Hyperliquid hash is separate from both the NEAR transaction hash and signing digest.
 Regression tests use the exact recorded ledger shape, missing-field variant and wrong/ambiguous cases.
-Original failed captures remain historical evidence. Public-ledger confirmation does **not** prove destination-chain arrival.
+Original failed captures remain historical evidence. Public-ledger confirmation alone does **not** prove destination-chain arrival; the v2 payout arrived on Arbitrum Sepolia, independently verified by the 13 November public RPC evidence linked below.
 Never resubmit an uncertain signature. API result/history limits and fees may change; unmatched rows fail closed.
 
 ## UI Send lands in spot; owner-only class transfer was required
@@ -171,8 +161,8 @@ alone cannot correct the existing spoken audio. Replacement narration and a
 matching render remain outside this offline repo edit; no paid voice API was used.
 
 Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
-no multi-day carry, Intents dry quotes only, no live rebalancing route, and no destination-chain arrival verification.
-The v3 run records spot → open → reduce-only close → owner settlement (success reported by the owner); current state not re-read. The 4 wNEAR spot leg remains in v3 custody and directional after settlement. No v3 withdrawal is claimed. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
+no multi-day carry, Intents dry quotes only, no live rebalancing route. The v2 withdrawal arrived on Arbitrum Sepolia.
+The v3 run records spot → open → reduce-only close → owner settlement, with finalized zero reserved short in the keeper journal (block and extract above). The 4 wNEAR spot leg remains in v3 custody and directional after settlement. No v3 withdrawal is claimed. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
 signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
 
 ## 3. Demo attack semantics and owner boundary
@@ -218,9 +208,11 @@ and $22,036.913 for the funded v2 test mark, with fee and owner-replenishment as
 this is not a total portfolio-loss or liquidation guarantee and is not a bound for v3. Subsidized MPC costs
 have a separate worst-case 10 NEAR lifetime ceiling at the per-request fee maximum.
 
-Network is now an immutable `Testnet` / `Mainnet` init enum, binding both account
-checks and signing domains. Mainnet deployment/operation is untested and not claimed.
+Network is an immutable `Testnet` / `Mainnet` init enum, selecting account
+checks and L1 order source `a`/`b`. User-signed actions retain the testnet-only chain ID described above; mainnet compatibility is unsupported.
 The shared Hyperliquid package now handles noop; the duplicate relay codec is removed.
 That historical network/oracle layout required a fresh controller when moving from v1.
 v2 was upgraded to the state-compatible class-transfer artifact before key removal, and the funded lifecycle
 is recorded above. This release-engineering pass used public reads and local checks only; it performed no testnet sends.
+
+V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.

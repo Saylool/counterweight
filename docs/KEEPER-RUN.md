@@ -58,12 +58,7 @@ This starts the deployed v3 keeper for 48 hours on macOS and keeps the machine a
 caffeinate -i npm run keeper:run -- --policy=policy-v3.counterweight-samet.testnet --hours=48 --allow-open
 ```
 
-`--allow-open` does not supply that owner attestation. The current planner does
-not precheck its age and may hit `ERR_REBALANCE_STALE`; because the signature
-journal is claimed before the CLI call, a failed request can leave a blocking
-`.active.json`. Preserve it and reconcile the original operation before recovery.
-Do not enable openings on an unattended v3 run. This release leaves the running
-keeper implementation and journals untouched.
+`--allow-open` does not supply that owner attestation. Before claiming an opening signature journal, v3 reads `get_margin` at the policy's finalized block and skips missing, malformed, zero, future or >30-second-old `observed_at_ms` values. Monitoring with opening disabled and reduce-only closes perform no additional margin read. The contract remains authoritative; an observation can expire in flight, and an uncertain CLI submission still leaves a blocking `.active.json`. Preserve it and reconcile the original operation before recovery. Do not enable openings on an unattended v3 run. This source fix takes effect when the operator restarts the keeper; this release does not restart the running process or modify its journals.
 
 A live run requires an explicit `--policy`; it does not deploy/migrate contracts. The policy must designate `keeper.counterweight-samet.testnet` and the testnet MPC signer, and expose `get_state`, `get_rebalance`, heartbeat, keeper-price and order-signature methods. The known v3 account selects v3 exit semantics. Unknown or incompatible public responses block trading and are logged.
 

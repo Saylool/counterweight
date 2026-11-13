@@ -17,7 +17,7 @@ The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliq
 | 0:10–0:20 | lifecycle-top · RECORDED V2 · 2026-11-10 | Recorded v2 lifecycle: owner funding preceded key removal; keeper trading followed it. | lifecycle |
 | 0:20–0:28 | lifecycle-scroll · RECORDED V2 · SUPERVISED OWNER STEPS | Dated v2 proof: zero access keys. Funding and the spot-to-perp transfer came first. | keys |
 | 0:28–0:35 | live-v3 · LIVE PUBLIC RPC · V3 ZERO ACCESS KEYS | Separate v3 deployment: read-only checks compare finalized code and access keys. This is not the v2 fill account. | v3 |
-| 0:35–0:49 | hl-fills · PUBLIC EXPLORER · HYPURRSCAN · SPOT→PERP + WITHDRAW | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Destination-chain arrival is unverified. | withdrawal |
+| 0:35–0:49 | hl-fills · PUBLIC EXPLORER · HYPURRSCAN · SPOT→PERP + WITHDRAW | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Arrived on Arbitrum Sepolia. | withdrawal |
 | 0:49–1:00 | live-v2 · RECORDED V2 · REAL TESTNET FILLS · 2026-11-10 | Testnet keeper short: 3.5 NEAR at 3.5121; reduce-only close at 3.5212. Position checked flat. | fills |
 | 1:00–1:09 | v3-proof · PUBLIC RPC CAPTURE UTILITY · SEPARATE V3 ACCOUNT | Separate v3 deployment: read-only checks compare finalized code and access keys. This is not the v2 fill account. | v3 |
 | 1:09–1:16 | market · LIVE MAINNET MARKET · ILLUSTRATIVE RISK | Public mainnet market data powers an illustrative risk gate. This panel does not query a trading account. | market |
@@ -39,7 +39,7 @@ The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliq
 | 0:07–0:16 | rogue · LOCAL SANDBOX · SEVEN REJECTIONS | Local contract checks reject seven rogue attempts. Bounded ordinary keeper opens remain permitted. | rogue |
 | 0:16–0:26 | lifecycle-top · RECORDED V2 · REAL TESTNET FILLS · 2026-11-10 | Testnet keeper short: 3.5 NEAR at 3.5121; reduce-only close at 3.5212. Position checked flat. | fills |
 | 0:26–0:33 | lifecycle-scroll · RECORDED V2 · KEY REMOVED BEFORE KEEPER TRADING | Dated v2 proof: zero access keys. Funding and the spot-to-perp transfer came first. | keys |
-| 0:33–0:40 | hl-fills · PUBLIC EXPLORER · HYPURRSCAN · WITHDRAW | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Destination-chain arrival is unverified. | withdrawal |
+| 0:33–0:40 | hl-fills · PUBLIC EXPLORER · HYPURRSCAN · WITHDRAW | Withdrawal ledger: 46.957074 USDC net plus a 1 USDC fee. Arrived on Arbitrum Sepolia. | withdrawal |
 | 0:40–0:47 | v3-proof · SEPARATE V3 · READ-ONLY PUBLIC RPC CHECKS | Separate v3 deployment: read-only checks compare finalized code and access keys. This is not the v2 fill account. | v3 |
 | 0:47–0:54 | lifecycle-scroll · SUPERVISED TESTNET · NO LIVE INTENTS ROUTE | Supervised testnet prototype. Owner observations remain trusted; no multi-day carry or live Intents route is proven. | limits |
 | 0:54–1:00 | end · SOURCE AND REBUILD INSTRUCTIONS IN THE REPOSITORY | Built at NEAR HACKATHON · Testnet prototype · not investment advice | end |
@@ -51,7 +51,7 @@ The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliq
 - **keys**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “v2 zero access keys”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “temporary full-access key still present during class transfer”
 - **fills**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Keeper IOC short 3.5 @ 3.5121; reduce-only close 3.5 @ 3.5212, flat”
 - **open**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Reservations are signed exposure, not fills”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “2ZHrq1du5UaAeiQZVBoXCzb6vBFj9eMrQd99NiTDcFNd”
-- **withdrawal**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “46.957074 net + 1 USDC fee”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Destination-chain arrival unverified”
+- **withdrawal**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “46.957074 net + 1 USDC fee”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “arrived on Arbitrum Sepolia”
 - **v3**: [docs/evidence/2026-11-10-policy-v3-keyless-verify.txt](evidence/2026-11-10-policy-v3-keyless-verify.txt) — anchor: “"account": "policy-v3.counterweight-samet.testnet"”; [docs/evidence/2026-11-10-policy-v3-keyless-verify.txt](evidence/2026-11-10-policy-v3-keyless-verify.txt) — anchor: “"expected": "zero access keys"”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “v2 zero access keys”
 - **market**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Read-only UI, report/evidence display, public market and finalized contract reads”; [apps/web/src/App.tsx](../apps/web/src/App.tsx) — anchor: “No account is queried.”
 - **evidence**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Dated evidence is historical”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Contract signing rehearsal successful but key still present”
@@ -61,7 +61,9 @@ The funded lifecycle belongs to **policy-v2**, dated **2026-11-10**, at Hyperliq
 - **resume**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Owner nonce/balance unchanged; no autonomous owner transaction”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Mock adapter/token/receipt; owner trusted”
 - **results**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Full rebalance sizes”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Capital denominator differs for spot-holder”
 - **oos**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Retrospective holdout; independent periods; frozen costs/latency”
-- **limits**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “No mainnet, live Intents route, multi-day carry or bridge-arrival proof”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Owner observations trusted”
+- **limits**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “No mainnet, live Intents route or multi-day carry”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Owner observations trusted”
 - **end**: [docs/CLAIMS.md](CLAIMS.md) — anchor: “Hackathon deliverables”; [docs/CLAIMS.md](CLAIMS.md) — anchor: “Experimental user-account software, not a fund/investment product”
 
 Edit times and terminal typing are editorial choices, not measured command runtimes. The terminal cut is an excerpt: setup, monitor waits and repeated lines may be omitted, with original line numbers retained. Full source log and its SHA-256 are saved. Mock labels remain visible throughout. Public failures are retained and labelled unavailable; they never become fabricated green states. Before publishing, review every image and the capture manifest, replace the repository-link placeholder with the actual public repo URL, and check that explorer details are readable. See [VIDEO.md](VIDEO.md) for exact rebuild commands and limitations.
+
+V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.

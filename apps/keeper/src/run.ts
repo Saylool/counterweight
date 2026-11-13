@@ -4,7 +4,7 @@ import { assembleRequest, recoveredSigner, TESTNET_API } from '../../../packages
 import { parseAccount, parseFills, parseLifecycleReceipt, verifyFill, type ExpectedCall } from '../../../scripts/lifecycle-parsing.js';
 import { assertFreshContractProof } from '../../../scripts/prove-contract.js';
 import { decimal, units } from '../../../scripts/lifecycle-config.js';
-import { testnetAccount } from '../../../scripts/testnet-common.js';
+import { testnetAccount, V3_POLICY } from '../../../scripts/testnet-common.js';
 import { assess, heartbeatDue, priceNeeded, planOrder, riskSettings, KEEPER, type PolicyState } from './run-state.js';
 import { commandArgs, DiskStore, printable, PublicClient, runtime, sendNear, type Runtime } from './run-io.js';
 
@@ -189,6 +189,19 @@ export class Keeper {
       c.H = latestRisk.metrics.headroom; c.thresholdUsd = latestRisk.thresholdUsd; c.risk = latestRisk; c.riskSettings = latestSettings;
       const expected = planOrder(this.options.policy, snapshot.state, o, latestSettings, this.rt.now(), this.options.allowOpen);
       if (!expected) return c;
+      if (this.options.policy === V3_POLICY && !expected.reduceOnly) {
+        // Owner-only margin attestations gate v3 entries. Check before claiming a
+        // signature journal: a known stale preflight must not become an uncertain send.
+        const margin = await this.client.view(this.options.policy, 'get_margin', {}, snapshot.block);
+        c.ownerMargin = margin;
+        const parsed = z.object({ observed_at_ms: z.string().regex(/^\d+$/) }).safeParse(margin.value);
+        const observedAt = parsed.success ? BigInt(parsed.data.observed_at_ms) : 0n;
+        const now = BigInt(this.rt.now());
+        if (observedAt === 0n || observedAt > now || now - observedAt > 30_000n) {
+          c.decision = 'blocked-owner-margin-stale';
+          return c;
+        }
+      }
       c.decision = `${this.options.dry ? 'would-' : ''}${expected.reduceOnly ? 'reduce-only-close' : 'open-within-caps'}`;
       const args = commandArgs(this.options.policy, 'request_order_signature', expected.args);
       c.commands.push(printable(args)); this.rt.print(`${this.options.dry ? 'WOULD SEND' : 'SEND'} ${printable(args)}`);
