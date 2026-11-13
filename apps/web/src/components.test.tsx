@@ -119,7 +119,7 @@ describe("read-only presentation", () => {
   });
 });
 
-it("renders v3's supervised open/close without borrowing v2 withdrawal or settlement claims", () => {
+it("renders v3's supervised open/close/settlement without borrowing v2 withdrawal claims", () => {
   const summary = lifecycleSchema.parse(JSON.parse(readFileSync(new URL("../../../docs/evidence/2026-11-12-v3-lifecycle-summary.json", import.meta.url), "utf8")));
   const html = renderToStaticMarkup(<LifecycleTable summary={summary} />);
   for (const row of summary.steps) {
@@ -127,13 +127,13 @@ it("renders v3's supervised open/close without borrowing v2 withdrawal or settle
     if (row.tx) expect(html).toContain(`https://testnet.nearblocks.io/txns/${row.tx}`);
     expect(html).toContain(`evidence/${row.evidence}`);
   }
-  for (const text of ['3.6 NEAR @ 3.3788', '3.6 NEAR @ 3.3796', '48.986173', 'Owner-assisted open', 'keeper-only close', 'locally tested', 'no completed owner settlement or withdrawal'])
+  for (const text of ['3.6 NEAR @ 3.3788', '3.6 NEAR @ 3.3796', '48.986173', 'Owner-assisted open', 'keeper-only close', 'locally tested', 'Owner-reported settlement succeeded after open expiry', 'current state not re-read', '4 wNEAR remain in v3 custody and directional', 'No v3 withdrawal is claimed'])
     expect(html).toContain(text);
   expect(html).not.toContain('Withdrawal ledger:');
   expect(html).not.toContain('preceded key removal');
   expect(html).toContain('evidence/2026-11-12-v3-lifecycle-summary.md');
   const app = renderToStaticMarkup(<App />);
-  expect(app).toContain('12 November · keyless v3 open/close');
+  expect(app).toContain('12 November · keyless v3 open/close/settlement');
   expect(app).toContain('10 November · historical keyless v2 lifecycle');
 });
 

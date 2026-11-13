@@ -13,7 +13,7 @@
       "evidence": "2026-11-12-lifecycle-policy-v3-spot.md"
     },
     {
-      "step": "First keeper open — failed",
+      "step": "First keeper open \u2014 failed",
       "tx": "6oiP66YntFXUfqRvfPyfuD1CS5WyahebzqRFmmMsxeRh",
       "result": "ERR_REBALANCE_STALE; no verified fill",
       "evidence": "2026-11-12-lifecycle-policy-v3-open.md"
@@ -21,7 +21,7 @@
     {
       "step": "Owner margin attestation",
       "tx": null,
-      "result": "49 USDC equity/withdrawable; ≤30 seconds old; command captured, separate transaction hash not saved",
+      "result": "49 USDC equity/withdrawable; \u226430 seconds old; command captured, separate transaction hash not saved",
       "evidence": "2026-11-12-lifecycle-policy-v3-open.md"
     },
     {
@@ -38,8 +38,8 @@
     },
     {
       "step": "Owner settlement",
-      "tx": null,
-      "result": "Not established in the saved lifecycle; close capture reserves 3.6 NEAR until owner settlement after expiry",
+      "tx": "CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93",
+      "result": "Owner-reported success after open expiry; short_size 0; observed_at_ms 1794509677914; current state not re-read; 4 wNEAR remain in v3 custody and directional; no v3 withdrawal",
       "evidence": "2026-11-12-v3-lifecycle-summary.md"
     }
   ]

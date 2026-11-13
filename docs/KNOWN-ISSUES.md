@@ -19,8 +19,12 @@ WASM SHA-256 `052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c`.
 4 wNEAR custody, a keeper IOC short of 3.6 NEAR @ 3.3788 and a reduce-only buy
 of 3.6 @ 3.3796, leaving the venue flat with 48.986173 USDC equity. Both successful
 requests have zero policy keys at their request/signature receipt blocks and recovered
-signers matching the derived address. The close capture reserves 3.6 NEAR;
-no owner settlement receipt is retained in the saved lifecycle. Out-of-band exit authorization is locally tested;
+signers matching the derived address. The historical close capture reserves 3.6 NEAR;
+the owner subsequently reports [successful settlement](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93)
+after open expiry on 12 November with `short_size: "0"` and
+`observed_at_ms: "1794509677914"`. The [archived status](evidence/2026-11-12-v3-settle-status.json)
+prints the command and records the pre-settlement reservation, not a settlement receipt.
+Current state: **not re-read** (sandbox public RPC DNS failure). Out-of-band exit authorization is locally tested;
 this live close occurred inside the opening band and proves no live paused/out-of-band fill.
 These changes do not repair v2; its historical WASM remains separately pinned.
 
@@ -168,7 +172,7 @@ matching render remain outside this offline repo edit; no paid voice API was use
 
 Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
 no multi-day carry, Intents dry quotes only, no live rebalancing route, and no destination-chain arrival verification.
-The 4 wNEAR spot leg is now in v3 custody and remains directional after the venue close; owner settlement is not recorded in the saved lifecycle. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
+The v3 run records spot → open → reduce-only close → owner settlement (success reported by the owner); current state not re-read. The 4 wNEAR spot leg remains in v3 custody and directional after settlement. No v3 withdrawal is claimed. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
 signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
 
 ## 3. Demo attack semantics and owner boundary

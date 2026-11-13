@@ -256,7 +256,8 @@ export function LifecycleTable({ summary }: { summary: LifecycleSummary }) {
     {summary.withdrawalHash && <p>Withdrawal ledger: <a href={`https://app.hyperliquid-testnet.xyz/explorer/tx/${summary.withdrawalHash}`}><code>{summary.withdrawalHash}</code> ↗</a>.
       Fixed recipient: <code>{summary.recipient}</code>. Destination-chain arrival is unverified.</p>}
     {isV3 ? <p>Owner-assisted open · keeper-only close. Zero keys at both order receipt blocks.
-      The close capture retains reserved exposure; no completed owner settlement or withdrawal is proven here.
+      Owner-reported settlement succeeded after open expiry; current state not re-read.
+      The archived status precedes settlement. No v3 withdrawal is claimed; 4 wNEAR remain in v3 custody and directional.
       This live close was in-band; paused and out-of-band authorization is locally tested. IOC fills are not guaranteed.</p>
       : <p>Owner funding and the 49 USDC spot→perp transfer preceded key removal. Keeper trading and withdrawal
       were checked with zero keys at their receipt blocks.</p>}
@@ -935,7 +936,7 @@ export default function App() {
               After owner funding and key removal, a NEAR policy holding 4 wNEAR
               authorized a keeper short and reduce-only close on Hyperliquid testnet.
               V2 records a fixed-recipient withdrawal; on 12 November, v3 opened
-              and closed a 3.6 NEAR short. Owner-assisted open; keeper-only close.
+              and closed a 3.6 NEAR short, followed by owner-reported settlement. Owner-assisted open; keeper-only close.
             </p>
             <a className="primary-link" href="#lifecycle">
               Inspect the funded lifecycle <span>↓</span>
@@ -955,7 +956,7 @@ export default function App() {
         </section>
         <section id="lifecycle" className="section">
           <SectionHead number="01" label="2026-11-12 v3 · 2026-11-10 v2" title="Funded testnet lifecycle" />
-          <div className="panel"><h3>12 November · keyless v3 open/close</h3><FundedLifecycle file="data/lifecycle-v3.json" /></div>
+          <div className="panel"><h3>12 November · keyless v3 open/close/settlement</h3><FundedLifecycle file="data/lifecycle-v3.json" /></div>
           <div className="panel"><h3>10 November · historical keyless v2 lifecycle</h3><FundedLifecycle file="data/lifecycle.json" /></div>
         </section>
         <section id="live" className="section">

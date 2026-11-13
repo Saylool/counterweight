@@ -1,8 +1,8 @@
-# Supervised keyless v3 testnet open/close — 12 November 2026
+# Supervised keyless v3 testnet spot → open → reduce-only close → owner settlement — 12 November 2026
 
 The saved public evidence verifies 4 wNEAR custody on `policy-v3.counterweight-samet.testnet`, a keeper IOC short of 3.6 NEAR at 3.3788, and a keeper reduce-only buy of 3.6 at 3.3796, leaving the Hyperliquid position flat. Both successful order requests have zero policy access keys at their request/signature receipt blocks and signatures recovering the policy-derived address `0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`.
 
-This was supervised: **v3 opens require an owner margin attestation no more than 30 seconds old**. The keeper cannot open alone; it can reduce alone. Owner settlement is not recorded in this saved lifecycle; the close capture still reserves the short. Venue flatness does not release the contract's reserved short automatically.
+This was supervised: **v3 opens require an owner margin attestation no more than 30 seconds old**. The keeper cannot open alone; it can reduce alone. The owner subsequently reported successful `settle_position` after open expiry on 12 November: [settlement transaction](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93). Venue flatness does not release the contract's reserved short automatically; owner settlement releases that reservation. Current state: **not re-read** (sandbox public RPC request failed with DNS resolution error).
 
 ## Transactions
 
@@ -17,6 +17,8 @@ This was supervised: **v3 opens require an owner margin attestation no more than
 | First keeper v3 open attempt — failed | [6oiP66Yn…](https://testnet.nearblocks.io/txns/6oiP66YntFXUfqRvfPyfuD1CS5WyahebzqRFmmMsxeRh) | Contract panicked with `ERR_REBALANCE_STALE`; no verified fill from this attempt |
 | Second keeper v3 open — filled | [5ckMPUyA…](https://testnet.nearblocks.io/txns/5ckMPUyA87VycWs2HFyBBQiWvuAJTJbFUA6ZpMuUCwwM) | Sell 3.6 NEAR @ 3.3788; [fill 0x53ce4698…0224c9](https://app.hyperliquid-testnet.xyz/explorer/tx/0x53ce46989e0e4adf5548042dfb724b0101005e7e390169b1f796f1eb5d0224c9) |
 | Keeper v3 reduce-only close — filled | [3cvncGKs…](https://testnet.nearblocks.io/txns/3cvncGKshNgXQop5p438o8Qh1vWZBm4U5mrP5u3xxaUu) | Buy 3.6 NEAR @ 3.3796; [fill 0x1888a834…88dc45](https://app.hyperliquid-testnet.xyz/explorer/tx/0x1888a8348885025b1a02042dfb73c5010700c01a2388212dbc5153874788dc45); flat |
+
+| Owner v3 settlement — succeeded (owner-reported) | [CYFZdHDe…](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93) | `settle_position {"short_size":"0","observed_at_ms":"1794509677914"}` after open expiry; current state not re-read |
 
 The cleanup transaction hashes come from the operator's 12 November release record.
 The archived [final public status](2026-11-12-v2-cleanup-status.json) records
@@ -45,6 +47,8 @@ The successful relay records contain venue responses and matching public fills b
 
 ## Remaining boundary
 
-The close evidence still records `signed_short_size: "3600000000000000000000000"` and `last_open_expiry: "1794505157899"` (12 November 2026, 17:39:17.899 UTC). Owner `settle_position` was not documented in this lifecycle capture; it requires a fresh flat/no-open-orders observation after that expiry. This describes the dated close capture, not a current settlement-status check. No completed v3 settlement or withdrawal is claimed. The 4 wNEAR remain in v3 custody and directional after the venue close.
+The historical close evidence records `signed_short_size: "3600000000000000000000000"` and `last_open_expiry: "1794505157899"` (12 November 2026, 17:39:17.899 UTC). The archived [pre-settlement public status](2026-11-12-v3-settle-status.json), copied byte-for-byte from `.tmp/v3-status.out`, supplies the later flat/no-open-orders observation at `1794509677914` ms, after that expiry, and prints the exact owner command. Its preflight still reserves 3.6 NEAR; this is command-generation evidence, not a settlement receipt.
+
+The owner reports that `settle_position {"short_size":"0","observed_at_ms":"1794509677914"}` succeeded on 12 November in [transaction `CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93`](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93). This completes the recorded v3 sequence: **spot → open → reduce-only close → owner settlement**. Settlement is an owner attestation, not an on-chain venue proof. Current `get_state.signed_short_size`: **not re-read**; the public read attempt to `https://rpc.testnet.near.org` failed with `Could not resolve host` in this sandbox. The expected post-settlement value is `"0"`, not a newly verified observation. No v3 withdrawal is claimed. The 4 wNEAR remain in v3 custody and directional after settlement.
 
 This live close occurred inside the opening bounds; it does not establish a live out-of-band or paused exit fill. Those authorization cases have separate local evidence. These public captures establish a brief supervised testnet open/close, not continuous keeper uptime, autonomous opening, multi-day carry, live Intents execution or destination-chain arrival. Owner margin and settlement observations remain attestations, without an on-chain venue verifier.
