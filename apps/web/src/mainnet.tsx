@@ -1,4 +1,6 @@
 import { assetUrl } from "./data";
+import { useResource } from "./components";
+import { bundledMainnetStatus, readMainnetStatus, type MainnetStatus } from "./mainnet-data";
 
 /** Dated public evidence, separate from the live testnet inspection tools. */
 export const mainnetProof = {
@@ -15,6 +17,52 @@ export const mainnetProof = {
   arrival: "0x6a6ff973ef4558eaab8afc9a8e63c968bde1a08f7713428dc9ed227f771eb07d",
   recipient: "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
 };
+
+export function MainnetOverview() {
+  return <div className="mainnet-overview" aria-label="Mainnet proof at a glance">
+    <a href={`https://nearblocks.io/address/${mainnetProof.account}#keys`}>
+      <span>Keyless NEAR account</span><strong>0 access keys ↗</strong><small>{mainnetProof.account}</small>
+    </a>
+    <a href={`https://app.hyperliquid.xyz/explorer/tx/${mainnetProof.open.venue}`}>
+      <span>Open short</span><strong>3.6 NEAR @ 3.3241 ↗</strong><small>Hyperliquid mainnet</small>
+    </a>
+    <a href={`https://app.hyperliquid.xyz/explorer/tx/${mainnetProof.close.venue}`}>
+      <span>Reduce-only close</span><strong>3.6 NEAR @ 3.3248 ↗</strong><small>Hyperliquid mainnet</small>
+    </a>
+    <a href={`https://arbiscan.io/tx/${mainnetProof.arrival}`}>
+      <span>Arbitrum One arrival</span><strong>17.886709 USDC ↗</strong><small>Native USDC · fixed recipient</small>
+    </a>
+  </div>;
+}
+
+export function MainnetStatusView({ status, loading, error, retry }: {
+  status: MainnetStatus; loading: boolean; error: string | null; retry: () => void;
+}) {
+  const live = status.source === "live";
+  return <div className="mainnet-status" aria-label="Mainnet account status" aria-live="polite">
+    <div className="mainnet-status-heading">
+      <strong>{live ? "Live mainnet status" : "Bundled mainnet evidence"}</strong>
+      <button className="text-button" onClick={retry} disabled={loading}>{loading ? "Checking public RPC…" : "Refresh mainnet status"}</button>
+    </div>
+    <p><code>{mainnetProof.account}</code> · {status.keyCount} access keys · policy {status.paused ? "paused" : "active"} ·
+      {" "}<span className={status.codeMatches && status.keyCount === 0 ? "" : "warning-text"}>
+        {status.codeMatches ? "Code matches recorded v4 hash" : "WARNING: code differs from recorded v4 hash"}
+        {status.keyCount > 0 && " · WARNING: account is not keyless"}
+      </span></p>
+    <small>{live ? "Observed" : "Recorded"} {new Date(status.observedAt).toISOString()} · finalized block {status.blockHeight}.
+      {" "}Policy spot custody: {status.spotBalance === "0" ? "0 wNEAR" : "nonzero"}; short reservation: {status.shortReservation === "0" ? "0 NEAR" : "nonzero"}.
+      {" "}Policy reservations do not establish current venue positions.</small>
+    {!live && <p className="source-note">{loading ? "Reading public mainnet RPC; the dated snapshot is shown while it loads." : "Public RPC unavailable; showing the dated bundled snapshot. This is not a live verification."}
+      {" "}<a href={assetUrl("data/lifecycle-v4.json")}>Inspect bundled evidence ↗</a></p>}
+    {error && <details><summary>Public-read failure details</summary><small>{error}</small></details>}
+    {live && <small>Read-only source: {status.endpoint}. Account, keys and state are pinned to the same finalized block. Refresh to recheck.</small>}
+  </div>;
+}
+
+export function MainnetLiveStatus() {
+  const result = useResource(() => readMainnetStatus());
+  return <MainnetStatusView status={result.data ?? bundledMainnetStatus} loading={result.loading} error={result.error} retry={result.retry} />;
+}
 
 export function MainnetLifecycle() {
   const proof = mainnetProof;
@@ -45,7 +93,7 @@ export function MainnetLifecycle() {
       Arbitrum recipient: <code>{proof.recipient}</code>.
       {" "}<a href={assetUrl("evidence/2026-11-14-v4-mainnet-lifecycle-summary.md")}>Full lifecycle, incidents &amp; verification limits ↗</a>
       {" · "}<a href={assetUrl("data/lifecycle-v4.json")}>Verification JSON ↗</a>.
-      These are dated evidence records; this section does not continuously monitor mainnet.
+      These are dated evidence records; the proof table does not continuously monitor mainnet. The live NEAR account check above is separate from the recorded venue fills and arrival.
     </p>
     <p>One owner-supervised lifecycle at tiny size; unaudited, with no autonomous mainnet keeper or multi-day carry proof.
       Approximately 0.011 USDC trading fees, 0.0025 USDC trading loss, and 1 USDC bridge fee;

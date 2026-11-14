@@ -1,6 +1,6 @@
 # Counterweight web
 
-Read-only React + Vite + TypeScript frontend. No wallet SDK, private keys, signing, exchange actions, or transactions. Public POST requests are limited to NEAR `query` and Hyperliquid `/info` market and testnet account reads.
+Read-only React + Vite + TypeScript frontend. No wallet SDK, private keys, signing, exchange actions, or transactions. Public POST requests are limited to NEAR mainnet/testnet `query` and Hyperliquid `/info` market and testnet account reads.
 
 From the repository root:
 
@@ -11,7 +11,7 @@ npm ci
 npm run web
 ```
 
-Open the local URL Vite prints (normally http://localhost:5173). The first section presents v4's owner-supervised mainnet lifecycle on 14 November 2026, with NEAR keyless account, Hyperliquid open/close fills, and Arbitrum One arrival links. Its downloadable summary records verification limits and tooling incidents; it is dated evidence, not continuous mainnet monitoring. Historical v1–v3 sections remain testnet, with live testnet position, margin and ledger reads for their derived addresses. v1 is selectable as a rehearsal with an access key. Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
+Open the local URL Vite prints (normally http://localhost:5173). The first section presents v4's owner-supervised mainnet lifecycle on 14 November 2026, with NEAR keyless account, Hyperliquid open/close fills, and Arbitrum One arrival links. The first screen includes keyless/open/close/arrival explorer cards and live read-only status for `cw4.haxheton.near`. Browser queries use `https://rpc.mainnet.fastnear.com`, then `https://rpc.mainnet.near.org` on failure; account, keys and policy state share one finalized block. Each request times out after six seconds. A dated snapshot embedded in the JavaScript bundle remains visible while loading or if both public RPC reads fail, with an explicit fallback label and refresh button. The downloadable summary records verification limits and tooling incidents; the dated fills and arrival are separate from the current NEAR status. Historical v1–v3 sections remain testnet, with live testnet position, margin and ledger reads for their derived addresses. v1 is selectable as a rehearsal with an access key. Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required. For GitHub Pages, upload the contents of `apps/web/dist/` to the `/counterweight/` path at `https://saylool.github.io/counterweight/`. All report/evidence downloads are copied into the bundle; browser reads require only the public endpoints.
 
 ```sh
 # Deploy under a subdirectory (include the trailing slash):

@@ -12,6 +12,13 @@ Owner-supervised, tiny size, one lifecycle; unaudited, no autonomous mainnet kee
 | Reduce-only close: 3.6 @ 3.3248 | [Hyperliquid fill](https://app.hyperliquid.xyz/explorer/tx/0x2fad11edb3ade83731260448c6f1560201f400d34ea10709d375bd4072a1c221) · [NEAR signature](https://nearblocks.io/txns/5Nu3jXF6boa7H9ddFMc2XhD6bMiVDesCyC2vgyVzsFTN) |
 | Arbitrum One: 17.886709 native USDC | [Destination transaction](https://arbiscan.io/tx/0x6a6ff973ef4558eaab8afc9a8e63c968bde1a08f7713428dc9ed227f771eb07d) |
 
+> **Verify the mainnet run yourself**  
+> Requires Node >=22.19.0 and `npm ci`; no keys or accounts.  
+> Run `npm run verify:mainnet` (public reads only; under one minute).  
+> Checks deployed code, empty keys, final transactions, derivation, orders, ledger and USDC arrival.  
+> Prints PASS/FAIL per check and exits non-zero for any mismatch or unavailable proof.  
+> Later run: `npm run verify:mainnet -- --summary=FILE`. [Verification details](docs/VERIFY.md).
+
 Bounded trading via **NEAR Chain Signatures** (`v1.signer`); fixed withdrawal recipients. Trusted marks remain risky. [Claims](docs/CLAIMS.md) · [Known issues](docs/KNOWN-ISSUES.md).
 
 [Watch the historical testnet demo](docs/media/counterweight-demo.mp4) · 94 seconds, voiced and subtitled.

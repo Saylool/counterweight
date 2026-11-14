@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { MainnetLifecycle } from "./mainnet";
+import { MainnetLifecycle, MainnetLiveStatus, MainnetOverview } from "./mainnet";
 import {
   Architecture,
   Chart,
@@ -947,12 +947,12 @@ export default function App() {
         </a>
         <nav aria-label="Main navigation">
           <a href="#mainnet">Mainnet</a>
-          <a href="#lifecycle">Funded lifecycle</a>
-          <a href="#live">Live state</a>
+          <a href="#lifecycle">Historical testnet</a>
+          <a href="#live">Testnet state</a>
           <a href="#market">Market &amp; risk</a>
           <a href="#evidence">Evidence</a>
           <a href="#results">Results</a>
-          <a href="#demo">Local demo</a>
+          <a href="#demo">Historical local demo</a>
         </nav>
         <span className="read-only">
           <i />
@@ -976,16 +976,15 @@ export default function App() {
           </h1>
           <div className="hero-bottom">
             <p className="hero-description">
-              On 14 November, keyless v4 on NEAR mainnet held 3.6 wNEAR,
-              opened and closed a 3.6 NEAR short on Hyperliquid mainnet,
-              and completed a withdrawal of 17.886709 native USDC to Arbitrum One.
-              One owner-supervised lifecycle, ending flat with spot returned.
+              14 November 2026: one owner-supervised mainnet lifecycle,
+              from 3.6 wNEAR custody to 17.886709 native USDC on Arbitrum One.
+              Flat, with spot returned.
             </p>
-            <a className="primary-link" href="#mainnet">
-              Inspect the mainnet proof <span>↓</span>
-            </a>
           </div>
-          <Architecture />
+          <MainnetOverview />
+          <MainnetLiveStatus />
+          <a className="mainnet-details-link" href="#mainnet">Inspect full mainnet receipts ↓</a>
+          <details className="hero-architecture"><summary>How the policy works</summary><Architecture /></details>
           <div className="hero-footnote">
             <span>01 / Inspect public state</span>
             <span>02 / Verify the evidence</span>
@@ -1005,14 +1004,14 @@ export default function App() {
           <div className="panel"><MainnetLifecycle /></div>
         </section>
         <section id="lifecycle" className="section">
-          <SectionHead number="01" label="2026-11-12 v3 · 2026-11-10 v2" title="Funded testnet lifecycle" />
+          <SectionHead number="01" label="2026-11-12 v3 · 2026-11-10 v2" title="Historical funded testnet lifecycle" />
           <div className="panel"><h3>12 November · keyless v3 open/close/settlement</h3><FundedLifecycle file="data/lifecycle-v3.json" /></div>
           <div className="panel"><h3>10 November · historical keyless v2 lifecycle</h3><FundedLifecycle file="data/lifecycle.json" /></div>
         </section>
         <section id="live" className="section">
           <SectionHead
             number="02"
-            label="Public contract"
+            label="Historical deployments · live public inspection"
             title="Trust the state. Check the keys."
           >
             <span className="section-tag">NEAR testnet</span>
@@ -1055,7 +1054,7 @@ export default function App() {
         <section id="demo" className="section">
           <SectionHead
             number="06"
-            label="Local demonstration"
+            label="Historical local demonstration"
             title="A keeper closes. A rogue cannot."
           />
           <div className="panel">

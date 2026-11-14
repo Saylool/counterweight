@@ -23,6 +23,7 @@
     "prove:contract:live": "tsx scripts/prove-contract-live.ts",
     "prove:contract": "tsx scripts/prove-contract.ts",
     "testnet:verify": "tsx scripts/testnet-verify.ts",
+    "verify:mainnet": "tsx scripts/verify-mainnet.ts",
     "vectors:generate": ".tmp/sdk-venv/bin/python scripts/generate-signing-vectors.py",
     "economics": "node --require ./scripts/demo-offline-guard.cjs --import tsx scripts/economics.ts",
     "replay": "tsx apps/keeper/src/cli.ts",

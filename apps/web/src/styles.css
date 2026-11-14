@@ -1607,3 +1607,59 @@ footer > a:last-child,
 }
 .lifecycle-table th:nth-child(2), .lifecycle-table td:nth-child(2) { width: 36%; }
 .ledger-table th:nth-child(3), .ledger-table td:nth-child(3) { width: 38%; }
+
+/* The first screen leads with the public mainnet receipts and a dated RPC fallback. */
+.mainnet-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 16px;
+}
+.mainnet-overview a {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.mainnet-overview a:hover { border-color: var(--accent); }
+.mainnet-overview span { color: var(--muted); font-size: 11px; }
+.mainnet-overview strong { font-size: 14px; font-weight: 600; }
+.mainnet-overview small { font-size: 10px; }
+.mainnet-status {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  overflow-wrap: anywhere;
+}
+.mainnet-status-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mainnet-status-heading strong { font-size: 13px; }
+.mainnet-status p { font-size: 12px; margin: 8px 0; }
+.mainnet-status small { display: block; font-size: 11px; }
+.mainnet-status .text-button { font-size: 11px; padding: 6px 0; }
+.hero-architecture { margin-top: 22px; }
+.hero h1 { font-size: clamp(36px, 5vw, 66px); margin: 22px 0; }
+.hero .hero-bottom { margin-top: 0; }
+.hero .hero-description { font-size: 14px; max-width: 740px; }
+.hero .hero-footnote { margin-top: 22px; }
+@media (max-width: 700px) {
+  .mainnet-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+  .mainnet-overview a { padding: 12px; gap: 6px; }
+  .mainnet-overview strong { font-size: 12px; }
+  .mainnet-status { padding: 12px; }
+  .mainnet-status-heading { align-items: flex-start; }
+  .mainnet-status-heading button { max-width: 125px; text-align: right; }
+  .hero h1 { font-size: 36px; }
+}
+.mainnet-details-link { display: inline-block; margin-top: 14px; color: var(--accent); font-size: 12px; }
+@media (max-width: 700px) {
+  nav { flex-wrap: wrap; justify-content: flex-start; column-gap: 15px; row-gap: 10px; }
+  .hero { padding-top: 22px; }
+  .hero h1 { margin: 18px 0; }
+  .hero .hero-description { line-height: 1.6; }
+}
