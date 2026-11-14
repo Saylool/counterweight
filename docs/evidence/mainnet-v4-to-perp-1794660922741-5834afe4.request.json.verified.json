@@ -1,0 +1,56 @@
+{
+  "network": "mainnet",
+  "request": "docs/evidence/mainnet-v4-to-perp-1794660922741-5834afe4.request.json",
+  "hash": "AVxzs7ai9eC17i1wTW5mNNcsdp9U3uiLK2jEbtFTTkdc",
+  "nonce": 1794660925432,
+  "digest": "0xe01455fa74bc33a5a94176ca940b4a7d7189d4a16f4ba51732a87db74e92620c",
+  "verifiedAt": 1794661157847,
+  "response": {
+    "status": "ok",
+    "response": {
+      "type": "default"
+    }
+  },
+  "after": {
+    "clearing": {
+      "marginSummary": {
+        "accountValue": "20.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "20.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "20.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "20.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "20.0",
+      "assetPositions": [],
+      "time": 1794661157541
+    },
+    "spot": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    }
+  },
+  "ledger": [
+    {
+      "time": 1794661047751,
+      "hash": "0x788997d204c8dc527a030448c6bade02012e00b79fcbfb241c524324c3ccb63d",
+      "delta": {
+        "type": "accountClassTransfer",
+        "usdc": "20.0",
+        "toPerp": true
+      }
+    }
+  ]
+}

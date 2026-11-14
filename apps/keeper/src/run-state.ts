@@ -8,8 +8,8 @@ export const KEEPER = 'keeper.counterweight-samet.testnet';
 export const uint = z.string().regex(/^\d+$/);
 const seconds = z.number().int().positive().max(31_536_000);
 export const stateSchema = z.object({
-  network: z.literal('Testnet'), keeper: z.literal(KEEPER), coin: z.literal('NEAR'),
-  signer_account: z.literal('v1.signer-prod.testnet'), derivation_path: z.string().min(1),
+  network: z.enum(['Testnet', 'Mainnet']), keeper: z.string().min(2), coin: z.literal('NEAR'),
+  signer_account: z.enum(['v1.signer-prod.testnet', 'v1.signer']), derivation_path: z.string().min(1),
   evm_recipient: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
   asset_index: z.number().int().nonnegative(), size_decimals: z.number().int().min(0).max(6),
   limits: z.object({ max_short_size: uint, per_order_notional_cap: uint, per_day_notional_cap: uint,
@@ -43,7 +43,7 @@ export function heartbeatDue(state: PolicyState, now: number) {
 }
 export function priceNeeded(state: PolicyState, mark: number, observedAt: number, now: number, policy = NEXT_POLICY) {
   const price = BigInt(Math.round(mark * 1e6));
-  if (policy === V3_POLICY ? price < 10n || price > 1_000_000_000_000n
+  if (policy === V3_POLICY || state.network === 'Mainnet' ? price < 10n || price > 1_000_000_000_000n
     : price < BigInt(state.oracle.min_price) || price > BigInt(state.oracle.max_price)) throw new Error('Policy mark outside immutable bounds');
   if (observedAt > now || now - observedAt > Math.min(30_000, state.oracle.max_age_seconds * 1000)) throw new Error('Policy stale market');
   return price !== BigInt(state.reference_price) || now / 1000 - Number(state.reference_price_timestamp) >= Math.min(state.limits.price_max_age_seconds, state.oracle.max_age_seconds) / 2;
@@ -65,7 +65,7 @@ export function assess(state: PolicyState, o: Observation, settings: RiskSetting
   return { ...risk, thresholdUsd: Number(ceilDiv(BigInt(Math.round(upper * 1e6)) * BigInt(settings.minHeadroomBps), 10000n)) / 1e6 };
 }
 export function planOrder(policy: string, state: PolicyState, o: Observation, settings: RiskSettings, now: number, allowOpen: boolean): ExpectedCall | null {
-  const v3 = policy === V3_POLICY;
+  const v3 = policy === V3_POLICY || state.network === 'Mainnet';
   if ((!v3 && state.paused) || state.pending !== null || o.openOrders.length || o.account.otherPositions.length || o.account.signedSize > 0) return null;
   if (state.asset_index !== o.assetIndex || state.size_decimals !== o.szDecimals) throw new Error('Policy market metadata mismatch');
   const risk = assess(state, o, settings, now);
@@ -82,6 +82,7 @@ export function planOrder(policy: string, state: PolicyState, o: Observation, se
     const cap = BigInt(state.signed_short_size) > BigInt(state.limits.max_short_size) ? BigInt(state.signed_short_size) : BigInt(state.limits.max_short_size);
     size = size < cap ? size : cap;
   } else {
+    if (state.network === 'Mainnet' && o.account.equity > 20) return null;
     if (state.paused || reference < BigInt(state.oracle.min_price) || reference > BigInt(state.oracle.max_price)) return null;
     if (!allowOpen || o.account.signedSize !== 0 || BigInt(state.signed_short_size) !== 0n || now <= Number(state.last_open_expiry) ||
       now < Number(state.last_nonce) + state.limits.cooldown_seconds * 1000 || o.funding <= 0) return null;
@@ -103,7 +104,7 @@ export function planOrder(policy: string, state: PolicyState, o: Observation, se
   const args = { order: { asset_index: o.assetIndex, size: size.toString(), reduce_only: reduce,
     reference_price: reduce ? String(Math.round(o.mark * 1e6)) : null,
     ...(v3 && reduce ? { observed_at: String(Math.floor(o.observedAt / 1000)) } : {}) } };
-  return { method: 'request_order_signature', args, caller: KEEPER, policy, asset: o.assetIndex, reduceOnly: reduce,
+  return { method: 'request_order_signature', args, caller: state.keeper, policy, asset: o.assetIndex, reduceOnly: reduce,
     size: decimal(size, 24), price: decimal(v3 && reduce ? v3ExitPrice(reference, o.szDecimals) : orderPrice(reference, o.szDecimals, reduce, state.limits.price_band_bps), 6),
     recipient: state.evm_recipient, amount: '0' };
 }

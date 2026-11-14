@@ -16,6 +16,8 @@ const BASE: u128 = 10u128.pow(24); // wNEAR yocto base units
 const DAY: u64 = 86_400;
 
 const LIFETIME_MS: u64 = 60_000;
+const PUBLIC_SUBSIDY_KEY: &[u8] = b"v4:public_subsidy_spent";
+const PUBLIC_SUBSIDY_LIMIT: u128 = BASE / 100; // 0.01 NEAR over the policy's lifetime.
 
 /// Immutable signature domain and NEAR account-network selection; not a deployment claim.
 #[near(serializers = [borsh, json])]
@@ -341,11 +343,18 @@ impl Policy {
             network.matches_account(&env::current_account_id()),
             "ERR_TESTNET_ONLY"
         );
-        require!(
-            network.matches_account(&signer_account),
-            "ERR_TESTNET_SIGNER"
-        );
-        require!(network.matches_account(&wnear_account), "ERR_TESTNET_WNEAR");
+        if network.mainnet() {
+            // Pin production services; a non-testnet suffix alone is insufficient.
+            require!(signer_account.as_str() == "v1.signer", "ERR_MAINNET_SIGNER");
+            require!(wnear_account.as_str() == "wrap.near", "ERR_MAINNET_WNEAR");
+        } else {
+            // Retain the original testnet checks and error strings.
+            require!(
+                network.matches_account(&signer_account),
+                "ERR_TESTNET_SIGNER"
+            );
+            require!(network.matches_account(&wnear_account), "ERR_TESTNET_WNEAR");
+        }
         require!(
             keeper != env::current_account_id()
                 && owner != env::current_account_id()
@@ -841,7 +850,7 @@ impl Policy {
         let payload = SigningPayload {
             action: HlAction::UsdClassTransfer {
                 hyperliquid_chain: self.network.chain().into(),
-                signature_chain_id: "0x66eee".into(),
+                signature_chain_id: hl_digest::USER_SIGNATURE_CHAIN_ID.into(),
                 amount: decimal(amount.0, 6),
                 to_perp,
                 nonce,
@@ -880,7 +889,7 @@ impl Policy {
         let payload = SigningPayload {
             action: HlAction::Withdraw {
                 hyperliquid_chain: self.network.chain().into(),
-                signature_chain_id: "0x66eee".into(),
+                signature_chain_id: hl_digest::USER_SIGNATURE_CHAIN_ID.into(),
                 destination: self.evm_recipient.clone(),
                 amount: decimal(amount.0, 6),
                 time: nonce,
@@ -928,6 +937,10 @@ impl Policy {
                 .clone()
                 .filter(|p| matches!(p.kind, OperationKind::Reduce))
         })
+    }
+    /// Public dead-man subsidies never reset; attached-fee recovery remains available.
+    pub fn get_public_subsidy_spent(&self) -> U128 {
+        U128(read_extension(PUBLIC_SUBSIDY_KEY).unwrap_or(0))
     }
     #[private]
     pub fn on_signature(&mut self, operation_id: U64) -> bool {
@@ -1048,7 +1061,11 @@ impl Policy {
         );
     }
     fn assert_idle(&self) {
-        require!(self.pending.is_none(), "ERR_PENDING_OPERATION");
+        require!(
+            self.pending.is_none()
+                && read_extension::<PendingOperation>(b"v3:concurrent_exit").is_none(),
+            "ERR_PENDING_OPERATION"
+        );
     }
     fn owner_idle(&mut self) {
         self.expire_pending();
@@ -1184,9 +1201,15 @@ impl Policy {
         }
     }
     fn expire_pending(&mut self) {
-        if read_extension::<PendingOperation>(b"v3:concurrent_exit")
-            .is_some_and(|p| env::block_timestamp_ms() > p.callback_deadline_ms)
+        if let Some(op) = read_extension::<PendingOperation>(b"v3:concurrent_exit")
+            .filter(|p| env::block_timestamp_ms() > p.callback_deadline_ms)
         {
+            // Apply the same uncertain-operation bookkeeping without detaching
+            // the independent token transfer callback or releasing reservations.
+            let id = op.id;
+            let saved = self.pending.replace(op);
+            self.mark_uncertain(id, "callback_timeout_expired");
+            self.pending = saved;
             env::storage_remove(b"v3:concurrent_exit");
         }
         if self.pending.as_ref().is_some_and(|p| {
@@ -1243,6 +1266,10 @@ impl Policy {
             require!(!self.paused, "ERR_PAUSED");
         }
         self.expire_pending();
+        require!(
+            read_extension::<PendingOperation>(b"v3:concurrent_exit").is_none(),
+            "ERR_PENDING_OPERATION"
+        );
         if order.reduce_only && self.pending.as_ref().is_some_and(|p| p.keeper) {
             self.clear_signing_slot();
         }
@@ -1253,6 +1280,16 @@ impl Policy {
                 .is_some_and(|p| matches!(p.kind, OperationKind::SpotWithdrawal));
         if !concurrent_spot {
             self.assert_idle();
+        }
+        let public = !keeper && env::predecessor_account_id() != self.owner;
+        if order.reduce_only && public && env::attached_deposit().is_zero() {
+            require!(
+                self.get_public_subsidy_spent()
+                    .0
+                    .saturating_add(self.mpc_fee)
+                    <= PUBLIC_SUBSIDY_LIMIT,
+                "ERR_PUBLIC_SUBSIDY_CAP"
+            );
         }
         self.assert_signing_resources();
         require!(order.asset_index == self.asset_index, "ERR_MARKET");
@@ -1410,6 +1447,16 @@ impl Policy {
     ) -> Promise {
         let invalidation = matches!(kind, OperationKind::Invalidation);
         let reduction = matches!(kind, OperationKind::Reduce);
+        let caller = env::predecessor_account_id();
+        if reduction
+            && caller != self.owner
+            && caller != self.keeper
+            && env::attached_deposit().is_zero()
+        {
+            let spent = add(self.get_public_subsidy_spent().0, self.mpc_fee);
+            require!(spent <= PUBLIC_SUBSIDY_LIMIT, "ERR_PUBLIC_SUBSIDY_CAP");
+            write_extension(PUBLIC_SUBSIDY_KEY, &spent);
+        }
         let keeper = env::predecessor_account_id() == self.keeper && !invalidation && !reduction;
         require!(
             invalidation || reduction || self.outstanding.len() < 32,

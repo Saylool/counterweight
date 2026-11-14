@@ -2,6 +2,31 @@
 
 Intended customer: a NEAR treasury or substantial wNEAR holder seeking to reduce dollar drawdowns, willing to sell inventory to replenish margin and to coordinate owner approvals. This is a supervised prototype, not a coin-count-preservation or passive-income product. Customer demand and revenue are unproved.
 
+<!-- mainnet-costs:start -->
+## Executed mainnet costs — 14 November 2026
+
+The [single owner-supervised v4 mainnet lifecycle](evidence/2026-11-14-v4-mainnet-lifecycle-summary.md) is measured separately from the replay below. A 3.6 NEAR short opened at 3.3241 and closed at 3.3248; 20 USDC had been moved to perps.
+
+| Item | USDC / NEAR | Treatment |
+|---|---:|---|
+| Open + close trading fees | about 0.011 USDC | Real venue cost; exact fill fees in summary |
+| Realized trading loss | about 0.0025 USDC | `(3.3248 − 3.3241) × 3.6 = 0.00252`; excludes fees |
+| withdraw3 gross | 18.886709 USDC | Withdrawal amount, not a cost |
+| Bridge fee | 1 USDC | Gross minus destination payout |
+| Native USDC destination payout | 17.886709 USDC | Arrived on Arbitrum One; summary states RPC verification limits |
+| Inbound funding send fee | 1 USDC | Separate setup/funding ledger charge; additional to withdrawal bridge fee |
+| Venue spot residual | 1 USDC | Retained venue capital, separate from perps residual |
+| Perps residual | 1.1 USDC | Retained by policy, not a fee or realized loss |
+| Native policy balance retained | about 7 NEAR | Capital in a keyless immutable account, including storage/operating reserves; not a measured burned fee |
+| Keeper funding | 0.7 NEAR | Liquidity allocation, not final gas cost; a 285–300 Tgas call needs about 0.3 NEAR prepaid |
+| Spot backing | 3.6 wNEAR | Returned to owner; directional exposure during custody was separate from the perp PnL |
+
+Approximate fees plus realized trading loss are **0.0133 USDC**, before the **1 USDC bridge fee**. Residual USDC and retained NEAR are capital, not trading costs. The inbound send ledger adds a separate **1 USDC funding fee**, making the identified trading, funding-send and withdrawal-fee total approximately **2.0133 USDC**. Every NEAR burned fee, other setup costs and owner labor are not fully reconstructed here; no all-in profit or yield claim follows from this smoke test. The prepaid-gas requirement is refundable liquidity and must not be booked as the burned fee. Three pre-open tooling stops and a public-RPC delay also consumed owner time; [incidents](MAINNET.md#executed-run).
+
+<!-- mainnet-costs:end -->
+
+## Historical replay sensitivity
+
 Computed offline with the existing replay engine and verified fixtures: **4320 hours**, 2026-05-12T00:00:00.000Z through 2026-11-08T00:00:00.000Z (exclusive). Frozen illustrative allocation: $2500.00 spot + $3000.00 margin + $200.00 operating = **$5700.00**. The saved training-selected rule is held fixed; no retuning. Fresh baseline PnL/costs/capital/hours/rebalances must equal the saved report before output is written.
 
 | Scenario | Signing + routing costs | All engine costs | Owner labor | Net after labor | All-capital return | Net minus assumed cash |

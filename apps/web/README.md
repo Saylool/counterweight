@@ -11,7 +11,7 @@ npm ci
 npm run web
 ```
 
-Open the local URL Vite prints (normally http://localhost:5173). The first section presents the funded keyless lifecycle from the structured evidence summary, exact NEAR/Hyperliquid explorer links, and live testnet position, margin and ledger for the recorded derived address. v1 is selectable as a rehearsal with an access key. Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
+Open the local URL Vite prints (normally http://localhost:5173). The first section presents v4's owner-supervised mainnet lifecycle on 14 November 2026, with NEAR keyless account, Hyperliquid open/close fills, and Arbitrum One arrival links. Its downloadable summary records verification limits and tooling incidents; it is dated evidence, not continuous mainnet monitoring. Historical v1–v3 sections remain testnet, with live testnet position, margin and ledger reads for their derived addresses. v1 is selectable as a rehearsal with an access key. Configured policy limits display exact NEAR/USDC amounts beside raw integer values. Run `npm run web:build` to produce `apps/web/dist`; upload the contents to any static host. No backend, secrets, or SPA fallback is required.
 
 ```sh
 # Deploy under a subdirectory (include the trailing slash):

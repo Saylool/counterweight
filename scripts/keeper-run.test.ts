@@ -31,13 +31,13 @@ function makeState() {
     last_keeper_heartbeat: String(Math.floor(start / 1000)), heartbeat_timeout_seconds: 3600, paused: false, pending: null,
     spot_balance: String(5n * BASE), signed_short_size: String(4n * BASE), daily_usage: '0', last_nonce: '0', last_open_expiry: '0' });
 }
-async function setup(dry = false) {
+async function setup(dry = false, configuredKeeper = KEEPER) {
   const dir = await mkdtemp(join(tmpdir(), 'counterweight-keeper-')); dirs.push(dir);
   const store = new DiskStore(dir), state = makeState();
   let now = start, size = '-4', equity = '13', submitted = false, receipt: unknown;
   let exchangeFailure = false, nearFailure = false, venueFailure = false, fillVisible = true;
   let margin: unknown = { observed_at_ms: String(start) };
-  const options = { ...parseRunOptions([`--policy=${policy}`]), dry };
+  const options = { ...parseRunOptions([`--policy=${policy}`]), dry, keeper: configuredKeeper };
   const rt: Runtime = { now: () => now, random: () => 0.5, print: vi.fn(), sleep: vi.fn(async ms => { now += ms; }),
     exec: vi.fn(async args => {
       const method = args[4], input = JSON.parse(args[6]!);
@@ -51,12 +51,12 @@ async function setup(dry = false) {
         const signing = { scheme: 'l1' as const, network: 'testnet' as const, action, nonce: now, expiresAfter: now + 60000 };
         const event = (event: string, data: unknown) => ({ id: event, block_hash: event, outcome: { executor_id: policy,
           status: { SuccessValue: 'dHJ1ZQ==' }, logs: [`EVENT_JSON:${JSON.stringify({ standard: 'counterweight', version: '1.0.0', event, data: [data] })}`] } });
-        receipt = { final_execution_status: 'FINAL', status: { SuccessValue: 'dHJ1ZQ==' }, transaction: { hash, signer_id: KEEPER, receiver_id: policy,
+        receipt = { final_execution_status: 'FINAL', status: { SuccessValue: 'dHJ1ZQ==' }, transaction: { hash, signer_id: configuredKeeper, receiver_id: policy,
           actions: [{ FunctionCall: { method_name: method, deposit: '0', args: Buffer.from(JSON.stringify(input)).toString('base64') } }] }, receipts_outcome: [
-          event('request', { id: '1', caller: KEEPER, kind: reduce ? 'Reduce' : 'Increase', digest: getSigningDigest(signing).slice(2), payload: { action, nonce: now, expiresAfter: now + 60000 } }),
+          event('request', { id: '1', caller: configuredKeeper, kind: reduce ? 'Reduce' : 'Increase', digest: getSigningDigest(signing).slice(2), payload: { action, nonce: now, expiresAfter: now + 60000 } }),
           event('signature', { id: '1', nonce: String(now), expiresAfter: String(now + 60000), signature }),
         ] };
-      } else receipt = { final_execution_status: 'FINAL', status: { SuccessValue: '' }, transaction: { hash, signer_id: KEEPER, receiver_id: policy }, receipts_outcome: [] };
+      } else receipt = { final_execution_status: 'FINAL', status: { SuccessValue: '' }, transaction: { hash, signer_id: configuredKeeper, receiver_id: policy }, receipts_outcome: [] };
       return { stdout: `Transaction ID: ${hash}`, stderr: '' };
     }),
     fetch: vi.fn<typeof fetch>(async (url, init) => {
@@ -96,6 +96,26 @@ describe('unattended keeper policy and timing', () => {
   });
   it.each(['', '--hours=0', '--hours=NaN', '--interval-seconds=0', '--policy=mainnet.near', '--dry --dry', '--oops'])('rejects invalid options %s', args => {
     expect(() => parseRunOptions(args.split(' '))).toThrow();
+  });
+  it('confirms custom keeper transactions using the configured sender and signer', async () => {
+    const custom = 'keeper.other.testnet', x = await setup(false, custom);
+    const c = { commands: [], txHashes: [], heartbeats: 0 } as unknown as Parameters<Keeper['command']>[0];
+    await x.keeper.command(c, 'heartbeat', {});
+    expect(c.heartbeats).toBe(1);
+    expect(c.commands[0]).toContain(`sign-as ${custom}`);
+    const queries = vi.mocked(x.rt.fetch).mock.calls.map(([, init]) => JSON.parse(String(init?.body)));
+    expect(queries.find(q => q.method === 'tx').params.sender_account_id).toBe(custom);
+  });
+  it('accepts a custom keeper journal identity and rejects the default identity for that keeper', async () => {
+    const custom = 'keeper.other.testnet', x = await setup(false, custom);
+    const o = await x.keeper.client.observe(address);
+    const expected = { ...planOrder(policy, x.state, o, riskSettings(x.state, null), start, false)!, caller: custom };
+    await x.store.write(`verified-${hash}.json`, { verified: true });
+    const c = { txHashes: [] } as unknown as Parameters<Keeper['verifyActive']>[1];
+    const active = { phase: 'verify' as const, expected, address, codeHash: 'code-v3', before: o.clearinghouseState, createdAt: start, txHash: hash };
+    await x.store.write(x.keeper.activeName, active);
+    await expect(x.keeper.verifyActive(active, c)).resolves.toBe(true);
+    await expect(x.keeper.verifyActive({ ...active, expected: { ...expected, caller: KEEPER } }, c)).rejects.toThrow('identity invalid');
   });
   it('heartbeats at one third of timeout, well before expiration', () => {
     const state = makeState();

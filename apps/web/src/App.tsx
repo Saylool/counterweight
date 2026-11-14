@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { MainnetLifecycle } from "./mainnet";
 import {
   Architecture,
   Chart,
@@ -945,6 +946,7 @@ export default function App() {
           counterweight<span className="brand-period">.</span>
         </a>
         <nav aria-label="Main navigation">
+          <a href="#mainnet">Mainnet</a>
           <a href="#lifecycle">Funded lifecycle</a>
           <a href="#live">Live state</a>
           <a href="#market">Market &amp; risk</a>
@@ -962,25 +964,25 @@ export default function App() {
           <div className="hero-top">
             <p className="eyebrow">
               <span className="mini-dot" />
-              NEAR × Hyperliquid · testnet prototype
+              NEAR × Hyperliquid · v4 mainnet lifecycle
             </p>
             <span className="hero-tag">A hedge with boundaries.</span>
           </div>
           <h1>
-            Funded testnet.
+            Executed on mainnet.
             <br />
             <em>Keyless policy</em>
             <span className="accent-dot">.</span>
           </h1>
           <div className="hero-bottom">
             <p className="hero-description">
-              After owner funding and key removal, a NEAR policy holding 4 wNEAR
-              authorized a keeper short and reduce-only close on Hyperliquid testnet.
-              V2 records a fixed-recipient withdrawal; on 12 November, v3 opened
-              and closed a 3.6 NEAR short, followed by owner settlement, verified by a finalized keeper read. Owner-assisted open; keeper-only close.
+              On 14 November, keyless v4 on NEAR mainnet held 3.6 wNEAR,
+              opened and closed a 3.6 NEAR short on Hyperliquid mainnet,
+              and completed a withdrawal of 17.886709 native USDC to Arbitrum One.
+              One owner-supervised lifecycle, ending flat with spot returned.
             </p>
-            <a className="primary-link" href="#lifecycle">
-              Inspect the funded lifecycle <span>↓</span>
+            <a className="primary-link" href="#mainnet">
+              Inspect the mainnet proof <span>↓</span>
             </a>
           </div>
           <Architecture />
@@ -992,8 +994,15 @@ export default function App() {
           <p className="boundary-note">
             Emergency closes are reduce-only; ordinary opens remain bounded by
             owner-set caps. Stress H is keeper policy, not a contract price
-            oracle. This was a supervised testnet run; owner steps remain trusted. No multi-day carry or live Intents settlement is proven.
+            oracle. Owner-supervised, tiny size, unaudited; owner steps remain trusted.
+            No autonomous mainnet keeper, multi-day carry or live Intents settlement is proven.
           </p>
+        </section>
+        <section id="mainnet" className="section">
+          <SectionHead number="00" label="14 November 2026 · v4" title="Mainnet. Follow the receipts.">
+            <span className="section-tag">NEAR · Hyperliquid · Arbitrum One</span>
+          </SectionHead>
+          <div className="panel"><MainnetLifecycle /></div>
         </section>
         <section id="lifecycle" className="section">
           <SectionHead number="01" label="2026-11-12 v3 · 2026-11-10 v2" title="Funded testnet lifecycle" />
@@ -1058,7 +1067,7 @@ export default function App() {
         <a className="brand" href="#">
           counterweight<span className="brand-period">.</span>
         </a>
-        <p>Testnet prototype. Not a fund, not investment advice.</p>
+        <p>V4 mainnet lifecycle · v1–v3 testnet. Unaudited prototype.</p>
         <a
           href={import.meta.env.VITE_REPO_URL || "https://github.com/Saylool/counterweight"}
           target="_blank"

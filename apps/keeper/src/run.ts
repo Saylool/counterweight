@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { assembleRequest, recoveredSigner, TESTNET_API } from '../../../packages/hyperliquid/src/index.js';
+import { assembleRequest, recoveredSigner, apiForNetwork, accountForNetwork, type Network } from '../../../packages/hyperliquid/src/index.js';
 import { parseAccount, parseFills, parseLifecycleReceipt, verifyFill, type ExpectedCall } from '../../../scripts/lifecycle-parsing.js';
 import { assertFreshContractProof } from '../../../scripts/prove-contract.js';
 import { decimal, units } from '../../../scripts/lifecycle-config.js';
@@ -8,20 +8,24 @@ import { testnetAccount, V3_POLICY } from '../../../scripts/testnet-common.js';
 import { assess, heartbeatDue, priceNeeded, planOrder, riskSettings, KEEPER, type PolicyState } from './run-state.js';
 import { commandArgs, DiskStore, printable, PublicClient, runtime, sendNear, type Runtime } from './run-io.js';
 
-export interface RunOptions { policy: string; hours: number; intervalMs: number; dry: boolean; allowOpen: boolean; cycles?: number }
+export interface RunOptions { policy: string; hours: number; intervalMs: number; dry: boolean; allowOpen: boolean; network?: Network; keeper?: string; cycles?: number }
 export function parseRunOptions(argv: string[]): RunOptions {
   const values: Record<string, string> = {};
   for (const arg of argv) {
-    const m = /^--(policy|hours|interval-seconds|cycles)=(.+)$/.exec(arg);
-    const key = m?.[1] ?? (['--dry', '--allow-open'].includes(arg) ? arg.slice(2) : '');
+    const m = /^--(policy|hours|interval-seconds|cycles|network|keeper)=(.+)$/.exec(arg);
+    const key = m?.[1] ?? (['--dry', '--allow-open', '--i-understand-real-funds'].includes(arg) ? arg.slice(2) : '');
     if (!key || values[key] !== undefined) throw new Error('Expected unique --policy=ACCOUNT --hours=N --interval-seconds=N --cycles=N --dry --allow-open');
     values[key] = m?.[2] ?? 'true';
   }
+  const network = z.enum(['testnet', 'mainnet']).parse(values.network ?? 'testnet');
+  if (network === 'mainnet' && values['i-understand-real-funds'] !== 'true') throw new Error('Expected --i-understand-real-funds for MAINNET (real funds)');
+  if (network === 'mainnet' && (!values.policy || !values.keeper)) throw new Error('Expected --policy=ACCOUNT --keeper=ACCOUNT for mainnet keeper commands');
   if (values.dry !== 'true' && values.policy === undefined) throw new Error('Expected --policy=ACCOUNT for a live keeper run');
   const hours = z.coerce.number().finite().positive().max(8760).parse(values.hours ?? 48);
   const intervalMs = z.coerce.number().finite().min(1).max(300).parse(values['interval-seconds'] ?? 300) * 1000;
-  return { policy: testnetAccount(values.policy ?? 'policy.counterweight-samet.testnet'), hours, intervalMs,
-    dry: values.dry === 'true', allowOpen: values['allow-open'] === 'true',
+  return { policy: accountForNetwork(values.policy ?? 'policy.counterweight-samet.testnet', network), hours, intervalMs,
+    ...(network === 'mainnet' ? { network, keeper: accountForNetwork(values.keeper!, network) } : {}),
+    dry: network === 'mainnet' || values.dry === 'true', allowOpen: values['allow-open'] === 'true',
     ...(values.cycles === undefined ? {} : { cycles: z.coerce.number().int().positive().parse(values.cycles) }) };
 }
 export interface Cycle {
@@ -47,7 +51,7 @@ export function addCycle(s: Summary, c: Cycle, intervalMs: number): Summary {
 }
 export function summaryMarkdown(s: Summary, options: RunOptions, runId: string, final: boolean) {
   return `# Counterweight keeper ${runId}\n\n` +
-    `Policy: ${options.policy} · TESTNET · ${options.dry ? 'DRY (commands only)' : 'LIVE'} · opening ${options.allowOpen ? 'enabled within caps' : 'disabled'}\n\n` +
+    `Policy: ${options.policy} · ${(options.network ?? 'testnet').toUpperCase()} · ${options.dry ? 'DRY (commands only)' : 'LIVE'} · opening ${options.allowOpen ? 'enabled within caps' : 'disabled'}\n\n` +
     `Status: ${final ? 'stopped' : 'running'}\nStarted: ${new Date(s.startedAt).toISOString()}\nUpdated: ${new Date(s.finishedAt).toISOString()}\n\n` +
     `| Metric | Value |\n| --- | ---: |\n| Uptime seconds | ${Math.max(0, s.finishedAt - s.startedAt) / 1000} |\n| Cycles | ${s.cycles} |\n| Confirmed heartbeats | ${s.heartbeats} |\n| Verified reductions | ${s.reductions} |\n| Verified opens | ${s.opens} |\n| Errors | ${s.errors} |\n| Missing cycle intervals (estimated) | ${s.gaps} |\n| Maximum cycle start gap seconds | ${s.maxGapMs / 1000} |\n| Cycles without risk data | ${s.dataErrorCycles} |\n\n` +
     'H is USDC headroom from packages/domain, using observed venue equity and the policy price band/reserve. Threshold is upper-band notional × policy min_headroom_bps (default 1000 when absent). Maintenance assumptions are model diagnostics. A signature is not a fill. Dry commands do not count as confirmed actions.\n';
@@ -72,17 +76,18 @@ export class Keeper {
   readonly activeName: string;
   private addressCache: { identity: string; address: string } | undefined;
   constructor(readonly options: RunOptions, readonly store: DiskStore, readonly rt: Runtime, readonly stopped: () => boolean = () => false) {
-    this.client = new PublicClient(rt);
+    this.client = new PublicClient(rt, undefined, options.network);
+    if (options.network === 'mainnet' && !options.dry) throw new Error('Policy mainnet keeper is commands-only; use --dry');
     this.activeName = `${options.policy}.active.json`;
   }
   async command(c: Cycle, method: 'heartbeat' | 'set_keeper_price', args: unknown) {
-    const command = commandArgs(this.options.policy, method, args);
+    const command = commandArgs(this.options.policy, method, args, this.options.network, this.options.keeper);
     c.commands.push(printable(command)); this.rt.print(`${this.options.dry ? 'WOULD SEND' : 'SEND'} ${printable(command)}`);
     if (this.options.dry || this.stopped()) return;
     const hash = await sendNear(this.rt, command); c.txHashes.push(hash);
-    const raw = await this.client.rpc('tx', { tx_hash: hash, sender_account_id: KEEPER, wait_until: 'FINAL' });
+    const raw = await this.client.rpc('tx', { tx_hash: hash, sender_account_id: this.options.keeper ?? KEEPER, wait_until: 'FINAL' });
     z.object({ final_execution_status: z.literal('FINAL'), status: z.object({ SuccessValue: z.string() }).strict(),
-      transaction: z.object({ hash: z.literal(hash), signer_id: z.literal(KEEPER), receiver_id: z.literal(this.options.policy) }),
+      transaction: z.object({ hash: z.literal(hash), signer_id: z.literal(this.options.keeper ?? KEEPER), receiver_id: z.literal(this.options.policy) }),
       receipts_outcome: z.array(z.object({ outcome: z.object({ status: z.record(z.string(), z.unknown()).refine(s => !('Failure' in s)) }) })),
     }).parse(raw);
     if (method === 'heartbeat') c.heartbeats++;
@@ -94,7 +99,7 @@ export class Keeper {
     this.addressCache = { identity, address }; return address;
   }
   async verifyActive(active: ActiveOrder, c: Cycle): Promise<boolean> {
-    if (active.expected.method !== 'request_order_signature' || active.expected.policy !== this.options.policy || active.expected.caller !== KEEPER ||
+    if (active.expected.method !== 'request_order_signature' || active.expected.policy !== this.options.policy || active.expected.caller !== (this.options.keeper ?? KEEPER) ||
       !['near-uncertain', 'relay-claimed', 'verify'].includes(active.phase)) throw new Error('Policy active journal identity invalid');
     if (!active.txHash) { c.decision = 'blocked-uncertain-near-signature'; return false; }
     if (!c.txHashes.includes(active.txHash)) c.txHashes.push(active.txHash);
@@ -103,8 +108,8 @@ export class Keeper {
       await this.store.remove(this.activeName); this.urgentUntil = 0;
       c.decision = 'already-verified-journal-cleared'; return true;
     }
-    const raw = await this.client.rpc('tx', { tx_hash: active.txHash, sender_account_id: KEEPER, wait_until: 'FINAL' });
-    const parsed = parseLifecycleReceipt(raw, active.txHash, active.expected);
+    const raw = await this.client.rpc('tx', { tx_hash: active.txHash, sender_account_id: this.options.keeper ?? KEEPER, wait_until: 'FINAL' });
+    const parsed = parseLifecycleReceipt(raw, active.txHash, active.expected, this.options.network);
     if (active.address !== c.derivedAddress) throw new Error('Policy active order derivation changed');
     if (parsed.input.scheme !== 'l1') throw new Error('Contract keeper order must use l1 signature');
     c.nearReceipt = raw;
@@ -128,7 +133,7 @@ export class Keeper {
       assertFreshContractProof(parsed.input, this.rt.now());
       if (this.stopped()) { c.decision = 'stopped-before-relay'; return false; }
       if (claimed) try {
-        const response = await this.rt.fetch(`${TESTNET_API}/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        const response = await this.rt.fetch(`${apiForNetwork(this.options.network ?? 'testnet')}/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' },
           body: JSON.stringify(request), signal: AbortSignal.timeout(15_000) });
         active.httpStatus = response.status; active.exchangeResponse = await response.json();
         c.hyperliquidResponses.exchange = active.exchangeResponse;
@@ -184,6 +189,7 @@ export class Keeper {
           try { await this.command(c, 'heartbeat', {}); } catch (e) { c.errors.push(safeFailure(e)); }
         }
       });
+      if (this.options.network === 'mainnet' && (snapshot.state.keeper !== this.options.keeper || BigInt(snapshot.state.limits.per_order_notional_cap) > 15_000_000n || BigInt(snapshot.state.limits.per_day_notional_cap) > 30_000_000n)) throw new Error('Policy mainnet keeper identity/$15 order/$30 daily caps mismatch');
       c.policyState = snapshot;
       const address = await this.address(snapshot.state); c.derivedAddress = address;
       const o = await this.client.observe(address);
@@ -211,7 +217,7 @@ export class Keeper {
       c.H = latestRisk.metrics.headroom; c.thresholdUsd = latestRisk.thresholdUsd; c.risk = latestRisk; c.riskSettings = latestSettings;
       const expected = planOrder(this.options.policy, snapshot.state, o, latestSettings, this.rt.now(), this.options.allowOpen);
       if (!expected) return c;
-      if (this.options.policy === V3_POLICY && !expected.reduceOnly) {
+      if ((this.options.policy === V3_POLICY || this.options.network === 'mainnet') && !expected.reduceOnly) {
         // Owner-only margin attestations gate v3 entries. Check before claiming a
         // signature journal: a known stale preflight must not become an uncertain send.
         const margin = await this.client.view(this.options.policy, 'get_margin', {}, snapshot.block);
@@ -225,7 +231,7 @@ export class Keeper {
         }
       }
       c.decision = `${this.options.dry ? 'would-' : ''}${expected.reduceOnly ? 'reduce-only-close' : 'open-within-caps'}`;
-      const args = commandArgs(this.options.policy, 'request_order_signature', expected.args);
+      const args = commandArgs(this.options.policy, 'request_order_signature', expected.args, this.options.network, this.options.keeper);
       c.commands.push(printable(args)); this.rt.print(`${this.options.dry ? 'WOULD SEND' : 'SEND'} ${printable(args)}`);
       if (this.options.dry || this.stopped()) return c;
       const pending: ActiveOrder = { phase: 'near-uncertain', expected, address, codeHash: snapshot.codeHash, before: o.clearinghouseState, createdAt: this.rt.now() };
@@ -244,7 +250,7 @@ export class Keeper {
   urgentUntil = 0;
 }
 export async function runKeeper(options: RunOptions, dependencies: { rt?: Runtime; store?: DiskStore; signal?: AbortSignal; runId?: string } = {}) {
-  const rt = dependencies.rt ?? runtime(), store = dependencies.store ?? new DiskStore('reports/keeper-run');
+  const rt = dependencies.rt ?? runtime(), store = dependencies.store ?? new DiskStore(options.network === 'mainnet' ? 'reports/keeper-mainnet' : 'reports/keeper-run');
   const runId = dependencies.runId ?? `${new Date(rt.now()).toISOString().replaceAll(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}`;
   await store.init();
   const lock = `${options.policy}${options.dry ? '.dry' : ''}.lock.json`;

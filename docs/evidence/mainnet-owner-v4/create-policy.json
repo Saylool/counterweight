@@ -1,0 +1,140 @@
+{
+  "phase": "final-success",
+  "hash": "7PrZ6ScJvgGqPCLaeozyckMUfbnLpfZjdMUSzrTsMejw",
+  "signer": "haxheton.near",
+  "receiver": "cw4.haxheton.near",
+  "raw": {
+    "final_execution_status": "FINAL",
+    "receipts_outcome": [
+      {
+        "block_hash": "4rpPGWm4UmW6Vp2NDc6vtvFX82fqcnANed8a5o1sgxqh",
+        "id": "6LFwVCEwp8tSmSDCB9aL1ejVR585YCMyzmCr2oFedt7J",
+        "outcome": {
+          "executor_id": "cw4.haxheton.near",
+          "gas_burnt": 7524947687500,
+          "logs": [],
+          "metadata": {
+            "contracts": [
+              null,
+              null,
+              null
+            ],
+            "gas_profile": [],
+            "version": 4
+          },
+          "receipt_ids": [
+            "AgqkuoPkUmW7TBYvGaiQiwoBFPgPD7b1dXs51KVMzPQp"
+          ],
+          "status": {
+            "SuccessValue": ""
+          },
+          "tokens_burnt": "7032494768750000000000"
+        },
+        "proof": [
+          {
+            "direction": "Left",
+            "hash": "5XdqNaNsg2k4ZbuXEqjBsNdENgG7i8DaQBMNMwRCDFvu"
+          }
+        ]
+      },
+      {
+        "block_hash": "6nhEvVxzdfRXsAe5NAH9QyxxDY9ghPRcPe2yjA8P8hox",
+        "id": "AgqkuoPkUmW7TBYvGaiQiwoBFPgPD7b1dXs51KVMzPQp",
+        "outcome": {
+          "executor_id": "haxheton.near",
+          "gas_burnt": 223182562500,
+          "logs": [],
+          "metadata": {
+            "contracts": [
+              null
+            ],
+            "gas_profile": [],
+            "version": 4
+          },
+          "receipt_ids": [],
+          "status": {
+            "SuccessValue": ""
+          },
+          "tokens_burnt": "0"
+        },
+        "proof": [
+          {
+            "direction": "Left",
+            "hash": "5c2e8L1otjWvWBunSS65CN2Kc6o1J3TYvC6HBLF5HMHf"
+          },
+          {
+            "direction": "Right",
+            "hash": "24apHqMz79eNkPwPPqLxtkvMhbGtU57AZsc1wyrZUpb7"
+          }
+        ]
+      }
+    ],
+    "status": {
+      "SuccessValue": ""
+    },
+    "transaction": {
+      "actions": [
+        "CreateAccount",
+        {
+          "Transfer": {
+            "deposit": "7000000000000000000000000"
+          }
+        },
+        {
+          "AddKey": {
+            "access_key": {
+              "nonce": 0,
+              "permission": "FullAccess"
+            },
+            "public_key": "ed25519:2bw4freQ8dZBz3fMvFu12Arkhkp4P1TG17Pf4HYUZQGE"
+          }
+        }
+      ],
+      "hash": "7PrZ6ScJvgGqPCLaeozyckMUfbnLpfZjdMUSzrTsMejw",
+      "nonce": 224500002000002,
+      "priority_fee": 0,
+      "public_key": "ed25519:2GpHmeRKdQq2Gn81ZdsX1vNeVYQF5sx2HxTPyUN4n5dC",
+      "receiver_id": "cw4.haxheton.near",
+      "signature": "ed25519:4PZz9Th3P4xXCk5tkJFcLZBfR2iHmsorn3unjnejaSL24HxmJDXfjmcQQVbEwDUPJPZxBEwz33nqZXwXh3RCnPfS",
+      "signer_id": "haxheton.near"
+    },
+    "transaction_outcome": {
+      "block_hash": "J4SMWvZfZXsYrC2BVBjrMZRxcDiMZJvJbL8xPH8kZxUh",
+      "id": "7PrZ6ScJvgGqPCLaeozyckMUfbnLpfZjdMUSzrTsMejw",
+      "outcome": {
+        "executor_id": "haxheton.near",
+        "gas_burnt": 824947687500,
+        "logs": [],
+        "metadata": {
+          "gas_profile": null,
+          "version": 1
+        },
+        "receipt_ids": [
+          "6LFwVCEwp8tSmSDCB9aL1ejVR585YCMyzmCr2oFedt7J"
+        ],
+        "status": {
+          "SuccessReceiptId": "6LFwVCEwp8tSmSDCB9aL1ejVR585YCMyzmCr2oFedt7J"
+        },
+        "tokens_burnt": "82494768750000000000"
+      },
+      "proof": [
+        {
+          "direction": "Right",
+          "hash": "87Et1jvHBK9iPAC64Q5WUU5HX3ioS2kQqQjDH592zgjn"
+        },
+        {
+          "direction": "Right",
+          "hash": "6owSAMs7kwjACbqtP5BJ6uVGWaKh9seYYddg65RronHC"
+        },
+        {
+          "direction": "Right",
+          "hash": "FHHji5gzuEUhx7CNVPXX428qtA4GXWivRDzRdBz87K1Y"
+        },
+        {
+          "direction": "Right",
+          "hash": "4XGLQYE9DuMmvarkMxf738zrxch5tFfgpbqfVQmVgdds"
+        }
+      ]
+    }
+  }
+}

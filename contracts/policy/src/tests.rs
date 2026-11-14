@@ -43,6 +43,7 @@ fn policy() -> Policy {
         b"v3:bounds",
         b"v3:exit_requests",
         b"v3:concurrent_exit",
+        b"v4:public_subsidy_spent",
     ] {
         env::storage_remove(key);
     }
@@ -961,3 +962,5 @@ mod oracle;
 mod class_transfer;
 
 mod v3;
+
+mod v4;

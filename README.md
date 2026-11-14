@@ -1,34 +1,44 @@
 # Counterweight
 
-**Problem:** automating a short hedge for held wNEAR on Hyperliquid usually means giving a bot a hot key, or an agent key that can open any size.
+**14 November 2026: keyless policy v4 completed one real NEAR + Hyperliquid MAINNET lifecycle.**
+`cw4.haxheton.near`: 3.6 wNEAR custody → 3.6 NEAR short → reduce-only close → withdrawal.
+**17.886709 native USDC arrived** at the fixed owner recipient; spot returned and final status was flat.
+Owner-supervised, tiny size, one lifecycle; unaudited, no autonomous mainnet keeper. [Evidence and verification limits](docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md).
 
-**Counterweight:** a **keyless NEAR policy contract** (zero access keys) holds the wNEAR and signs only bounded Hyperliquid actions through **NEAR Chain Signatures** (`v1.signer-prod.testnet`). The submission combines funded testnet evidence, local sandbox demos and a historical replay.
+| Mainnet proof | Public explorer |
+|---|---|
+| Keyless policy: **0 access keys** | [cw4.haxheton.near / keys](https://nearblocks.io/address/cw4.haxheton.near#keys) |
+| Open short: 3.6 NEAR @ 3.3241 | [Hyperliquid fill](https://app.hyperliquid.xyz/explorer/tx/0xa768851a0c51f57aa8e20448c6ec5002045500ffa755144c4b31306ccb55cf65) · [NEAR signature](https://nearblocks.io/txns/J9ckn6RCUva3eamTSpLBkXQGKipovq8199V6E55SR3aU) |
+| Reduce-only close: 3.6 @ 3.3248 | [Hyperliquid fill](https://app.hyperliquid.xyz/explorer/tx/0x2fad11edb3ade83731260448c6f1560201f400d34ea10709d375bd4072a1c221) · [NEAR signature](https://nearblocks.io/txns/5Nu3jXF6boa7H9ddFMc2XhD6bMiVDesCyC2vgyVzsFTN) |
+| Arbitrum One: 17.886709 native USDC | [Destination transaction](https://arbiscan.io/tx/0x6a6ff973ef4558eaab8afc9a8e63c968bde1a08f7713428dc9ed227f771eb07d) |
 
-- **Owner opens; the keeper can only de-risk on its own.** v3 opens are capped by held wNEAR, per-order/daily limits and an owner margin attestation at most 30 seconds old. The keeper can send reduce-only closes alone (also while paused), and anyone can call `deleverage` after a heartbeat timeout.
-- **Nothing can leave to a new recipient.** Withdrawals use immutable recipients (`withdraw3` to the owner's fixed EVM address). This does not prevent trading losses from false marks, fees or liquidation.
-- **Explicit trust boundary.** Venue state is owner-attested (no on-chain Hyperliquid light client). Exit prices are not authenticated: a false high mark can cost up to the perp margin; wNEAR custody is unaffected. See [Limitations](#limitations) and the [claims and limits](docs/CLAIMS.md).
+Bounded trading via **NEAR Chain Signatures** (`v1.signer`); fixed withdrawal recipients. Trusted marks remain risky. [Claims](docs/CLAIMS.md) · [Known issues](docs/KNOWN-ISSUES.md).
 
-[Watch the 94-second demo](docs/media/counterweight-demo.mp4) · voiced and subtitled.
+[Watch the historical testnet demo](docs/media/counterweight-demo.mp4) · 94 seconds, voiced and subtitled.
 
-**Try it without Rust or keys** (Node >=22.19.0; macOS arm64 or Linux x64). Installation needs internet; tests and demos then run offline with mocked MPC/venue inputs:
+**Try locally:** Node >=22.19.0; macOS arm64/Linux x64. Install online; tests/demo offline with mocked MPC/venue inputs:
 
 ```sh
-npm ci                  # Installed local NEAR sandbox 2.14.0 (...); npm install summary
-npm run test:ts         # Test Files / Tests: passed; two Rust cross-layer tests skipped
-npm run demo:local:v3   # shipped v3 WASM: PASS paused/out-of-band exits and the false-mark boundary
-npm run demo:local      # v2 WASM: keeper close, PASS 7/7 rogue attempts rejected, dead-man recovery
-npm run web             # read-only dashboard at http://localhost:5173
+npm ci
+npm run test:ts
+npm run demo:local:v3
 ```
 
-| Version | NEAR testnet account | Access keys | What it shows |
+| Version / network | NEAR policy account | Access keys | What it shows |
 |---|---|---:|---|
-| **v3 (current)** | [`policy-v3.counterweight-samet.testnet`](https://testnet.nearblocks.io/address/policy-v3.counterweight-samet.testnet) | 0 | 12 Nov: 4 wNEAR custody, keeper 3.6 NEAR short @ 3.3788, reduce-only close @ 3.3796, owner settlement ([summary](docs/evidence/2026-11-12-v3-lifecycle-summary.md)). Removes v2's exit price-band gate. |
-| **v2 (historical)** | [`policy-v2.counterweight-samet.testnet`](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) | 0 | 10 Nov: 4 wNEAR custody, 49 USDC spot→perp, 3.5 NEAR short and close, fixed-recipient withdrawal that arrived on Arbitrum Sepolia ([summary](docs/evidence/2026-11-10-lifecycle-summary.md)). Cleaned up 12 Nov. |
-| **v1 (rehearsal)** | `policy.counterweight-samet.testnet` | 1 | Unfunded signing rehearsal with a key ([proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md)). |
+| **v4 / mainnet** | [`cw4.haxheton.near`](https://nearblocks.io/address/cw4.haxheton.near) | 0 | 14 Nov: 3.6 wNEAR custody, 3.6 NEAR short open/close, 17.886709 native USDC arrived on Arbitrum One, spot returned; final flat ([summary](docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md)). Serializes concurrent exits and caps lifetime public subsidy. |
+| **v3 / testnet** | [`policy-v3.counterweight-samet.testnet`](https://testnet.nearblocks.io/address/policy-v3.counterweight-samet.testnet) | 0 | 12 Nov: 4 wNEAR custody, keeper 3.6 NEAR short @ 3.3788, reduce-only close @ 3.3796, owner settlement ([summary](docs/evidence/2026-11-12-v3-lifecycle-summary.md)). Removes v2's exit price-band gate. |
+| **v2 / testnet (historical)** | [`policy-v2.counterweight-samet.testnet`](https://testnet.nearblocks.io/address/policy-v2.counterweight-samet.testnet) | 0 | 10 Nov: 4 wNEAR custody, 49 USDC spot→perp, 3.5 NEAR short and close, fixed-recipient withdrawal that arrived on Arbitrum Sepolia ([summary](docs/evidence/2026-11-10-lifecycle-summary.md)). Cleaned up 12 Nov. |
+| **v1 / testnet (rehearsal)** | `policy.counterweight-samet.testnet` | 1 | Unfunded signing rehearsal with a key ([proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md)). |
 
 See [Judge quickstart](#judge-quickstart) for setup details and expected output.
 
 ## What is proven
+
+**v4 completed one owner-supervised mainnet lifecycle on 14 November:** 20 USDC spot→perps, 3.6 wNEAR custody, short 3.6 NEAR @ 3.3241, reduce-only close @ 3.3248, owner settlement, 18.886709 USDC gross withdrawal, 17.886709 native USDC on Arbitrum One, NEAR reconciliation and 3.6 wNEAR returned. Policy owner is `haxheton.near`, keeper `keeper4.haxheton.near`, signer `v1.signer`, derived Hyperliquid address `0xb6a1d45ba9154067b7981e2b4b676393c75b0d26`. [Step-by-step evidence, live checks and uncertainties](docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md).
+
+Three tooling stops preceded the successful open: fractional `observed_at_ms`, an over-strict host-clock guard, and a signature at 3.2823 refused by a relay expecting 3.2827. None sent a venue order; the unused signature expired and was settled. The keeper required 0.7 NEAR for mainnet prepaid gas; a public-RPC outage delayed the withdrawal relay. Approximate trading fees 0.011 USDC, realized loss 0.0025 USDC, bridge fee 1 USDC; 1.1 USDC remains in perps by policy, 1 USDC remains in venue spot, and about 7 NEAR remains in the keyless policy. The inbound funding ledger also charges a separate 1 USDC fee. [Executed run](docs/MAINNET.md#executed-run) · [Real costs](docs/ECONOMICS.md#executed-mainnet-costs-14-november-2026).
+
 
 **v2 completed a supervised, funded testnet lifecycle on 10 November:** 4 wNEAR custody, 49 USDC spot→perp, keeper open and reduce-only close, owner settlement and fixed-recipient withdrawal. Funding preceded key removal; keeper trading and withdrawal were verified with **zero access keys at their receipt blocks**.
 
@@ -46,7 +56,7 @@ See [Judge quickstart](#judge-quickstart) for setup details and expected output.
 | Withdrawal ledger | [0xdf68992e…0501c0](https://app.hyperliquid-testnet.xyz/explorer/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0); 46.957074 USDC net + 1 USDC fee |
 | v3 spot → open → reduce-only close → owner settlement, 12 November | 4 wNEAR custody; keeper short 3.6 @ 3.3788 and reduce-only buy 3.6 @ 3.3796, flat; zero keys at order receipt blocks. [Transactions and verification](docs/evidence/2026-11-12-v3-lifecycle-summary.md). Owner [settled on-chain](https://testnet.nearblocks.io/txns/CYFZdHDe7uqAeCceZAvxeBe8YWQQJQEea5oDJ1wz4D93) after open expiry; finalized keeper state records `signed_short_size: "0"`. |
 
-The fills and withdrawal ledger are testnet evidence. Owner observations, settlement and withdrawal approval were required; venue state is not verified on-chain. The v2 withdrawal [arrived on Arbitrum Sepolia](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0): 46.957074 HL-testnet USDC ([13 November evidence](docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json)). Live Intents routes and multi-day carry remain unproved. v2 cleanup completed on 12 November: paused, expired authorizations, abandoned withdrawal reservation and 4 wNEAR returned to the owner, with the status run verifying the owner balance increase. Those 4 wNEAR remain in v3 custody and directional after owner settlement; see the [12 November summary](docs/evidence/2026-11-12-v3-lifecycle-summary.md). v1 remains a rehearsal with an access key.
+The v1–v3 fills and withdrawal ledger below are historical testnet evidence; v4 mainnet evidence is above. Owner observations, settlement and withdrawal approval were required; venue state is not verified on-chain. The v2 withdrawal [arrived on Arbitrum Sepolia](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0): 46.957074 HL-testnet USDC ([13 November evidence](docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json)). Live Intents routes and multi-day carry remain unproved. v2 cleanup completed on 12 November: paused, expired authorizations, abandoned withdrawal reservation and 4 wNEAR returned to the owner, with the status run verifying the owner balance increase. The historical v3 status records those 4 wNEAR in custody and directional after owner settlement; see the [12 November summary](docs/evidence/2026-11-12-v3-lifecycle-summary.md). v1 remains a rehearsal with an access key.
 
 ## v3 and the keeper loop
 
@@ -103,7 +113,7 @@ Computed cost sensitivities, a same-capital cash benchmark and the intended cust
 npm run web
 ```
 
-You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Funded testnet lifecycle**, showing the 12 November v3 open/close beside the historical v2 table. The contract panel defaults to v3; selecting v2 switches its artifact and live testnet position/margin/ledger to the historical v2 address. The demo panel also shows v3 paused/out-of-band authorization and the malicious-mark case. V1 is a rehearsal with a key. V3 exit limits are relative to an unauthenticated mark; the adjacent warning explains the false-mark risk. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
+You should see Vite's `ready in` line and `Local: http://localhost:5173/` when the port is free. Open that URL: the page leads with **Mainnet** evidence for the 14 November v4 lifecycle, with public proof links. Historical v3 and v2 testnet evidence remains separately labeled. The contract panel defaults to v3; selecting v2 switches its artifact and live testnet position/margin/ledger to the historical v2 address. The demo panel also shows v3 paused/out-of-band authorization and the malicious-mark case. V1 is a rehearsal with a key. V3 exit limits are relative to an unauthenticated mark; the adjacent warning explains the false-mark risk. Replay and mainnet market illustrations follow with separate labels. Configured limits show NEAR/USDC alongside exact raw values. Stop the server with Ctrl-C before the next command; if the port is occupied Vite prints another URL. Public read failures appear as unavailable data.
 
 ```sh
 npm run testnet:verify
@@ -127,7 +137,7 @@ Measured commands, exit codes, startup/HTTP checks and environment: [REPRODUCE](
 ```text
 Owner -> wNEAR deposits + policy configuration + trusted observations
 Keeper -> bounded order/cancel requests -> NEAR policy -> MPC signer
-Relayer -> policy-built signed action -> Hyperliquid testnet
+Relayer -> policy-built signed action -> Hyperliquid (v4 mainnet; v1–v3 testnet)
 Owner -> exact spot-sale approval -> fixed adapter -> margin receipt reconciliation
 Web <- recorded reports + dated evidence + public RPC/market reads
 ```
@@ -151,7 +161,8 @@ On v2, pause blocks new keeper requests and queues original-nonce invalidations;
 
 | Scope | Status and evidence |
 |---|---|
-| Keyless funded lifecycle | **Completed on testnet**, with supervised owner steps. [Summary](docs/evidence/2026-11-10-lifecycle-summary.md), [open](docs/evidence/2026-11-10-lifecycle-open.md), [close](docs/evidence/2026-11-10-lifecycle-close.md), [withdrawal/status](docs/evidence/2026-11-10-lifecycle-status.md). |
+| v4 mainnet lifecycle | **Completed, owner-supervised**, one tiny lifecycle; [14 Nov proof](docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md). No autonomous mainnet keeper or audit. |
+| Historical keyless funded lifecycle | **Completed on testnet**, with supervised owner steps. [Summary](docs/evidence/2026-11-10-lifecycle-summary.md), [open](docs/evidence/2026-11-10-lifecycle-open.md), [close](docs/evidence/2026-11-10-lifecycle-close.md), [withdrawal/status](docs/evidence/2026-11-10-lifecycle-status.md). |
 | v2 code / custody | Committed WASM `1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a`; zero account access keys verified after deletion. [Manifest](contracts/policy/artifacts/SHA256SUMS). No upgrade export; key deletion freezes the code under this ABI. |
 | v3 code / live open-close-settlement | **Separate keyless deployment**; 4 wNEAR custody, keeper 3.6 NEAR short @ 3.3788 and reduce-only close @ 3.3796; venue flat, 48.986173 USDC equity. [12 Nov evidence](docs/evidence/2026-11-12-v3-lifecycle-summary.md), [code/key capture](docs/evidence/2026-11-11-v3-proof.json). Fresh owner margin attestation required to open; owner settled after open expiry; finalized keeper state records `signed_short_size: "0"`. |
 | v1 contract signing | **REHEARSAL with a key** on `policy.counterweight-samet.testnet`, old WASM `698195e3…2d289`. [Historical proof](docs/evidence/2026-11-10-contract-proof-FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU.md). |
@@ -196,7 +207,7 @@ Hackathon window: 2026-10-19 to 2026-11-14. This repository was created for the 
 
 The repository implements the Rust `near-sdk` policy, NEP-141 wNEAR receiver, Chain Signatures payload construction/relay and public-key derivation, deterministic keeper/replay, owner-approved rebalance accounting, sandbox demonstrations, and read-only web interface. Those are the work presented for the hackathon window. Dependencies and recorded market history are reused inputs, not work claimed as newly invented.
 
-NEAR Chain Signatures is exercised in the funded keyless v2 lifecycle (10 Nov) and the live keyless v3 open/close/settlement (12 Nov); earlier owner and v1 rehearsal proofs remain historical evidence. NEAR Intents 1Click is exercised as a mainnet dry quote; external adapter execution remains pending. Reserve-funded signing is deployed on keyless v2 and v3. [Recorded Rust validation](contracts/policy/TEST_RESULTS.md) reports native, export and sandbox checks; the full native/sandbox suites remain separate; `npm test` also invokes the focused cross-layer Cargo regression. Follow [contract reproduction instructions](contracts/policy/README.md) for the separate Rust toolchain.
+NEAR Chain Signatures is exercised in the keyless v4 mainnet lifecycle (14 Nov), the funded keyless v2 testnet lifecycle (10 Nov) and the live keyless v3 testnet open/close/settlement (12 Nov); earlier owner and v1 rehearsal proofs remain historical evidence. NEAR Intents 1Click is exercised as a mainnet dry quote; external adapter execution remains pending. Reserve-funded signing is deployed on keyless v2/v3 testnet and v4 mainnet. [Recorded Rust validation](contracts/policy/TEST_RESULTS.md) reports native, export and sandbox checks; the full native/sandbox suites remain separate; `npm test` also invokes the focused cross-layer Cargo regression. Follow [contract reproduction instructions](contracts/policy/README.md) for the separate Rust toolchain.
 
 ## Disclosures (Q-005)
 
@@ -206,9 +217,11 @@ Open-source dependencies include `near-sdk`, `near-workspaces`, React, Vite, vie
 
 ## Limitations
 
+**Mainnet scope:** owner-supervised, one tiny lifecycle, unaudited; no autonomous mainnet keeper, multi-day carry or live Intents route. V4 fixes concurrent exit serialization and the lifetime public MPC-deposit subsidy cap; it does not authenticate venue marks or owner observations.
+
 **Finding A — unauthenticated exit marks:** a false high mark supplied by the keeper, or by anyone after heartbeat timeout, can cost up to the perp margin on an adverse reduce-only buyback. wNEAR custody is unaffected. The v3 +1% cap is relative to the supplied mark and does not authenticate the true market price.
 
-**Unfixed v3 contract findings:** the deployed keyless v3 is immutable and retains issues from the final static review: concurrent-exit slot overwrite and open/exit overlap after a spot withdrawal, keeper fallback marks that can understate opening notional or block owner health checks, pause detaching in-flight owner callbacks, a sticky re-entry mode, and zero-deposit public `deleverage` reserve spend after timeout. Details: [KNOWN-ISSUES](docs/KNOWN-ISSUES.md#final-static-review-findings-in-shipped-v3-source-13-november-not-fixed).
+**Unfixed v3 contract findings:** the deployed keyless v3 is immutable and retains issues from the final static review: concurrent-exit slot overwrite and open/exit overlap after a spot withdrawal, keeper fallback marks that can understate opening notional or block owner health checks, pause detaching in-flight owner callbacks, a sticky re-entry mode, and zero-deposit public `deleverage` reserve spend after timeout. V4 repairs concurrent-exit serialization and adds a non-resetting 0.01 NEAR lifetime public subsidy cap; other findings remain open. Details: [KNOWN-ISSUES](docs/KNOWN-ISSUES.md#final-static-review-findings-in-shipped-v3-source-13-november-not-fixed).
 
 Bounded fallback prices and owner-supplied position, equity and finalized-receipt observations are trusted. Pyth-compatible prices are checked for age, confidence and immutable absolute bounds. Compromised or mistaken observations can understate external exposure. Contract reservations bound signed opens, not venue fills or repeated relaying of public signatures. Price bands and reduce-only IOC orders can fail to fill; MPC fees, signer availability, liquidity, venue liquidation/ADL and route delays remain risks.
 
@@ -220,4 +233,4 @@ This is experimental software for user-controlled accounts, not a fund or invest
 
 [MIT](LICENSE), copyright 2026 Samet.
 
-V2 arrival update (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.
+Historical v2 testnet arrival (13 November 2026): **arrived on Arbitrum Sepolia** — 46.957074 HL-testnet USDC; [transaction](https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0), [public RPC evidence](docs/evidence/2026-11-13-v2-arrival-arbitrum-sepolia.json). Testnet only.

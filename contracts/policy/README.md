@@ -1,4 +1,14 @@
-# Counterweight policy contract — v3 source, testnet prototype
+# Counterweight policy contract — v4 source, separate artifacts
+
+**V4 is a new mainnet-capable successor, locally tested; no mainnet deployment is
+claimed.** See [MAINNET](../../docs/MAINNET.md) for the owner-only runbook and
+[POLICY-V4](../../docs/POLICY-V4.md) for the exact scope. Build only
+`artifacts/counterweight_policy_v4.wasm` with `bash tools/build-v4.sh`;
+`artifacts/SHA256SUMS.v4` pins its bytes. The script preserves v3's optimization
+pipeline using external temporary scratch. Never rerun `build-v3.sh` against the
+v4 source: it would overwrite the immutable historical artifact path.
+V4 fixes the concurrent exit overwrite/idle gates and caps public reserve-funded
+MPC subsidies at 0.01 NEAR lifetime. Other findings stay disclosed.
 
 **V3 is separately deployed and keyless** at `policy-v3.counterweight-samet.testnet`.
 Use `artifacts/counterweight_policy_v3.wasm` and the
@@ -49,8 +59,9 @@ cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 cargo test --locked
 cargo test --locked --features test-utils
-bash tools/build-v3.sh
-python3 tests/check_default_exports.py artifacts/counterweight_policy_v3.wasm
+bash tools/build-v4.sh
+python3 tests/check_default_exports.py artifacts/counterweight_policy_v4.wasm
+shasum -a 256 -c artifacts/SHA256SUMS.v4
 shasum -a 256 -c artifacts/SHA256SUMS
 cargo build --locked --release --target wasm32-unknown-unknown -p counterweight-mock-signer
 TMPDIR=/private/tmp COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS=1 \
@@ -76,21 +87,23 @@ are absent from it. Sandbox contracts and artifacts must never custody funds.
 From the repository root, the key-free SDK generator and scoped relay check are:
 
 ```sh
-.tmp/sdk-venv/bin/python contracts/policy/tools/generate-signing-vectors.py
+python3 -m venv /private/tmp/counterweight-v4-signing-sdk
+/private/tmp/counterweight-v4-signing-sdk/bin/pip install -r scripts/requirements-signing-vectors.txt
+PYTHONDONTWRITEBYTECODE=1 /private/tmp/counterweight-v4-signing-sdk/bin/python contracts/policy/tools/generate-signing-vectors.py
 node_modules/.bin/tsx contracts/policy/relay/noop.test.ts
 PYTHONDONTWRITEBYTECODE=1 python3 contracts/policy/tools/test_custody_keys.py
 ```
 
 Generation requires pinned dependencies from `scripts/requirements-signing-vectors.txt`.
-It writes only the contract-local fixture. There are 28 SDK vectors: Rust checks
-22 supported vectors, including four noop cases; approveAgent/usdSend are codec
+It writes only the contract-local fixture. There are 34 SDK vectors: Rust checks
+28 supported vectors, including four noop cases; approveAgent/usdSend are codec
 interoperability fixtures and have no controller signing entry point.
 
 ## Authority, prices, and accounting
 
 Initialization fixes owner, market/precision, signer, wNEAR, derivation path and
 EVM withdrawal recipient, network and oracle feed config. Opening bounds require
-a cancellable 24h owner proposal to change; exits do not wait for it. The immutable network selects Testnet/Mainnet account guards and L1 order EIP-712 source `a`/`b`. User-signed class transfers and withdrawals hardcode the testnet signature chain ID `0x66eee` / `421614`, so mainnet domain separation for those actions is unsupported; no mainnet compatibility is claimed ([known issue](../../docs/KNOWN-ISSUES.md#mainnet-user-signed-actions-are-unsupported));
+a cancellable 24h owner proposal to change; exits do not wait for it. The immutable network selects Testnet/Mainnet account guards and L1 order EIP-712 source `b`/`a`, respectively. V4 pins Mainnet to `v1.signer` and `wrap.near`. User-signed class transfers and withdrawals match the official SDK: signature chain ID `0x66eee` / `421614` on both networks, with signed `hyperliquidChain` selecting the environment. This signing chain ID is not the bridge destination chain. Mainnet SDK-vector tests cover orders, withdrawal and both class-transfer directions ([corrected known issue](../../docs/KNOWN-ISSUES.md#mainnet-user-signed-actions-are-unsupported));
 `.test.near` is enabled solely by test-utils. Verify NEAR metadata before funding:
 read-only venue metadata on 2026-11-10 Istanbul time reported testnet index 54,
 mainnet index 74, `szDecimals=1` ([captured metadata](fixtures/near-market-meta.json)). Historical index 4 / precision 2 tests are mocks.
@@ -144,7 +157,9 @@ Owner `set_signing_resources` configures fee and signer/callback gas. Defaults a
 accepts zero deposit and pays from its own operating balance, capped at 0.01 NEAR
 per authorization while preserving storage stake + 128 KiB growth. A positive
 deposit must cover the whole fee; excess is refunded to the caller. Existing rate,
-caller and cumulative address budgets also bound reserve-funded requests. Spot transfers require
+caller and cumulative address budgets also bound reserve-funded requests. V4 additionally
+caps zero-deposit public reduction subsidies at 0.01 NEAR over the policy lifetime;
+caller-paid full-fee public recovery and owner/keeper recovery remain available. Spot transfers require
 exactly 1 yoctoNEAR and 80 Tgas. Native sweep retains storage stake + 128 KiB future
 state reserve + 1 NEAR, and sends only to the owner.
 

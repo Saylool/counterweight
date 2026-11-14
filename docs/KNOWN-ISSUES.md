@@ -1,5 +1,34 @@
 # Known issues
 
+## V4 deployed on mainnet; two bounded repairs
+
+The separately built **v4** successor and [mainnet runbook](MAINNET.md) add explicit
+mainnet initialization/service pins, SDK-verified signing domains, capped
+owner-supervised mainnet tooling, and these two repairs. No deployed v1/v2/v3
+artifact changes; their accounts remain immutable and their findings remain
+historical facts. On 14 November v4 completed one owner-supervised, tiny mainnet lifecycle at `cw4.haxheton.near`; [evidence and API verification limits](evidence/2026-11-14-v4-mainnet-lifecycle-summary.md). No autonomous mainnet keeper or audit is claimed.
+
+- **Concurrent exit slot fixed in v4:** a fresh outstanding concurrent exit blocks
+  all second exits, regardless of owner/keeper/public authority. `assert_idle`
+  checks that slot even after the spot callback clears `pending`. Timeout expiry
+  records normal uncertain-operation bookkeeping and keeps reservations/token
+  callbacks. Regression tests cover overwrite attempts, both slots, callback
+  ordering and expiry.
+- **Public reserve subsidy capped in v4:** zero-deposit public reductions have a
+  non-resetting **0.01 NEAR lifetime MPC-deposit subsidy budget**, including flat
+  calls and signer failures. `get_public_subsidy_spent` exposes the charge. Once
+  exhausted, a public caller can attach the whole configured MPC fee; owner/keeper
+  reserve-funded recovery is unaffected. Flat calls can still spend within this
+  finite budget. This does not cap caller-paid gas, venue loss or privileged
+  owner/keeper spending.
+
+All other v3 findings below stay disclosed and are not repaired by this scope.
+V4's caller-reported prices, owner margin/fill/finality attestations, sticky
+re-entry mode, immediate config powers and pause callback-detachment boundaries
+remain. See [POLICY-V4](POLICY-V4.md). Defaults for existing scripts/keeper remain
+testnet; applying keeper edits requires a separately chosen restart. The running
+keeper and its journals were not touched.
+
 ## V2 retains the immutable-band exit bug; v3 is separately deployed
 
 **Deployed keyless v2 has the band bug:** when NEAR leaves its fixed
@@ -59,6 +88,12 @@ short-only direction, freshness and separate rate limits remain enforced. Signer
 venue, gas and fee availability still matter. See the explicit trust boundary in
 [POLICY-V3](POLICY-V3.md).
 
+## Mainnet tooling incidents and operating limits
+
+The 14 November run stopped three times before the successful open: a fractional `observed_at_ms` rejected by the contract; an over-strict host-clock guard; and an opening signature at 3.2823 ([7Yr92zzo…](https://nearblocks.io/txns/7Yr92zzoTpncQ3bwpr3MCcczxNARvDxasmjg1zqxqdEj)) refused by the relay expecting 3.2827. None sent an order; the unused opening signature expired and was settled. This distinction matters: a signature is not a fill, and a local relay refusal does not revoke a signature.
+
+The keeper needed 0.7 NEAR funded because 285–300 Tgas calls require about 0.3 NEAR prepaid liquidity, substantially above final burned gas. A public-RPC outage delayed the withdrawal relay by a few minutes. These are observed tooling and infrastructure limits; [executed run](MAINNET.md#executed-run) and [summary](evidence/2026-11-14-v4-mainnet-lifecycle-summary.md) preserve the evidence boundaries.
+
 ## Keeper monitoring has interruptions; no autonomous trading proof
 
 The opt-in v3 opening planner now reads owner margin at the policy's finalized block and rejects missing, malformed, zero, future or >30-second-old attestations before writing an opening journal. Regression tests cover repeated stale cycles and a subsequent fresh attestation. Opening-disabled monitoring and reductions do not make this additional read. The contract remains authoritative: a margin observation can expire while a transaction is in flight. Any uncertain send still retains its journal and must be reconciled before recovery; deleting a journal is not proof that no signature exists. The running process is not restarted by this release edit. See [the supervised-entry warning](KEEPER-RUN.md#running-the-keeper).
@@ -80,9 +115,9 @@ slot without the normal uncertain-operation bookkeeping. The existing
 single-exit/token-callback ordering tests do not establish safety for repeated
 concurrent exits. Avoid treating that sequence as supported. Repair requires
 contract changes, regression tests and a separately deployed successor because
-the keyless v3 deployment is immutable. No deployed fix is claimed here.
+the keyless v3 deployment is immutable. These findings remain in immutable v3; v4 fixes the concurrent-exit slot as described above.
 
-## Final static review findings in shipped v3 source (13 November, not fixed)
+## Final static review findings in shipped v3 source (13 November, unchanged on v3)
 
 A last static review of `contracts/policy/src` reported the following. Each was checked
 against the source; none is fixed in the deployed keyless v3, which is immutable. Fixes need
@@ -125,14 +160,24 @@ tests and apply only after the running keeper is restarted. Still open: terminal
 rejected NEAR receipts, venue errors and expired unfilled orders; one shared clock-skew
 tolerance; automatic recovery of a lock left by a dead process (manual removal is required).
 
-## Mainnet user-signed actions are unsupported
+<a id="mainnet-user-signed-actions-are-unsupported"></a>
+## Mainnet support belongs only to new v4, not frozen artifacts
 
-Although the init enum accepts `Mainnet`, class-transfer and withdrawal builders
-and their digest validation hardcode signature chain ID `0x66eee` / `421614`
-in `contracts/policy/src/lib.rs` and `hl_digest.rs`. They do not select the
-mainnet domain. Do not deploy or operate this artifact on mainnet. Correcting and
-validating those domains belongs to a future artifact; both frozen testnet WASMs
-and their manifests remain unchanged. No mainnet compatibility is claimed.
+The previous explanation incorrectly called `0x66eee` / `421614` a testnet-only
+Hyperliquid user-signing domain. The [official Python SDK](https://github.com/hyperliquid-dex/hyperliquid-python-sdk/blob/2fdb18f9517675ea03695a0962bd19eece9c83f0/hyperliquid/utils/signing.py)
+uses it on **both** networks; the signed `hyperliquidChain` chooses `Mainnet` or
+`Testnet`. The chain ID identifies the wallet-signing domain, not the withdrawal
+bridge. V4 names those constants explicitly, rejects an inconsistent chain/action,
+and tests mainnet L1 orders plus withdraw3 and both class-transfer directions
+against SDK-generated golden vectors. L1 mainnet Agent source is `a`, domain
+chain ID 1337.
+
+V4 pins mainnet initialization to `v1.signer` and `wrap.near`, rejects testnet
+policy accounts, and adds a separate real-funds-gated tooling path. Frozen testnet
+v1/v2/v3 WASMs and manifests are unchanged; do not infer mainnet compatibility or
+redeploy/upgrade their keyless accounts. V4 has now executed a supervised mainnet
+class transfer, order lifecycle and withdrawal; [summary](evidence/2026-11-14-v4-mainnet-lifecycle-summary.md). Follow [MAINNET](MAINNET.md), including legacy-bridge status,
+minimum notional, funding, key deletion and uncertainty recovery.
 
 ## Recorded monitoring limits
 
@@ -203,7 +248,7 @@ separate live v3 run). The narration source no longer contains the earlier “ke
 wording; the other six recordings are unchanged from 12 November. No paid voice API was used
 in this repository edit.
 
-Testnet only, supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
+V1–v3 executed evidence remains testnet. V4 completed one owner-supervised mainnet lifecycle on 14 November, with final flat status and spot returned; this proves neither autonomous mainnet trading nor an audit. Supervised owner funding/observations/settlement/withdrawal approval, no on-chain venue light client,
 no multi-day carry, Intents dry quotes only, no live rebalancing route. The v2 withdrawal arrived on Arbitrum Sepolia.
 The v3 run records spot → open → reduce-only close → owner settlement, with finalized zero reserved short in the keeper journal (block and extract above). The 4 wNEAR spot leg remains in v3 custody and directional after settlement. No v3 withdrawal is claimed. V2 price bands can block exit requests; IOC liquidity can prevent fills in either version;
 signer availability, fees, liquidity, liquidation/ADL and owner mistakes remain risks.
@@ -252,7 +297,7 @@ this is not a total portfolio-loss or liquidation guarantee and is not a bound f
 have a separate worst-case 10 NEAR lifetime ceiling at the per-request fee maximum.
 
 Network is an immutable `Testnet` / `Mainnet` init enum, selecting account
-checks and L1 order source `a`/`b`. User-signed actions retain the testnet-only chain ID described above; mainnet compatibility is unsupported.
+checks and L1 order source `a`/`b`. The user-signing domain `0x66eee` / `421614` is shared across networks; `hyperliquidChain` selects mainnet/testnet. V4 mainnet compatibility is demonstrated by the supervised lifecycle above; frozen v1–v3 artifacts remain testnet evidence.
 The shared Hyperliquid package now handles noop; the duplicate relay codec is removed.
 That historical network/oracle layout required a fresh controller when moving from v1.
 v2 was upgraded to the state-compatible class-transfer artifact before key removal, and the funded lifecycle

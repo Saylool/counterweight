@@ -1,0 +1,217 @@
+{
+  "policy": {
+    "state": {
+      "network": "Mainnet",
+      "keeper": "keeper4.haxheton.near",
+      "coin": "NEAR",
+      "signer_account": "v1.signer",
+      "derivation_path": "counterweight-mainnet-v4",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "asset_index": 74,
+      "size_decimals": 1,
+      "limits": {
+        "max_short_size": "3700000000000000000000000",
+        "per_order_notional_cap": "15000000",
+        "per_day_notional_cap": "30000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "oracle": {
+        "min_price": "2660960",
+        "max_price": "3991440",
+        "max_age_seconds": 60
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "reference_price": "3323600",
+      "reference_price_timestamp": "1794662196",
+      "last_keeper_heartbeat": "1794662010",
+      "heartbeat_timeout_seconds": 3600,
+      "paused": false,
+      "pending": null,
+      "spot_balance": "0",
+      "signed_short_size": "0",
+      "daily_usage": "24133223",
+      "last_nonce": "1794662210501",
+      "last_open_expiry": "1794661999588"
+    },
+    "block": "dpdHZG62pazaVYsBQTck8qNuLkKDpfQUb5ZJn1JpQ1x",
+    "codeHash": "3fCQcNC7KLrfQzYdfQnfbkdpxzfvDp1whUCJqDmk4ivc",
+    "keyless": true,
+    "rebalance": null,
+    "margin": {
+      "limits": {
+        "per_withdrawal_usdc": "20000000",
+        "daily_withdrawal_usdc": "20000000",
+        "min_residual_equity_usdc": "1000000",
+        "min_headroom_bps": 1000,
+        "fee_reserve_usdc": "100000",
+        "max_fee_usdc": "1000000"
+      },
+      "usable_margin": "1100000",
+      "withdrawable": "1100000",
+      "observed_at_ms": "1794662201348",
+      "withdrawals": [
+        [
+          1794662210501,
+          18886709
+        ]
+      ],
+      "withdrawal": null,
+      "processed_receipts": [
+        [
+          63,
+          13,
+          43,
+          134,
+          151,
+          179,
+          90,
+          53,
+          109,
+          205,
+          21,
+          7,
+          185,
+          223,
+          66,
+          240,
+          104,
+          198,
+          69,
+          226,
+          218,
+          81,
+          53,
+          98,
+          143,
+          9,
+          93,
+          75,
+          4,
+          204,
+          9,
+          18
+        ]
+      ]
+    },
+    "token": "0",
+    "fullState": {
+      "owner": "haxheton.near",
+      "near_recipient": "haxheton.near",
+      "wnear_account": "wrap.near",
+      "network": "Mainnet",
+      "oracle": {
+        "account_id": null,
+        "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+        "max_age_seconds": 60,
+        "max_confidence_bps": 100,
+        "min_price": "2660960",
+        "max_price": "3991440"
+      },
+      "oracle_price": "0",
+      "oracle_timestamp": "0",
+      "keeper": "keeper4.haxheton.near",
+      "coin": "NEAR",
+      "asset_index": 74,
+      "size_decimals": 1,
+      "derivation_path": "counterweight-mainnet-v4",
+      "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+      "signer_account": "v1.signer",
+      "limits": {
+        "max_short_size": "3700000000000000000000000",
+        "per_order_notional_cap": "15000000",
+        "per_day_notional_cap": "30000000",
+        "cooldown_seconds": 60,
+        "price_band_bps": 100,
+        "price_max_age_seconds": 60
+      },
+      "spot_balance": "0",
+      "signed_short_size": "0",
+      "daily_usage": "24133223",
+      "usage_day": 20771,
+      "operation_id": "7",
+      "pending": null,
+      "paused": false,
+      "last_keeper_heartbeat": "1794662010",
+      "heartbeat_timeout_seconds": 3600,
+      "reference_price": "3323600",
+      "reference_price_timestamp": "1794662196",
+      "last_nonce": "1794662210501",
+      "signing_limits": {
+        "keeper_per_block": 2,
+        "keeper_per_window": 8,
+        "keeper_outstanding": 8,
+        "owner_per_window": 16,
+        "window_ms": 60000,
+        "max_nonce_ahead_ms": 1000
+      },
+      "outstanding": [
+        {
+          "nonce": 1794660925432,
+          "expires_after": 1794833725433,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": false,
+          "withdrawal": false
+        },
+        {
+          "nonce": 1794662210501,
+          "expires_after": 1794835010502,
+          "keeper": false,
+          "discarded": false,
+          "invalidation_requested": false,
+          "invalidation_signed": false,
+          "invalidation_confirmed": true,
+          "withdrawal": true
+        }
+      ],
+      "pause_complete": true,
+      "lifetime_opened": "7200000000000000000000000",
+      "last_open_expiry": "1794661999588",
+      "keeper_weight_used": "15",
+      "keeper_weight_limit": "5000",
+      "mpc_fee": "1",
+      "signer_gas_tgas": 230,
+      "callback_gas_tgas": 30
+    }
+  },
+  "venue": {
+    "equityText": "1.1",
+    "equity": 1.1,
+    "marginUsed": 0,
+    "withdrawable": 1.1,
+    "signedSize": 0,
+    "signedSizeText": "0",
+    "funding": null,
+    "otherPositions": []
+  },
+  "orders": [],
+  "balances": {
+    "owner": {
+      "amount": "824075179214294499999998",
+      "storage_usage": 182,
+      "locked": "0",
+      "code_hash": "11111111111111111111111111111111",
+      "block_hash": "H14ooRvGPnKhLk4FUGQmdvS5sLAXBxxFjwHaRASrrnTq"
+    },
+    "keeper": {
+      "amount": "692888468986176600000000",
+      "storage_usage": 182,
+      "locked": "0",
+      "code_hash": "11111111111111111111111111111111",
+      "block_hash": "H14ooRvGPnKhLk4FUGQmdvS5sLAXBxxFjwHaRASrrnTq"
+    },
+    "nativePolicy": {
+      "amount": "6997231424514551799999994",
+      "storage_usage": 345920,
+      "locked": "0",
+      "code_hash": "3fCQcNC7KLrfQzYdfQnfbkdpxzfvDp1whUCJqDmk4ivc",
+      "block_hash": "H14ooRvGPnKhLk4FUGQmdvS5sLAXBxxFjwHaRASrrnTq"
+    }
+  },
+  "derivedAddress": "0xb6a1d45ba9154067b7981e2b4b676393c75b0d26"
+}

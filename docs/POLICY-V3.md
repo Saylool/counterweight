@@ -1,5 +1,10 @@
 # Policy v3 — exit availability and fresh deployment
 
+This document records the immutable **v3 artifact and testnet deployment**. Current
+source builds the separately named [v4 successor](POLICY-V4.md); its repairs do not
+change v3 behavior or evidence. V4 completed a supervised mainnet lifecycle on 14 November ([proof and verification limits](evidence/2026-11-14-v4-mainnet-lifecycle-summary.md)); v1–v3 remain testnet. Use the [mainnet runbook](MAINNET.md) only with v4.
+Do not rebuild this historical v3 artifact from current source.
+
 **Deployed separately and keyless** at `policy-v3.counterweight-samet.testnet`,
 path `counterweight-1`, signer `v1.signer-prod.testnet`. Its derived EVM address is
 **`0xb4b87e81e185b7ad1911cbf5d1ee3729c92d62a5`**, locally derived from the

@@ -49,7 +49,9 @@ describe('judge README numeric claims against replay-report.json', () => {
     ].join('\n'));
   });
   it('rejects additional untracked numeric replay prose outside the checked blocks', () => {
-    const results = readme.split('## Historical results: simulated execution\n')[1]!.split('\n## NEAR technology')[0]!;
+    const sectionBody = readme.split('## Historical results: simulated execution\n')[1];
+    expect(sectionBody, 'README must retain the historical results section').toBeDefined();
+    const results = sectionBody!.split(/\n## /)[0]!;
     const prose = results.replace(/<!-- replay-(facts|table):start -->[\s\S]*?<!-- replay-\1:end -->/g, '');
     expect(prose).not.toMatch(/\d/);
   });

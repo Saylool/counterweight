@@ -4,6 +4,11 @@ use crate::{HlAction, OrderType, SigningPayload};
 use near_sdk::env::keccak256_array as keccak;
 
 pub const IMPLEMENTATION: &str = "HYPERLIQUID_MSGPACK_EIP712_V1";
+// Official Python SDK sign_user_signed_action uses this wallet signing chain on
+// BOTH networks. hyperliquidChain, not this domain chain ID, isolates mainnet.
+// https://github.com/hyperliquid-dex/hyperliquid-python-sdk/blob/2fdb18f9517675ea03695a0962bd19eece9c83f0/hyperliquid/utils/signing.py
+pub const USER_SIGNATURE_CHAIN_ID: &str = "0x66eee";
+pub const USER_DOMAIN_CHAIN_ID: u64 = 421614;
 type Result<T> = std::result::Result<T, &'static str>;
 
 pub fn digest(payload: &SigningPayload, mainnet: bool) -> Result<[u8; 32]> {
@@ -16,7 +21,7 @@ pub fn digest(payload: &SigningPayload, mainnet: bool) -> Result<[u8; 32]> {
     } = &payload.action
     {
         if hyperliquid_chain != if mainnet { "Mainnet" } else { "Testnet" }
-            || signature_chain_id != "0x66eee"
+            || signature_chain_id != USER_SIGNATURE_CHAIN_ID
             || *nonce != payload.nonce
             || payload.expires_after.is_some()
         {
@@ -33,7 +38,7 @@ pub fn digest(payload: &SigningPayload, mainnet: bool) -> Result<[u8; 32]> {
     } = &payload.action
     {
         if hyperliquid_chain != if mainnet { "Mainnet" } else { "Testnet" }
-            || signature_chain_id != "0x66eee"
+            || signature_chain_id != USER_SIGNATURE_CHAIN_ID
             || *time != payload.nonce
             || payload.expires_after.is_some()
         {
@@ -99,7 +104,7 @@ pub fn withdraw_digest(
     safe_integer(time)?;
     address(destination)?;
     decimal(amount, true)?;
-    Ok(typed(domain("HyperliquidSignTransaction", 421614), hash_words(&[
+    Ok(typed(domain("HyperliquidSignTransaction", USER_DOMAIN_CHAIN_ID), hash_words(&[
         keccak(b"HyperliquidTransaction:Withdraw(string hyperliquidChain,string destination,string amount,uint64 time)"),
         keccak(if mainnet { b"Mainnet" } else { b"Testnet" }),
         keccak(destination.as_bytes()), keccak(amount.as_bytes()), word(time),
@@ -113,7 +118,7 @@ pub fn usd_class_transfer_digest(
 ) -> Result<[u8; 32]> {
     safe_integer(nonce)?;
     decimal(amount, true)?;
-    Ok(typed(domain("HyperliquidSignTransaction", 421614), hash_words(&[
+    Ok(typed(domain("HyperliquidSignTransaction", USER_DOMAIN_CHAIN_ID), hash_words(&[
         keccak(b"HyperliquidTransaction:UsdClassTransfer(string hyperliquidChain,string amount,bool toPerp,uint64 nonce)"),
         keccak(if mainnet { b"Mainnet" } else { b"Testnet" }),
         keccak(amount.as_bytes()), word(u64::from(to_perp)), word(nonce),

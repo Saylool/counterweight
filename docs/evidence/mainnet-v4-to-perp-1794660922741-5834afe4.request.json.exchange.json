@@ -1,0 +1,1 @@
+{"action":{"type":"usdClassTransfer","amount":"20","toPerp":true,"nonce":1794660925432,"signatureChainId":"0x66eee","hyperliquidChain":"Mainnet"},"nonce":1794660925432,"signature":{"r":"0x2559435cb405e6b312817b2d80f77a09d21de13ccc28dbf71a7075728c881495","s":"0x21dcb33acdfb4c330ee1064b136bfd53aef141296c88a82608126e3e37f987d6","v":28}}

@@ -1,0 +1,1 @@
+{"action":{"type":"order","orders":[{"a":74,"b":false,"p":"3.2885","s":"3.6","r":false,"t":{"limit":{"tif":"Ioc"}}}],"grouping":"na"},"nonce":1794661939588,"signature":{"r":"0xd4469f4ef77408548104e1f0979bba269daac4cbfbcb0e804a038f8fb03abd66","s":"0x603bf90dbd4224185d04e425d02b6a71374b400089bb1d6abdf5410c931e5593","v":27},"expiresAfter":1794661999588}

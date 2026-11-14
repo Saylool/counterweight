@@ -7,6 +7,10 @@ import { simulate, COSTS, type ReplayConfig } from '../apps/keeper/src/replay.js
 // This command runs in its own process. Cost overrides never change source files,
 // saved replay reports, or the separate live keeper process.
 const root = fileURLToPath(new URL('../', import.meta.url));
+// Measured mainnet facts are maintained separately from this generated replay.
+const existingEconomics = await readFile(root + 'docs/ECONOMICS.md', 'utf8');
+const mainnetCosts = existingEconomics.match(/<!-- mainnet-costs:start -->[\s\S]*?<!-- mainnet-costs:end -->/);
+assert(mainnetCosts, 'Missing mainnet cost markers; refusing to overwrite measured evidence');
 const saved = JSON.parse(await readFile(root + 'reports/replay-report.json', 'utf8'));
 const reference = saved.comparisons.find((r: { period: string; policy: string; label: string }) =>
   r.period === 'full' && r.policy === 'hedged-rebalance' && r.label === 'illustrative');
@@ -69,6 +73,7 @@ const table = ['| Scenario | Signing + routing costs | All engine costs | Owner 
   '|---|---:|---:|---:|---:|---:|---:|',
   ...rows.map(r => `| ${r.name} | ${money(r.signingRoutingCostsUsd)} | ${money(r.engineCostsUsd)} | ${money(r.ownerOpsUsd)} | ${money(r.netAfterOwnerUsd)} | ${pct(r.netReturnPct)} | ${money(r.excessOverCashUsd)} |`)].join('\n');
 const text = `# Economics sensitivity\n\nIntended customer: a NEAR treasury or substantial wNEAR holder seeking to reduce dollar drawdowns, willing to sell inventory to replenish margin and to coordinate owner approvals. This is a supervised prototype, not a coin-count-preservation or passive-income product. Customer demand and revenue are unproved.\n\n`
+  + mainnetCosts[0] + '\n\n## Historical replay sensitivity\n\n'
   + `Computed offline with the existing replay engine and verified fixtures: **${hours} hours**, ${report.start} through ${report.endExclusive} (exclusive). Frozen illustrative allocation: ${money(config.shortUsd)} spot + ${money(config.marginUsd)} margin + ${money(config.operatingUsd)} operating = **${money(baseline.initialCapitalUsd)}**. The saved training-selected rule is held fixed; no retuning. Fresh baseline PnL/costs/capital/hours/rebalances must equal the saved report before output is written.\n\n`
   + table + '\n\n'
   + `Cash sensitivity on the same ${money(baseline.initialCapitalUsd)} for the same window: at 0% annual, ${money(0)} / ${pct(0)}; at an **assumed** ${pct(cashAnnualRate * 100)} simple annual rate, ${money(cashPnl)} / ${pct(report.cash.netReturnPct)}. Formula: capital × annual rate × ${hours}/8760. This is an opportunity-cost input, not a current yield quote or available risk-free investment. No cash fees, taxes or compounding.\n\n`

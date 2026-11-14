@@ -1,0 +1,57 @@
+{
+  "network": "mainnet",
+  "plan": "docs/evidence/policy-v4-mainnet-plan.json",
+  "createdAt": 1794661701434,
+  "expected": {
+    "method": "request_order_signature",
+    "args": {
+      "order": {
+        "asset_index": 74,
+        "size": "3600000000000000000000000",
+        "reduce_only": false,
+        "reference_price": null
+      }
+    },
+    "caller": "keeper4.haxheton.near",
+    "policy": "cw4.haxheton.near",
+    "asset": 74,
+    "reduceOnly": false,
+    "size": "3.6",
+    "price": "3.2827",
+    "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+    "amount": "0"
+  },
+  "address": "0xb6a1d45ba9154067b7981e2b4b676393c75b0d26",
+  "codeHash": "3fCQcNC7KLrfQzYdfQnfbkdpxzfvDp1whUCJqDmk4ivc",
+  "before": {
+    "clearing": {
+      "marginSummary": {
+        "accountValue": "20.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "20.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMarginSummary": {
+        "accountValue": "20.0",
+        "totalNtlPos": "0.0",
+        "totalRawUsd": "20.0",
+        "totalMarginUsed": "0.0"
+      },
+      "crossMaintenanceMarginUsed": "0.0",
+      "withdrawable": "20.0",
+      "assetPositions": [],
+      "time": 1794661700951
+    },
+    "spot": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    }
+  }
+}

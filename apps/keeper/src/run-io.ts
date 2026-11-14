@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { TESTNET_API, deriveEvmAddress, nearPublicKeyToHex } from '../../../packages/hyperliquid/src/index.js';
+import { apiForNetwork, accountForNetwork, MAINNET_RPC, deriveEvmAddress, nearPublicKeyToHex, type Network } from '../../../packages/hyperliquid/src/index.js';
 import { parseAccount } from '../../../scripts/lifecycle-parsing.js';
 import { parseMarket, numeric, positive } from '../../../scripts/lifecycle-config.js';
 import { txHash, testnetAccount } from '../../../scripts/testnet-common.js';
@@ -21,9 +21,9 @@ export function runtime(): Runtime {
     exec: args => execute('near', args, { encoding: 'utf8', timeout: 90_000, maxBuffer: 2 * 1024 * 1024, killSignal: 'SIGTERM' }) };
 }
 export class PublicClient {
-  constructor(readonly rt: Runtime, readonly fallback = process.env.NEAR_TESTNET_RPC ?? 'https://test.rpc.fastnear.com') {}
+  constructor(readonly rt: Runtime, readonly fallback = process.env.NEAR_TESTNET_RPC ?? 'https://test.rpc.fastnear.com', readonly network: Network = 'testnet') {}
   async rpc(method: string, params: unknown): Promise<unknown> {
-    const endpoints = [...new Set(['https://rpc.testnet.near.org', this.fallback])];
+    const endpoints = this.network === 'mainnet' ? [MAINNET_RPC] : [...new Set(['https://rpc.testnet.near.org', this.fallback])];
     for (let attempt = 0; attempt < 4; attempt++) {
       let response: Response | undefined;
       try {
@@ -53,6 +53,7 @@ export class PublicClient {
   async policy(policy: string, block?: string, onState?: (state: z.infer<typeof stateSchema>) => Promise<void>) {
     const view = await this.view(policy, 'get_state', {}, block);
     const state = stateSchema.parse(view.value);
+    if (state.network !== (this.network === 'mainnet' ? 'Mainnet' : 'Testnet') || state.signer_account !== (this.network === 'mainnet' ? 'v1.signer' : 'v1.signer-prod.testnet') || (this.network === 'testnet' && state.keeper !== KEEPER)) throw new Error('Policy network/signer/keeper mismatch');
     await onState?.(state);
     const [account, keys, rebalance] = await Promise.all([
       this.rpc('query', { request_type: 'view_account', account_id: policy, block_id: view.block }),
@@ -71,7 +72,7 @@ export class PublicClient {
     return derived.address.toLowerCase();
   }
   async info(body: Record<string, unknown>): Promise<unknown> {
-    const r = await this.rt.fetch(`${TESTNET_API}/info`, { method: 'POST', headers: { 'content-type': 'application/json' },
+    const r = await this.rt.fetch(`${apiForNetwork(this.network)}/info`, { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
     if (!r.ok) throw new Error('Hyperliquid public data unavailable');
     return r.json();
@@ -102,11 +103,11 @@ export class PublicClient {
       responses: { metaAndAssetCtxs: marketRaw, clearinghouseState, openOrders: orders, fundingHistory: history, l2Book: bookRaw } };
   }
 }
-export function commandArgs(policy: string, method: 'heartbeat' | 'set_keeper_price' | 'request_order_signature', args: unknown) {
-  testnetAccount(policy);
+export function commandArgs(policy: string, method: 'heartbeat' | 'set_keeper_price' | 'request_order_signature', args: unknown, network: Network = 'testnet', keeper = KEEPER) {
+  accountForNetwork(policy, network); accountForNetwork(keeper, network);
   return ['contract', 'call-function', 'as-transaction', policy, method, 'json-args', JSON.stringify(args), 'prepaid-gas',
-    method === 'request_order_signature' ? '300 Tgas' : '30 Tgas', 'attached-deposit', '0 NEAR', 'sign-as', KEEPER,
-    'network-config', 'testnet', 'sign-with-keychain', 'send'];
+    method === 'request_order_signature' ? '300 Tgas' : '30 Tgas', 'attached-deposit', '0 NEAR', 'sign-as', keeper,
+    'network-config', network, 'sign-with-keychain', 'send'];
 }
 export function printable(args: string[]) { return `near ${args.map(s => /^[a-zA-Z0-9_.:-]+$/.test(s) ? s : `'${s.replaceAll("'", "'\\''")}'`).join(' ')}`; }
 export function extractHash(output: string) {

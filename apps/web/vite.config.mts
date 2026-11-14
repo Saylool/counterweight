@@ -32,6 +32,7 @@ function publicEvidence(): Plugin {
     });
   add("data/lifecycle.json", lifecycleSchema.parse(JSON.parse(read("docs/evidence/2026-11-10-lifecycle-summary.json"))));
   add("data/lifecycle-v3.json", lifecycleSchema.parse(JSON.parse(read("docs/evidence/2026-11-12-v3-lifecycle-summary.json"))));
+  add("data/lifecycle-v4.json", JSON.parse(read("docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.json")));
   const report = reportSchema.parse(
     JSON.parse(read("reports/replay-report.json")),
   );

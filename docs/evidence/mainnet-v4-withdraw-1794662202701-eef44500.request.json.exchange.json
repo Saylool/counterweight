@@ -1,0 +1,1 @@
+{"action":{"type":"withdraw3","destination":"0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a","amount":"18.886709","time":1794662210501,"signatureChainId":"0x66eee","hyperliquidChain":"Mainnet"},"nonce":1794662210501,"signature":{"r":"0xddee3f5c0561c339143086bafd234dd52acf7f2b1b1cd6056b4c1e3a38c19617","s":"0x7a6ce7cc7ea7c743f53255b23766bc734915ee34d60dbd78516e569c1d4d1f8b","v":28}}

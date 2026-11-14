@@ -1,0 +1,1 @@
+{"phase":"claimed-before-send","args":["contract","call-function","as-transaction","cw4.haxheton.near","request_cancel_signature","json-args","{\"order_id\":\"0\"}","prepaid-gas","300 Tgas","attached-deposit","0 NEAR","sign-as","keeper4.haxheton.near","network-config","mainnet","sign-with-keychain","send"],"signer":"keeper4.haxheton.near","receiver":"cw4.haxheton.near"}

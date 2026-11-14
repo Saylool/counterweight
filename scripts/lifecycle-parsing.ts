@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
-import { getSigningDigest, mpcToHyperliquidSignature, type SigningInput } from '../packages/hyperliquid/src/index.js';
+import { getSigningDigest, mpcToHyperliquidSignature, type SigningInput, type Network } from '../packages/hyperliquid/src/index.js';
 import { txHash } from './testnet-common.js';
 import { numeric, positive, units } from './lifecycle-config.js';
 
@@ -27,9 +27,9 @@ export function parseOrderResponse(raw: unknown) {
   }) }) }).parse(raw).response.data.statuses[0]!.filled;
 }
 export function verifyFill(raw: unknown, fillsRaw: unknown, before: ReturnType<typeof parseAccount>, after: ReturnType<typeof parseAccount>,
-  size: string, reduceOnly: boolean, nonce: number) {
+  size: string, reduceOnly: boolean, nonce: number, timeBufferMs = 0) {
   const filled = parseOrderResponse(raw);
-  const fills = parseFills(fillsRaw).filter(f => f.oid === filled.oid && f.coin === 'NEAR' && f.time >= nonce && f.side === (reduceOnly ? 'B' : 'A'));
+  const fills = parseFills(fillsRaw).filter(f => f.oid === filled.oid && f.coin === 'NEAR' && f.time >= nonce - timeBufferMs && f.side === (reduceOnly ? 'B' : 'A'));
   const total = fills.reduce((sum, f) => sum + units(f.sz, 24), 0n);
   const actual = units(filled.totalSz, 24), wanted = units(size, 24);
   if (actual > wanted || actual === 0n || total !== actual) throw new Error('Hyperliquid fill size/order/side/time not verified');
@@ -41,14 +41,14 @@ export function verifyFill(raw: unknown, fillsRaw: unknown, before: ReturnType<t
 // Testnet withdraw3 debits the signed gross amount; ledger usdc is net of the fee.
 // The public ledger nonce is in microseconds; the signed action time is milliseconds.
 export const WITHDRAWAL_WINDOW_MS = 86_400_000;
-export function parseWithdrawal(raw: unknown, ledgerRaw: unknown, amount: string, nonce: number) {
+export function parseWithdrawal(raw: unknown, ledgerRaw: unknown, amount: string, nonce: number, windowMs = WITHDRAWAL_WINDOW_MS, timeBufferMs = 0) {
   z.object({ status: z.literal('ok'), response: z.object({ type: z.literal('default') }) }).parse(raw);
   uint.parse(nonce);
   const ledger = z.array(z.object({ time: uint, hash: hashSchema, delta: z.object({ type: z.string(),
     usdc: numeric.optional(), fee: numeric.optional(), nonce: uint.optional() }).passthrough() })).parse(ledgerRaw);
   const gross = units(amount, 6);
   const entries = ledger.filter(l => {
-    if (l.time < nonce || l.time > nonce + WITHDRAWAL_WINDOW_MS || l.delta.type !== 'withdraw' || l.delta.usdc === undefined) return false;
+    if (l.time < nonce - timeBufferMs || l.time > nonce + windowMs || l.delta.type !== 'withdraw' || l.delta.usdc === undefined) return false;
     if (l.delta.nonce !== undefined && BigInt(l.delta.nonce) !== BigInt(nonce) * 1000n) return false;
     // Older minimal ledger shapes omit fee/nonce: use the documented 1 USDC testnet
     // fee, exact micro-units and a unique bounded-time match. Never guess a hash:
@@ -57,6 +57,16 @@ export function parseWithdrawal(raw: unknown, ledgerRaw: unknown, amount: string
   });
   if (entries.length !== 1) throw new Error('Hyperliquid withdrawal not yet verified in public ledger; do not resubmit signature');
   return entries[0]!;
+}
+/** Missing/uncertain HTTP response requires exact public nonce, never a time/amount-only guess. */
+export function parseMainnetWithdrawal(raw: unknown, ledgerRaw: unknown, amount: string, nonce: number) {
+  const accepted = z.object({ status: z.literal('ok'), response: z.object({ type: z.literal('default') }) }).safeParse(raw);
+  if (!accepted.success) {
+    const exact = z.array(z.object({ delta: z.object({ nonce: uint.optional() }).passthrough() }).passthrough()).parse(ledgerRaw)
+      .filter(entry => entry.delta.nonce === nonce * 1000);
+    return parseWithdrawal({ status: 'ok', response: { type: 'default' } }, exact, amount, nonce, 3 * WITHDRAWAL_WINDOW_MS, 5000);
+  }
+  return parseWithdrawal(raw, ledgerRaw, amount, nonce, 3 * WITHDRAWAL_WINDOW_MS, 5000);
 }
 export function spotUsdc(raw: unknown) {
   const balances = z.object({ balances: z.array(z.object({ coin: z.string(), total: numeric.refine(s => Number(s) >= 0), hold: numeric })) }).parse(raw).balances;
@@ -73,10 +83,10 @@ export function verifyClassTransfer(raw: unknown, beforeSpot: unknown, afterSpot
     throw new Error('Hyperliquid spot/perps transfer balance deltas not yet verified; do not resubmit signature');
   return { amount, spotBefore: old.total.toString(), spotAfter: current.total.toString(), perpsBefore: before.equity, perpsAfter: after.equity };
 }
-export interface ExpectedCall { method: 'request_order_signature' | 'request_evm_withdrawal' | 'request_usd_class_transfer'; args: Record<string, unknown>; caller: string;
+export interface ExpectedCall { method: 'request_order_signature' | 'request_evm_withdrawal' | 'request_usd_class_transfer' | 'set_paused' | 'request_next_invalidation'; args: Record<string, unknown>; caller: string;
   policy: string; asset: number; reduceOnly: boolean; size: string; price: string; recipient: string; amount: string }
 /** Require successful final callback, exact caller/ABI args, unique policy events and matching digest. */
-export function parseLifecycleReceipt(raw: unknown, hash: string, expected: ExpectedCall) {
+export function parseLifecycleReceipt(raw: unknown, hash: string, expected: ExpectedCall, network: Network = 'testnet') {
   const receipt = z.object({ id: z.string(), block_hash: z.string(), outcome: z.object({ executor_id: z.string(),
     status: z.record(z.string(), z.unknown()), logs: z.array(z.string()) }) });
   const tx = z.object({ final_execution_status: z.literal('FINAL'), status: z.object({ SuccessValue: z.literal('dHJ1ZQ==') }).strict(),
@@ -91,30 +101,35 @@ export function parseLifecycleReceipt(raw: unknown, hash: string, expected: Expe
         data: z.array(z.unknown()).length(1) }).parse(JSON.parse(l.slice(11))) })));
   const requests = events.filter(e => e.event.event === 'request'), signatures = events.filter(e => e.event.event === 'signature');
   if (requests.length !== 1 || signatures.length !== 1) throw new Error('Contract needs one request and one signature');
-  const req = z.object({ id: decUint, caller: z.literal(expected.caller), kind: z.literal(expected.method === 'request_usd_class_transfer' ? 'UsdClassTransfer' : expected.method === 'request_evm_withdrawal' ? 'EvmWithdrawal' : expected.reduceOnly ? 'Reduce' : 'Increase'),
+  const req = z.object({ id: decUint, caller: z.literal(expected.caller), kind: z.literal(['set_paused', 'request_next_invalidation'].includes(expected.method) ? 'Invalidation' : expected.method === 'request_usd_class_transfer' ? 'UsdClassTransfer' : expected.method === 'request_evm_withdrawal' ? 'EvmWithdrawal' : expected.reduceOnly ? 'Reduce' : 'Increase'),
     digest: z.string().regex(/^[0-9a-f]{64}$/), payload: z.object({ action: z.unknown(), nonce: uint, expiresAfter: uint.nullable().optional() }).strict() }).parse(requests[0]!.event.data[0]);
   const sig = z.object({ id: decUint, nonce: decUint, expiresAfter: decUint.nullable(), signature: z.unknown() }).parse(signatures[0]!.event.data[0]);
   if (req.id !== sig.id || req.payload.nonce !== sig.nonce || (req.payload.expiresAfter ?? null) !== sig.expiresAfter ||
     signatures[0]!.receipt.outcome.status.SuccessValue !== 'dHJ1ZQ==') throw new Error('Contract callback operation/nonce/expiry mismatch');
   let input: SigningInput;
-  if (expected.method === 'request_order_signature') {
+  if (expected.method === 'set_paused' || expected.method === 'request_next_invalidation') {
+    const action = z.object({ type: z.literal('noop') }).strict().parse(req.payload.action);
+    const expiresAfter = uint.parse(req.payload.expiresAfter);
+    if (expiresAfter <= req.payload.nonce || expiresAfter - req.payload.nonce > 172_800_001) throw new Error('Contract invalidation expiry exceeds original replay window');
+    input = { scheme: 'l1', network, action, nonce: req.payload.nonce, expiresAfter };
+  } else if (expected.method === 'request_order_signature') {
     const action = z.object({ type: z.literal('order'), grouping: z.literal('na'), orders: z.array(z.object({
       a: z.literal(expected.asset), b: z.literal(expected.reduceOnly), r: z.literal(expected.reduceOnly),
       p: z.literal(expected.price), s: z.literal(expected.size), t: z.object({ limit: z.object({ tif: z.literal('Ioc') }).strict() }).strict(),
     }).strict()).length(1) }).strict().parse(req.payload.action);
     const expiry = uint.parse(req.payload.expiresAfter);
     if (expiry <= req.payload.nonce || expiry - req.payload.nonce > 60000) throw new Error('Contract order expiry exceeds 60s');
-    input = { scheme: 'l1', network: 'testnet', action, nonce: req.payload.nonce, expiresAfter: expiry };
+    input = { scheme: 'l1', network, action, nonce: req.payload.nonce, expiresAfter: expiry };
   } else if (expected.method === 'request_usd_class_transfer') {
     const action = z.object({ type: z.literal('usdClassTransfer'), amount: z.literal(expected.amount), toPerp: z.literal(true),
-      nonce: z.literal(req.payload.nonce), hyperliquidChain: z.literal('Testnet'), signatureChainId: z.literal('0x66eee') }).strict().parse(req.payload.action);
+      nonce: z.literal(req.payload.nonce), hyperliquidChain: z.literal(network === 'mainnet' ? 'Mainnet' : 'Testnet'), signatureChainId: z.literal('0x66eee') }).strict().parse(req.payload.action);
     if (req.payload.expiresAfter != null) throw new Error('Contract usdClassTransfer must not have expiresAfter');
-    input = { scheme: 'user', network: 'testnet', action: { type: 'usdClassTransfer', amount: action.amount, toPerp: action.toPerp, nonce: action.nonce } };
+    input = { scheme: 'user', network, action: { type: 'usdClassTransfer', amount: action.amount, toPerp: action.toPerp, nonce: action.nonce } };
   } else {
     const action = z.object({ type: z.literal('withdraw3'), destination: z.literal(expected.recipient), amount: z.literal(expected.amount),
-      time: z.literal(req.payload.nonce), hyperliquidChain: z.literal('Testnet'), signatureChainId: z.literal('0x66eee') }).strict().parse(req.payload.action);
+      time: z.literal(req.payload.nonce), hyperliquidChain: z.literal(network === 'mainnet' ? 'Mainnet' : 'Testnet'), signatureChainId: z.literal('0x66eee') }).strict().parse(req.payload.action);
     if (req.payload.expiresAfter != null) throw new Error('Contract withdraw3 must not have expiresAfter');
-    input = { scheme: 'user', network: 'testnet', action: { type: 'withdraw3', destination: action.destination, amount: action.amount, time: action.time } };
+    input = { scheme: 'user', network, action: { type: 'withdraw3', destination: action.destination, amount: action.amount, time: action.time } };
   }
   const digest = getSigningDigest(input);
   if (digest.slice(2) !== req.digest) throw new Error('Contract lifecycle digest mismatch');

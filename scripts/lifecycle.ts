@@ -1,3 +1,4 @@
+import { mainnetLifecycle } from './mainnet-lifecycle.js';
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline/promises';
 import { pathToFileURL } from 'node:url';
@@ -119,6 +120,8 @@ async function snapshot(address: string) {
     account: parseAccount(clearinghouseState), fills: parseFills(userFills) };
 }
 export async function lifecycle(argv: string[]) {
+  if (argv.some(arg => arg === '--network=mainnet')) return mainnetLifecycle(argv);
+  argv = argv.filter(arg => arg !== '--network=testnet');
   const options = parseOptions(argv, ['step', 'amount', 'plan', 'spot-tx', 'settle-tx', 'relay-tx', 'policy']);
   const policy = testnetAccount(options.policy ?? NEXT_POLICY);
   const v3 = policy === V3_POLICY;

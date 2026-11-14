@@ -3,9 +3,11 @@ import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { base58 } from '@scure/base';
 import { keccak256, toHex, type Hex } from 'viem';
 import { z } from 'zod';
-import { SECP256K1_ORDER, validateSignature, type HyperliquidSignature } from './signing.js';
+import { SECP256K1_ORDER, validateSignature, type HyperliquidSignature, type Network } from './signing.js';
 
 export const TESTNET_SIGNER = 'v1.signer-prod.testnet';
+export const MAINNET_SIGNER = 'v1.signer';
+export const MAINNET_RPC = process.env.NEAR_MAINNET_RPC ?? 'https://rpc.mainnet.near.org';
 // Override with NEAR_TESTNET_RPC (e.g. https://test.rpc.fastnear.com) when the public endpoint rate-limits.
 export const TESTNET_RPC = process.env.NEAR_TESTNET_RPC ?? 'https://rpc.testnet.near.org';
 export function nearPublicKeyToHex(publicKey: string): Hex {
@@ -32,10 +34,10 @@ export function deriveEvmAddress(rootPublicKey: string, predecessor: string, pat
   const publicKey = toHex(derived.toBytes(false));
   return { address: publicKeyToEvmAddress(publicKey), publicKey };
 }
-export async function testnetView(method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string): Promise<{ value: string; blockHeight: number; blockHash: string }> {
-  const response = await fetch(TESTNET_RPC, { method: 'POST', headers: { 'content-type': 'application/json' },
+export async function chainSignatureView(network: Network, method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string): Promise<{ value: string; blockHeight: number; blockHash: string }> {
+  const response = await fetch(network === 'mainnet' ? MAINNET_RPC : TESTNET_RPC, { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 'counterweight-public-view', method: 'query', params: {
-      request_type: 'call_function', ...(blockHash === undefined ? { finality: 'final' } : { block_id: blockHash }), account_id: TESTNET_SIGNER, method_name: method,
+      request_type: 'call_function', ...(blockHash === undefined ? { finality: 'final' } : { block_id: blockHash }), account_id: network === 'mainnet' ? MAINNET_SIGNER : TESTNET_SIGNER, method_name: method,
       args_base64: Buffer.from(JSON.stringify(args)).toString('base64'),
     } }), signal: AbortSignal.timeout(25_000) });
   if (!response.ok) throw new Error(`NEAR RPC HTTP ${response.status}`);
@@ -45,12 +47,18 @@ export async function testnetView(method: 'public_key' | 'derived_public_key', a
   return { value: z.string().parse(JSON.parse(Buffer.from(result.data.result.result).toString('utf8'))),
     blockHeight: result.data.result.block_height, blockHash: result.data.result.block_hash };
 }
-export async function deriveTestnetAddress(predecessor: string, path: string) {
-  const root = await testnetView('public_key', { domain_id: 0 });
+export function testnetView(method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string) {
+  return chainSignatureView('testnet', method, args, blockHash);
+}
+export async function deriveAddress(network: Network, predecessor: string, path: string) {
+  const root = await chainSignatureView(network, 'public_key', { domain_id: 0 });
   const derived = deriveEvmAddress(root.value, predecessor, path);
-  const remote = await testnetView('derived_public_key', { predecessor, path, domain_id: 0 }, root.blockHash);
+  const remote = await chainSignatureView(network, 'derived_public_key', { predecessor, path, domain_id: 0 }, root.blockHash);
   if (nearPublicKeyToHex(remote.value).toLowerCase() !== derived.publicKey.toLowerCase()) throw new Error('Local derivation disagrees with MPC view');
   return { ...derived, rootPublicKey: root.value, rootBlockHeight: root.blockHeight, derivedBlockHeight: remote.blockHeight };
+}
+export function deriveTestnetAddress(predecessor: string, path: string) {
+  return deriveAddress('testnet', predecessor, path);
 }
 const mpcSchema = z.object({
   scheme: z.literal('Secp256k1').optional(),

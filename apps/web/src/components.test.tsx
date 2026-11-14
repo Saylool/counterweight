@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import App, { ContractPanel, LifecycleTable, V3DemoResults } from "./App";
+import { MainnetLifecycle, mainnetProof } from "./mainnet";
 import { readFileSync } from "node:fs";
 import { lifecycleSchema, v3DemoSchema } from "./model";
 import { Architecture, Chart, ContractLimit, Notice, ResourceState, Stat } from "./components";
@@ -21,13 +22,13 @@ describe("read-only presentation", () => {
   });
   it("renders the product headline and all navigation sections", () => {
     const html = renderToStaticMarkup(<App />);
-    expect(html).toContain("Funded testnet.");
+    expect(html).toContain("Executed on mainnet.");
     expect(html.match(/<h1>(.*?)<\/h1>/)?.[1]?.replace(/<[^>]+>/g, ""))
-      .toBe("Funded testnet.Keyless policy.");
-    for (const id of ["lifecycle", "live", "evidence", "market", "results", "demo"])
+      .toBe("Executed on mainnet.Keyless policy.");
+    for (const id of ["mainnet", "lifecycle", "live", "evidence", "market", "results", "demo"])
       expect(html).toContain(`id="${id}"`);
     expect(html).toContain(
-      "Testnet prototype. Not a fund, not investment advice.",
+      "V4 mainnet lifecycle · v1–v3 testnet. Unaudited prototype.",
     );
   });
   it("keeps v3 as default and puts the false-mark warning beside the v3 exit cap", () => {
@@ -117,6 +118,26 @@ describe("read-only presentation", () => {
       renderToStaticMarkup(<Chart title="Empty" note="" lines={[]} />),
     ).toContain("No comparable observations");
   });
+});
+
+it("separates the mainnet proof and its limits from historical testnet inspection", () => {
+  const html = renderToStaticMarkup(<MainnetLifecycle />);
+  for (const link of [
+    `https://nearblocks.io/address/${mainnetProof.account}#keys`,
+    `https://nearblocks.io/txns/${mainnetProof.open.near}`,
+    `https://nearblocks.io/txns/${mainnetProof.close.near}`,
+    `https://app.hyperliquid.xyz/explorer/tx/${mainnetProof.open.venue}`,
+    `https://app.hyperliquid.xyz/explorer/tx/${mainnetProof.close.venue}`,
+    `https://arbiscan.io/tx/${mainnetProof.arrival}`,
+    "evidence/2026-11-14-v4-mainnet-lifecycle-summary.md",
+    "data/lifecycle-v4.json",
+  ]) expect(html).toContain(link);
+  for (const text of ["0 access keys", "3.6 NEAR @ 3.3241", "3.6 NEAR @ 3.3248", "17.886709 native USDC", "18.886709 gross", "owner-supervised", "unaudited", "no autonomous mainnet keeper", "does not continuously monitor mainnet", "Three tooling stops", "no order sent", "expired and was settled", "Unauthenticated exit marks", "v1–v3 below are testnet"])
+    expect(html).toContain(text);
+  expect(html).not.toContain("testnet.nearblocks.io");
+  expect(html).not.toContain("hyperliquid-testnet.xyz");
+  const app = renderToStaticMarkup(<App />);
+  expect(app.indexOf('id="mainnet"')).toBeLessThan(app.indexOf('id="lifecycle"'));
 });
 
 it("renders v3's supervised open/close/settlement without borrowing v2 withdrawal claims", () => {

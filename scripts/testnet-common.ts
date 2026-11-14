@@ -53,8 +53,8 @@ export function txHash(value: string) {
     throw new Error('Expected a base58 NEAR transaction hash');
   return value;
 }
-export async function committedWasm(wasm = WASM) {
-  const [bytes, manifest] = await Promise.all([readFile(wasm), readFile('contracts/policy/artifacts/SHA256SUMS', 'utf8')]);
+export async function committedWasm(wasm = WASM, manifestPath = 'contracts/policy/artifacts/SHA256SUMS') {
+  const [bytes, manifest] = await Promise.all([readFile(wasm), readFile(manifestPath, 'utf8')]);
   const filename = wasm.replace(/^contracts\/policy\//, '');
   const expected = manifest.split('\n').find(line => line.endsWith(`  ${filename}`))?.split('  ')[0];
   const sha256 = createHash('sha256').update(bytes).digest('hex');
