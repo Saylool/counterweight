@@ -45,7 +45,7 @@ export const XProof:React.FC<{scene:Scene;seconds:number}>=({scene,seconds})=>{
    <div style={{display:'flex',gap:22,alignItems:'center',fontSize:37,marginBottom:24,color:green}}>
     <div style={{padding:'12px 24px',border:'1px solid #61784b',borderRadius:12}}>NEAR holdings</div><span>+</span><div style={{padding:'12px 24px',border:'1px solid #61784b',borderRadius:12}}>short hedge</div>
    </div>
-   <div style={{fontFamily:mono,color:muted,fontSize:23,marginBottom:20}}>policy-v2.counterweight-samet.testnet</div>
+   <div style={{fontFamily:mono,color:muted,fontSize:23,marginBottom:20}}>TESTNET HISTORY · policy-v2.counterweight-samet.testnet</div>
    {cards.map((beat,i)=>{
     const entrance=Math.max(0,Math.min(1,(t-hookRevealAt[i]!)/.4));
     const focus=Math.min(2,Math.max(0,hookRevealAt.filter(at=>t>=at).length-1))===i;
@@ -103,6 +103,25 @@ export const XWithdrawal:React.FC<{seconds:number}>=({seconds})=>{
   </>}
  </div>;
 };
+// Values and shortened transaction identifiers are copied from the saved,
+// read-only verified v4 lifecycle summary. Fill prices are execution prices.
+export const mainnetProofRows = [
+ {label:'KEYLESS POLICY',value:'cw4.haxheton.near · 0 keys',detail:'3.6 wNEAR custody'},
+ {label:'OPEN SHORT',value:'3.6 NEAR @ 3.3241',detail:'HL 0xa768851a…'},
+ {label:'REDUCE-ONLY CLOSE',value:'3.6 @ 3.3248',detail:'HL 0x2fad11ed…'},
+ {label:'ARBITRUM ONE',value:'17.886709 native USDC',detail:'0x6a6ff973…'},
+];
+export const XMainnet:React.FC=()=> <div data-mainnet-proof="v4" style={{position:'absolute',left:90,top:150,width:1740,height:688,padding:'24px 32px',boxSizing:'border-box',border:`2px solid ${amber}`,borderRadius:18,background:'#17201b'}}>
+ <div style={{fontSize:44,fontWeight:650,marginBottom:22}}>MAINNET · 14 Nov 2026 · policy v4</div>
+ <div style={{display:'flex',flexDirection:'column',gap:12}}>{mainnetProofRows.map(row=><div key={row.label} style={{display:'flex',alignItems:'center',gap:22,minHeight:94,padding:'8px 22px',boxSizing:'border-box',border:`1px solid ${green}`,borderRadius:14,background:'#0c1510'}}>
+  <div style={{width:320,fontSize:26,color:amber,flexShrink:0}}>{row.label}</div>
+  <div style={{flex:1,fontSize:38,color:green,fontWeight:650}}>{row.value}</div>
+  <div style={{fontFamily:mono,fontSize:26,color:muted,whiteSpace:'nowrap'}}>{row.detail}</div>
+ </div>)}</div>
+ <div style={{fontSize:27,color:green,marginTop:24}}>withdraw3 · spot returned · flat</div>
+ <div style={{fontSize:27,color:amber,marginTop:18}}>owner-supervised · one lifecycle · unaudited</div>
+ <div style={{fontSize:19,color:muted,marginTop:18}}>docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md</div>
+</div>;
 const OwnerLine:React.FC<{text:string}>=({text})=><>{text.split(/(nonce=\d+|\(unchanged\))/).map((part,i)=><span key={i} style={/^(nonce=|\(unchanged\))/.test(part)?{color:green,fontWeight:750,background:'#30432a',padding:'3px 5px',borderRadius:4}:undefined}>{part}</span>)}</>;
 export const XTerminal:React.FC<{scene:Scene;seconds:number;rows:VideoProps['terminal']}>=({scene,seconds,rows})=>{
  const f=useCurrentFrame(),{fps}=useVideoConfig(),rogue=scene.kind==='rogue',t=f/fps;

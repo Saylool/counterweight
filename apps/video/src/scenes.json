@@ -13,15 +13,16 @@
       "start": 0,
       "end": 8,
       "seconds": 8,
-      "visual": "Headline plus simple NEAR holdings + short hedge visual. Three outcome rows reveal once: 0 ACCESS KEYS / BOUNDED OPEN / REDUCE-ONLY FLAT with short transaction ids; fill prices belong in A3.",
+      "visual": "Headline plus simple NEAR holdings + short hedge visual. Three outcome rows reveal once: 0 ACCESS KEYS / BOUNDED OPEN / REDUCE-ONLY FLAT with short transaction ids; fill prices belong in A3. Badge: testnet history + mainnet 14 Nov. The policy-v2 proof rows remain explicitly labelled testnet history.",
       "voiceover": "Counterweight hedges NEAR holdings with a short, and a keyless NEAR policy limits what the keeper can sign. Recorded on Hyperliquid testnet.",
       "caption": "Automate a NEAR hedge. Bound keeper authority.",
       "kind": "proof",
-      "badge": "Recorded Hyperliquid testnet run",
+      "badge": "testnet history + mainnet 14 Nov",
       "shots": [],
       "claims": [
         "keys",
-        "fills"
+        "fills",
+        "mainnetV4"
       ]
     },
     {
@@ -55,7 +56,7 @@
       "voiceover": "The owner funded the account, then deleted the policy's access keys. The keeper opened a 3.5 NEAR short and closed it reduce-only. The position is flat.",
       "caption": "Funded. Keyless. Short filled. Position flat.",
       "kind": "proof",
-      "badge": "RECORDED V2 · FUNDING PRECEDED KEY REMOVAL",
+      "badge": "RECORDED V2 · TESTNET · FUNDING PRECEDED KEY REMOVAL",
       "shots": [],
       "claims": [
         "funding",
@@ -119,18 +120,36 @@
       ]
     },
     {
+      "id": "A4M",
+      "cut": "x",
+      "number": "04-mainnet",
+      "title": "Mainnet lifecycle proof",
+      "start": 43,
+      "end": 50,
+      "seconds": 7,
+      "visual": "Full-width proof card titled MAINNET · 14 Nov 2026 · policy v4. Four rows: cw4.haxheton.near, 0 access keys and 3.6 wNEAR custody; open short 3.6 NEAR @ 3.3241, HL 0xa768851a…; reduce-only close 3.6 @ 3.3248, HL 0x2fad11ed…; 17.886709 native USDC on Arbitrum One, 0x6a6ff973…. Show withdraw3, spot returned and flat. Footer: owner-supervised · one lifecycle · unaudited. Cite docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md.",
+      "voiceover": "",
+      "caption": "On mainnet, keyless policy v4 held 3.6 wNEAR, opened and closed a real Hyperliquid short, and 17.886709 USDC arrived on Arbitrum One.",
+      "kind": "mainnet",
+      "badge": "MAINNET PROOF · OWNER-SUPERVISED · 14 NOV 2026",
+      "shots": [],
+      "claims": [
+        "mainnetV4"
+      ]
+    },
+    {
       "id": "A5",
       "cut": "x",
       "number": 5,
       "title": "Sandbox: Keeper Close",
-      "start": 43,
-      "end": 57,
+      "start": 50,
+      "end": 64,
       "seconds": 14,
       "visual": "Two large banner lines: Local simulation: +32.5% / 24h and Reduce-only close · owner nonce/balance unchanged. Preserve mocked signatures & fills. Narration-linked highlights: 003+010 during the setup, +32.499065% on 003 during the rally, 016 at the reduce-only close, then 036+050 at unchanged owner state. Use the same green nonce pill on 010 and 050; preserve source values and column headers.",
       "voiceover": "In a local simulation with the real policy WASM and mocked signatures, NEAR rallied thirty-two and a half percent in a day. The keeper closed the hedge reduce-only, and the owner's nonce and balance stayed unchanged.",
       "caption": "Local simulation: real WASM, mocked signatures/fills.",
       "kind": "keeper",
-      "badge": "LOCAL SIMULATION · REAL WASM · MOCKED SIGNATURES & FILLS",
+      "badge": "LOCAL SIMULATION · TESTNET HISTORY · REAL WASM · MOCKED SIGNATURES & FILLS",
       "shots": [],
       "claims": [
         "rally",
@@ -143,14 +162,14 @@
       "cut": "x",
       "number": 6,
       "title": "Rogue-Keeper Kill-Shot",
-      "start": 57,
-      "end": 72,
+      "start": 64,
+      "end": 79,
       "seconds": 15,
       "visual": "Keep 7/7 tested cases large. Highlight only increase beyond caps during oversized shorts and withdraw to rogue during rogue withdrawals; dim all other rows. At recovery emphasise the +601s row. Separate the early DEAD-MAN timeout check from the seven requests; preserve original line numbers and mocked-signature scope.",
       "voiceover": "Seven tested unauthorized requests, from oversized shorts to rogue withdrawals, were all rejected. After a timeout, the policy allows recovery; that signature was mocked.",
       "caption": "7/7 tested rogue requests rejected.",
       "kind": "rogue",
-      "badge": "LOCAL SIMULATION · REAL WASM · MOCKED SIGNATURES & FILLS",
+      "badge": "LOCAL SIMULATION · TESTNET HISTORY · REAL WASM · MOCKED SIGNATURES & FILLS",
       "shots": [],
       "claims": [
         "attacks",
@@ -163,17 +182,17 @@
       "cut": "x",
       "number": 7,
       "title": "End Card",
-      "start": 72,
-      "end": 80,
+      "start": 79,
+      "end": 87,
       "seconds": 8,
-      "visual": "Code + recorded testnet evidence with enlarged repo URL. Restore npm ci && npm test && npm run demo:local in small type below it. Remove the policy address; retain prototype and trust limitations. Reveal the full card within 0.3s and hold it at least three seconds. Sentence-per-page subtitles.",
+      "visual": "Code + mainnet proof and testnet history with enlarged repository link, https://saylool.github.io/counterweight/ and npm run verify:mainnet. Retain npm ci && npm test && npm run demo:local in small type. Owner-supervised, one mainnet lifecycle, unaudited. Reveal the full card within 0.3s and hold it at least three seconds. Balanced sentence/clause subtitle pages.",
       "voiceover": "Counterweight is a supervised testnet prototype, built at NEAR HACKATHON. Run the local demo and check the testnet evidence yourself.",
       "caption": "Run local demo. Check testnet evidence.",
       "kind": "end",
       "badge": "BUILT AT NEAR HACKATHON",
       "shots": [],
       "claims": [
-        "versions"
+        "mainnetV4"
       ]
     },
     {
@@ -1009,6 +1028,19 @@
         "3.3788",
         "3.3796",
         "zero"
+      ]
+    },
+    "mainnetV4": {
+      "anchor": "20 USDC spot→perps; 3.6 wNEAR custody; short 3.6 @ 3.3241; reduce-only close 3.6 @ 3.3248",
+      "evidence": "docs/evidence/2026-11-14-v4-mainnet-lifecycle-summary.md",
+      "spoken": [
+        "v4",
+        "3.6",
+        "eighteen",
+        "one",
+        "fourteenth",
+        "November fourteenth",
+        "17.886709"
       ]
     }
   },

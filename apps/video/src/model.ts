@@ -16,15 +16,15 @@ export const wordCount = (text: string) => text.split(/\s+/).filter(word => /[\p
 export const hookHeadline = 'Automate a NEAR hedge. Limit what the keeper can sign.';
 export const keeperRevealOrder = [3, 10, 16, 36, 50];
 export const textBand = (scene: Scene, subtitles: boolean, elapsed: number, seconds: number, speechSeconds = seconds - .4) => {
-  if (!subtitles) return scene.caption;
+  if (!subtitles && scene.voiceover) return scene.caption;
   const cues = subtitleSchedule(scene, seconds, speechSeconds);
   return cues.find(cue => elapsed < cue.end)?.text ?? cues.at(-1)!.text;
 };
 export function timeline(cut: Cut, audio: VideoProps['audio'] = {}) {
   let from = 0;
   return scenes.filter(scene => scene.cut === cut).map(scene => {
-    const entry = audio[scene.id];
-    const durationInFrames = Math.ceil(Math.max(scene.seconds, entry ? entry.seconds + 0.4 : wordCount(scene.voiceover) / 2.5 + 0.6) * FPS);
+    const entry = scene.voiceover ? audio[scene.id] : undefined;
+    const durationInFrames = Math.ceil((scene.voiceover ? Math.max(scene.seconds, entry ? entry.seconds + 0.4 : wordCount(scene.voiceover) / 2.5 + 0.6) : scene.seconds) * FPS);
     const row = {scene, from, durationInFrames};
     from += durationInFrames;
     return row;
@@ -38,12 +38,15 @@ export const xSubtitlePages: Record<string, string[]> = {
   A2: ["Counterweight puts a keyless NEAR policy contract between the keeper and the exchange.", "The keeper proposes an order,", "the contract checks its bounds,", "and NEAR Chain Signatures sign it for Hyperliquid."],
   A3: ["The owner funded the account,", "then deleted the policy's access keys.", "The keeper opened a 3.5 NEAR short", "and closed it reduce-only. The position is flat."],
   A4: ["The v2 run withdrew nearly forty-seven USDC net, and it arrived.", "On November twelfth, a separate keyless v3 opened and closed a live testnet short."],
+  A4M: ["On mainnet, keyless policy v4 held 3.6 wNEAR,", "opened and closed a real Hyperliquid short,", "and 17.886709 USDC arrived on Arbitrum One."],
   A5: ["In a local simulation with the real policy WASM and mocked signatures,", "NEAR rallied thirty-two and a half percent in a day.", "The keeper closed the hedge reduce-only,", "and the owner's nonce and balance stayed unchanged."],
   A6: ["Seven tested unauthorized requests,", "from oversized shorts to rogue withdrawals, were all rejected.", "After a timeout, the policy allows recovery; that signature was mocked."],
   A7: ["Counterweight is a supervised testnet prototype, built at NEAR HACKATHON.", "Run the local demo and check the testnet evidence yourself."],
 };
+// An empty voiceover marks an intentionally silent visual card; its caption is paged instead.
+export const subtitleText = (scene: Scene) => scene.voiceover || scene.caption;
 export function subtitleCues(text: string) {
-  const scene = scenes.find(s => s.cut === 'x' && s.voiceover === text);
+  const scene = scenes.find(s => s.cut === 'x' && subtitleText(s) === text);
   if (scene) return xSubtitlePages[scene.id]!;
   // Archived Judge uses sentence/clause boundaries, then bounded word groups.
   return text.split(/(?<=[,;.!?])\s+/).flatMap(clause => {
@@ -60,13 +63,14 @@ export function narrationAt(id: string, phrase: string, seconds: number) {
   return wordCount(text.slice(0, index)) / wordCount(text) * Math.max(0, seconds - .4);
 }
 export function subtitleSchedule(scene: Scene, seconds: number, speechSeconds = seconds - .4) {
-  const pages = subtitleCues(scene.voiceover);
+  const text = subtitleText(scene);
+  const pages = subtitleCues(text);
   const minimum = scene.cut === 'x' ? 2 : 0;
   if (seconds < pages.length * minimum) throw new Error(`Scene ${scene.id} cannot fit readable subtitle pages`);
   let words = 0;
   const boundaries = [0, ...pages.slice(0, -1).map(page => {
     words += wordCount(page);
-    return words / wordCount(scene.voiceover) * speechSeconds;
+    return words / wordCount(text) * (scene.voiceover ? speechSeconds : seconds);
   }), seconds];
   // Keep natural word boundaries where possible. Borrow time from adjacent pages
   // for short clauses, without leaving a last-page caveat to flash at the end.

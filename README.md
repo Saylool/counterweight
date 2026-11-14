@@ -21,7 +21,7 @@ Owner-supervised, tiny size, one lifecycle; unaudited, no autonomous mainnet kee
 
 Bounded trading via **NEAR Chain Signatures** (`v1.signer`); fixed withdrawal recipients. Trusted marks remain risky. [Claims](docs/CLAIMS.md) · [Known issues](docs/KNOWN-ISSUES.md).
 
-[Watch the historical testnet demo](docs/media/counterweight-demo.mp4) · 94 seconds, voiced and subtitled.
+[Watch the demo](docs/media/counterweight-demo.mp4) · 101 seconds, subtitled: testnet history plus the 14 Nov mainnet proof card.
 
 **Try locally:** Node >=22.19.0; macOS arm64/Linux x64. Install online; tests/demo offline with mocked MPC/venue inputs:
 

@@ -56,7 +56,7 @@ export async function prepare(cut:Cut, subtitles=false) {
   const raw=await readFile(path.join(ROOT,'reports/demo-local.json'),'utf8');
   const terminal=transcript(raw).map((text,i)=>({number:i+1,text}));
   const audio:VideoProps['audio']={};
-  for(const scene of scenes.filter(s=>s.cut===cut)) {
+  for(const scene of scenes.filter(s=>s.cut===cut && s.voiceover)) {
     const name=String(scene.number).padStart(2,'0')+'.mp3';
     const from=path.join(ROOT,'videos/vo',cut,name);
     if(!existsSync(from))continue;
@@ -64,9 +64,6 @@ export async function prepare(cut:Cut, subtitles=false) {
     await mkdir(path.join(publicDir,'vo',cut),{recursive:true});await copyFile(from,path.join(publicDir,src));
     audio[scene.id]={seconds,src};
     assets[src]=createHash('sha256').update(await readFile(from)).digest('hex');
-  }
-  if(Object.keys(audio).length){
-    await run('ffmpeg',['-hide_banner','-loglevel','error','-y','-f','lavfi','-i','sine=frequency=1250:duration=0.06:sample_rate=48000','-af','afade=t=out:st=0:d=0.06,apad=pad_dur=0.34,loudnorm=I=-24:TP=-8:LRA=1','-c:a','pcm_s16le',path.join(publicDir,'tick.wav')],{capture:true});
   }
   let repoUrl=process.env.VIDEO_REPO_URL?.trim()||(cut==='x'?'https://github.com/Saylool/counterweight':placeholder);
   if(repoUrl!==placeholder) {
