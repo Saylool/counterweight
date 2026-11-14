@@ -1,0 +1,82 @@
+{
+  "network": "mainnet",
+  "plan": "docs/evidence/policy-v4-mainnet-plan.json",
+  "createdAt": 1794662022070,
+  "expected": {
+    "method": "request_order_signature",
+    "args": {
+      "order": {
+        "asset_index": 74,
+        "size": "3600000000000000000000000",
+        "reduce_only": true,
+        "reference_price": "3322200",
+        "observed_at": "1794662020"
+      }
+    },
+    "caller": "keeper4.haxheton.near",
+    "policy": "cw4.haxheton.near",
+    "asset": 74,
+    "reduceOnly": true,
+    "size": "3.6",
+    "price": "3.3554",
+    "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+    "amount": "0"
+  },
+  "address": "0xb6a1d45ba9154067b7981e2b4b676393c75b0d26",
+  "codeHash": "3fCQcNC7KLrfQzYdfQnfbkdpxzfvDp1whUCJqDmk4ivc",
+  "before": {
+    "clearing": {
+      "marginSummary": {
+        "accountValue": "20.001455",
+        "totalNtlPos": "11.95992",
+        "totalRawUsd": "31.961375",
+        "totalMarginUsed": "1.195992"
+      },
+      "crossMarginSummary": {
+        "accountValue": "20.001455",
+        "totalNtlPos": "11.95992",
+        "totalRawUsd": "31.961375",
+        "totalMarginUsed": "1.195992"
+      },
+      "crossMaintenanceMarginUsed": "0.597996",
+      "withdrawable": "18.805463",
+      "assetPositions": [
+        {
+          "type": "oneWay",
+          "position": {
+            "coin": "NEAR",
+            "szi": "-3.6",
+            "leverage": {
+              "type": "cross",
+              "value": 10
+            },
+            "entryPx": "3.3241",
+            "positionValue": "11.95992",
+            "unrealizedPnl": "0.00684",
+            "returnOnEquity": "0.0057158329",
+            "liquidationPx": "8.4553902116",
+            "marginUsed": "1.195992",
+            "maxLeverage": 10,
+            "cumFunding": {
+              "allTime": "0.0",
+              "sinceOpen": "0.0",
+              "sinceChange": "0.0"
+            }
+          }
+        }
+      ],
+      "time": 1794662021787
+    },
+    "spot": {
+      "balances": [
+        {
+          "coin": "USDC",
+          "token": 0,
+          "total": "1.0",
+          "hold": "0.0",
+          "entryNtl": "0.0"
+        }
+      ]
+    }
+  }
+}

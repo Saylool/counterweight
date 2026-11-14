@@ -1,0 +1,39 @@
+{
+  "account": "policy.counterweight-samet.testnet",
+  "network": "testnet",
+  "finalizedBlock": {
+    "hash": "4BP9AaptiMYuzghzSN5ZFTU1sQ9SGEv8vkLNmdJuoF5B",
+    "height": 277053814
+  },
+  "checks": [
+    {
+      "check": "code hash",
+      "ok": false,
+      "details": "NEAR RPC UNKNOWN_ACCOUNT"
+    },
+    {
+      "check": "access keys",
+      "ok": false,
+      "details": "Account existence unavailable; an empty key list would not establish keyless custody"
+    },
+    {
+      "check": "get_state config and current state",
+      "ok": false,
+      "details": "NEAR RPC UNKNOWN_ACCOUNT"
+    },
+    {
+      "check": "policy-derived Hyperliquid address",
+      "ok": true,
+      "details": {
+        "predecessor": "policy.counterweight-samet.testnet",
+        "path": "counterweight-1",
+        "address": "0xaa640b1c7b3ac37db14d2705eaeceeb42d91eb0c",
+        "publicKey": "0x047b1ef1e3374ab7f0c29bfda9c9a851ebd0618796a7d4b8a6ec4aed36a3e6c0e87f06f05c05c325a92b544a6aff3c19727191a14b4170ebf1450b559a7a5b9d66",
+        "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+        "rootBlockHeight": 277053831,
+        "derivedBlockHeight": 277053831,
+        "note": "Local public derivation agrees with signer view at the root block. This is not a signature or fill proof."
+      }
+    }
+  ]
+}

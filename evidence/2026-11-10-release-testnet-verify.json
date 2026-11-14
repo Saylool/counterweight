@@ -1,0 +1,132 @@
+{
+  "account": "policy-v2.counterweight-samet.testnet",
+  "network": "testnet",
+  "finalizedBlock": {
+    "hash": "9yjsMMyXY1wwxUPskmefHW6bU74L7nAMFJNSTEHjvKQP",
+    "height": 277099608
+  },
+  "checks": [
+    {
+      "check": "code hash",
+      "ok": true,
+      "details": {
+        "committedSha256": "1bb1cc572586154d39d0931ebdc097b06b5a91bf54bb97be1a8d8238deb08a7a",
+        "expectedBase58": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M",
+        "actualBase58": "2s7Fhgf2cFHEWCHv7d7zwwMUmiPrbDEvbFVTPcbTfp2M"
+      }
+    },
+    {
+      "check": "access keys",
+      "ok": true,
+      "details": {
+        "ok": true,
+        "expected": "zero access keys",
+        "keys": []
+      }
+    },
+    {
+      "check": "get_state config and current state",
+      "ok": true,
+      "details": {
+        "recipientMatches": true,
+        "matchesPlan": true,
+        "state": {
+          "owner": "counterweight-samet.testnet",
+          "keeper": "keeper.counterweight-samet.testnet",
+          "coin": "NEAR",
+          "signer_account": "v1.signer-prod.testnet",
+          "wnear_account": "wrap.testnet",
+          "near_recipient": "counterweight-samet.testnet",
+          "derivation_path": "counterweight-1",
+          "evm_recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+          "asset_index": 54,
+          "size_decimals": 1,
+          "limits": {
+            "max_short_size": "5000000000000000000000000",
+            "per_order_notional_cap": "20000000",
+            "per_day_notional_cap": "40000000",
+            "cooldown_seconds": 60,
+            "price_band_bps": 100,
+            "price_max_age_seconds": 60
+          },
+          "spot_balance": "4000000000000000000000000",
+          "signed_short_size": "0",
+          "paused": false,
+          "pending": null,
+          "signing_limits": {
+            "keeper_per_block": 2,
+            "keeper_per_window": 8,
+            "keeper_outstanding": 8,
+            "owner_per_window": 16,
+            "window_ms": 60000,
+            "max_nonce_ahead_ms": 1000
+          },
+          "mpc_fee": "1",
+          "signer_gas_tgas": 230,
+          "callback_gas_tgas": 30,
+          "heartbeat_timeout_seconds": 3600,
+          "keeper_weight_limit": "5000",
+          "network": "Testnet",
+          "oracle": {
+            "account_id": null,
+            "feed_id": "c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750",
+            "max_age_seconds": 60,
+            "max_confidence_bps": 100,
+            "min_price": "2784560",
+            "max_price": "4176840"
+          },
+          "oracle_price": "0",
+          "oracle_timestamp": "0",
+          "daily_usage": "12408204",
+          "usage_day": 20767,
+          "operation_id": "4",
+          "last_keeper_heartbeat": "1794331679",
+          "reference_price": "3528000",
+          "reference_price_timestamp": "1794331854",
+          "last_nonce": "1794331863418",
+          "outstanding": [
+            {
+              "nonce": 1794331472735,
+              "expires_after": 1794504272736,
+              "keeper": false,
+              "discarded": false,
+              "invalidation_requested": false,
+              "invalidation_signed": false,
+              "invalidation_confirmed": false,
+              "withdrawal": false
+            },
+            {
+              "nonce": 1794331863418,
+              "expires_after": 1794504663419,
+              "keeper": false,
+              "discarded": false,
+              "invalidation_requested": false,
+              "invalidation_signed": false,
+              "invalidation_confirmed": false,
+              "withdrawal": true
+            }
+          ],
+          "pause_complete": true,
+          "lifetime_opened": "3500000000000000000000000",
+          "last_open_expiry": "1794331682790",
+          "keeper_weight_used": "10"
+        },
+        "note": "Identity, current venue metadata and plan baseline limits/resources checked. Mutable config drift fails this baseline check; inspect current state against owner intent. Use --owner-evm=0x... to assert your immutable EVM recipient."
+      }
+    },
+    {
+      "check": "policy-derived Hyperliquid address",
+      "ok": true,
+      "details": {
+        "predecessor": "policy-v2.counterweight-samet.testnet",
+        "path": "counterweight-1",
+        "address": "0x3e72c8963761c3f436710df9b891d8e3a74b5390",
+        "publicKey": "0x04e210798f654d841d6e293d3570b677355ce719a980076589a327dd8a80e38e8b8b26163cd2cff359c1417eb8766d6f752473a42f31a6bff36d3fa6b8645349d2",
+        "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+        "rootBlockHeight": 277099609,
+        "derivedBlockHeight": 277099609,
+        "note": "Local public derivation agrees with signer view at the root block. This is not a signature or fill proof."
+      }
+    }
+  ]
+}

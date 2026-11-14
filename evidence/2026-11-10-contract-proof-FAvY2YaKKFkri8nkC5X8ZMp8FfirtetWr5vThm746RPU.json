@@ -1,0 +1,247 @@
+{
+  "capturedAt": "2026-11-10T10:37:02.354Z",
+  "kind": "policy-contract-mpc-rehearsal",
+  "notice": "REHEARSAL — policy account still had a full-access key; not the final keyless proof",
+  "rehearsal": true,
+  "expectedSha256": "698195e3c6b785274055a3cc607251b9598e2fa166c1e20c4d99c28a8822d289",
+  "committedSha256": "e8bfa3d5e93c2ea85bd99be5b71a97508a90046f79b9d00aab34b2e9f0d6c48a",
+  "txHash": "FAvY2YaKKFkri8nkC5X8ZMp8FfirtetWr5vThm746RPU",
+  "predecessor": "policy.counterweight-samet.testnet",
+  "path": "counterweight-1",
+  "derived": {
+    "address": "0xaa640b1c7b3ac37db14d2705eaeceeb42d91eb0c",
+    "publicKey": "0x047b1ef1e3374ab7f0c29bfda9c9a851ebd0618796a7d4b8a6ec4aed36a3e6c0e87f06f05c05c325a92b544a6aff3c19727191a14b4170ebf1450b559a7a5b9d66",
+    "rootPublicKey": "secp256k1:4NfTiv3UsGahebgTaHyD9vF8KYKMBnfd6kh94mK6xv8fGBiJB8TBtFMP5WWXz6B89Ac1fbpzPwAvoyQebemHFwx3",
+    "rootBlockHeight": 277056033,
+    "derivedBlockHeight": 277056033
+  },
+  "recovered": "0xaa640b1c7B3ac37DB14D2705eAECeeB42d91eb0C",
+  "input": {
+    "scheme": "l1",
+    "network": "testnet",
+    "action": {
+      "type": "cancel",
+      "cancels": [
+        {
+          "a": 54,
+          "o": 0
+        }
+      ]
+    },
+    "nonce": 1794307007731,
+    "expiresAfter": 1794307067731
+  },
+  "digest": "0x6ecfda44ae71e7509caf002d2d12d214ccb504ce053708b79c8da88429a74d27",
+  "signature": {
+    "r": "0xdec7a7945f05883c3bb654de94056f90cde44a85b2ef68d499657ac6834026e6",
+    "s": "0x0751dac4c7d080639a6a4cf423eaa3af960ce0b160cbd5951c62fb79117e7864",
+    "v": 27
+  },
+  "requestReceipt": {
+    "id": "F2qQCDoUsqKG4L83EiWFGWgZ9ieSBzEn19LS7WnybB87",
+    "block_hash": "BBUYCfxAkMCcAtAwoJVLJKMHm4J9t3DxCZMcdNUuiGiJ",
+    "outcome": {
+      "executor_id": "policy.counterweight-samet.testnet",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"request\",\"data\":[{\"id\":\"2\",\"caller\":\"keeper.counterweight-samet.testnet\",\"kind\":\"Cancel\",\"payload\":{\"action\":{\"type\":\"cancel\",\"cancels\":[{\"a\":54,\"o\":0}]},\"nonce\":1794307007731,\"expiresAfter\":1794307067731},\"digest\":\"6ecfda44ae71e7509caf002d2d12d214ccb504ce053708b79c8da88429a74d27\",\"digest_implementation\":\"HYPERLIQUID_MSGPACK_EIP712_V1\"}]}"
+      ],
+      "status": {
+        "SuccessReceiptId": "7mZZWcse2gmE4EbCr11gwxnYGXaxQgXnmJ2tcSfcFC1D"
+      }
+    }
+  },
+  "signatureReceipt": {
+    "id": "7mZZWcse2gmE4EbCr11gwxnYGXaxQgXnmJ2tcSfcFC1D",
+    "block_hash": "x9a18ts5EUiSPPad5JJjNuP642aCsaDwXNjh7m9bq2N",
+    "outcome": {
+      "executor_id": "policy.counterweight-samet.testnet",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"counterweight\",\"version\":\"1.0.0\",\"event\":\"signature\",\"data\":[{\"id\":\"2\",\"nonce\":\"1794307007731\",\"expiresAfter\":\"1794307067731\",\"signature\":{\"big_r\":{\"affine_point\":\"03dec7a7945f05883c3bb654de94056f90cde44a85b2ef68d499657ac6834026e6\"},\"s\":{\"scalar\":\"0751dac4c7d080639a6a4cf423eaa3af960ce0b160cbd5951c62fb79117e7864\"},\"scheme\":\"Secp256k1\",\"recovery_id\":0}}]}"
+      ],
+      "status": {
+        "SuccessValue": "dHJ1ZQ=="
+      }
+    }
+  },
+  "checks": [
+    {
+      "block": "BBUYCfxAkMCcAtAwoJVLJKMHm4J9t3DxCZMcdNUuiGiJ",
+      "codeHash": "86rR2rWL6Qeo6cQuwcr5qNopvf17eE9dz5UmVo8UXRXW",
+      "accessKeys": [
+        {
+          "public_key": "ed25519:Drv27Uwd4m5pWoWkZPraCCkw3vva1c3sD17A31Zjyq1t",
+          "access_key": {
+            "permission": "FullAccess",
+            "nonce": 277054172000001
+          }
+        }
+      ],
+      "state": {
+        "owner": "counterweight-samet.testnet",
+        "keeper": "keeper.counterweight-samet.testnet",
+        "coin": "NEAR",
+        "signer_account": "v1.signer-prod.testnet",
+        "wnear_account": "wrap.testnet",
+        "near_recipient": "counterweight-samet.testnet",
+        "derivation_path": "counterweight-1",
+        "evm_recipient": "0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a",
+        "asset_index": 54,
+        "size_decimals": 1,
+        "limits": {
+          "max_short_size": "1000000000000000000000000",
+          "per_order_notional_cap": "10000000",
+          "per_day_notional_cap": "20000000",
+          "cooldown_seconds": 60,
+          "price_band_bps": 100,
+          "price_max_age_seconds": 60
+        },
+        "spot_balance": "0",
+        "signed_short_size": "0",
+        "paused": false,
+        "pending": {
+          "id": 2,
+          "kind": "Cancel",
+          "amount": "0",
+          "phase": "AwaitingCallback",
+          "nonce": 1794307007731,
+          "expires_after": 1794307067731,
+          "keeper": true,
+          "callback_deadline_ms": 1794307067731
+        },
+        "signing_limits": {
+          "keeper_per_block": 2,
+          "keeper_per_window": 8,
+          "keeper_outstanding": 8,
+          "owner_per_window": 16,
+          "window_ms": 60000,
+          "max_nonce_ahead_ms": 1000
+        },
+        "mpc_fee": "1",
+        "signer_gas_tgas": 230,
+        "callback_gas_tgas": 30,
+        "heartbeat_timeout_seconds": 3600,
+        "keeper_weight_limit": "5000",
+        "daily_usage": "0",
+        "usage_day": 20767,
+        "operation_id": "2",
+        "last_keeper_heartbeat": "1794305935",
+        "reference_price": "1000000",
+        "reference_price_timestamp": "1794305935",
+        "last_nonce": "1794307007731",
+        "outstanding": [
+          {
+            "nonce": 1794307007731,
+            "expires_after": 1794307067731,
+            "keeper": true,
+            "discarded": false,
+            "invalidation_requested": false,
+            "invalidation_signed": false,
+            "invalidation_confirmed": false,
+            "withdrawal": false
+          }
+        ],
+        "pause_complete": true,
+        "lifetime_opened": "0",
+        "last_open_expiry": "0",
+        "keeper_weight_used": "10"
+      }
+    },
+    {
+      "block": "x9a18ts5EUiSPPad5JJjNuP642aCsaDwXNjh7m9bq2N",
+      "codeHash": "86rR2rWL6Qeo6cQuwcr5qNopvf17eE9dz5UmVo8UXRXW",
+      "accessKeys": [
+        {
+          "public_key": "ed25519:Drv27Uwd4m5pWoWkZPraCCkw3vva1c3sD17A31Zjyq1t",
+          "access_key": {
+            "permission": "FullAccess",
+            "nonce": 277054172000001
+          }
+        }
+      ],
+      "state": {
+        "owner": "counterweight-samet.testnet",
+        "keeper": "keeper.counterweight-samet.testnet",
+        "coin": "NEAR",
+        "signer_account": "v1.signer-prod.testnet",
+        "wnear_account": "wrap.testnet",
+        "near_recipient": "counterweight-samet.testnet",
+        "derivation_path": "counterweight-1",
+        "evm_recipient": "0xea8b5c6f1e3e1537222d4cbbbed3d6fa5bcc819a",
+        "asset_index": 54,
+        "size_decimals": 1,
+        "limits": {
+          "max_short_size": "1000000000000000000000000",
+          "per_order_notional_cap": "10000000",
+          "per_day_notional_cap": "20000000",
+          "cooldown_seconds": 60,
+          "price_band_bps": 100,
+          "price_max_age_seconds": 60
+        },
+        "spot_balance": "0",
+        "signed_short_size": "0",
+        "paused": false,
+        "pending": null,
+        "signing_limits": {
+          "keeper_per_block": 2,
+          "keeper_per_window": 8,
+          "keeper_outstanding": 8,
+          "owner_per_window": 16,
+          "window_ms": 60000,
+          "max_nonce_ahead_ms": 1000
+        },
+        "mpc_fee": "1",
+        "signer_gas_tgas": 230,
+        "callback_gas_tgas": 30,
+        "heartbeat_timeout_seconds": 3600,
+        "keeper_weight_limit": "5000",
+        "daily_usage": "0",
+        "usage_day": 20767,
+        "operation_id": "2",
+        "last_keeper_heartbeat": "1794305935",
+        "reference_price": "1000000",
+        "reference_price_timestamp": "1794305935",
+        "last_nonce": "1794307007731",
+        "outstanding": [
+          {
+            "nonce": 1794307007731,
+            "expires_after": 1794307067731,
+            "keeper": true,
+            "discarded": false,
+            "invalidation_requested": false,
+            "invalidation_signed": false,
+            "invalidation_confirmed": false,
+            "withdrawal": false
+          }
+        ],
+        "pause_complete": true,
+        "lifetime_opened": "0",
+        "last_open_expiry": "0",
+        "keeper_weight_used": "10"
+      }
+    }
+  ],
+  "request": {
+    "action": {
+      "type": "cancel",
+      "cancels": [
+        {
+          "a": 54,
+          "o": 0
+        }
+      ]
+    },
+    "nonce": 1794307007731,
+    "signature": {
+      "r": "0xdec7a7945f05883c3bb654de94056f90cde44a85b2ef68d499657ac6834026e6",
+      "s": "0x0751dac4c7d080639a6a4cf423eaa3af960ce0b160cbd5951c62fb79117e7864",
+      "v": 27
+    },
+    "expiresAfter": 1794307067731
+  },
+  "httpStatus": 200,
+  "response": {
+    "status": "err",
+    "response": "User or API Wallet 0xaa640b1c7b3ac37db14d2705eaeceeb42d91eb0c does not exist."
+  },
+  "verdict": "server-recovered-address-matches"
+}

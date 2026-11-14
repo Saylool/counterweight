@@ -1,0 +1,8 @@
+{
+  "source": "Original checkout .git/logs/HEAD, first entry; read directly without a git history command",
+  "initialCommit": "07aa9688ec05cdd437b213b7c0193468a9835629",
+  "timestampSeconds": 1794253774,
+  "timestampUtc": "2026-11-09T19:49:34+00:00",
+  "message": "commit (initial): Start Counterweight: README, license and ignore rules",
+  "scope": "Corroborates release brief first-commit date; not an independent audit of all authorship or prior work."
+}

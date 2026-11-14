@@ -1,0 +1,17 @@
+{
+  "checkedAtUtc": "2026-11-13",
+  "chain": "Arbitrum Sepolia (chainId 421614)",
+  "rpc": "https://sepolia-rollup.arbitrum.io/rpc",
+  "token": "0x1baAbB04529D43a73232B713C0FE471f7c7334d5 (Hyperliquid testnet USDC)",
+  "method": "eth_getLogs Transfer(to=recipient) over the last 1.5M blocks + balanceOf(recipient)",
+  "recipient": "0xb1af8b1d316e111c10fe6a2eb3b7b747ec37f36a",
+  "transfer": {
+    "transactionHash": "0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0",
+    "blockNumber": 327938892,
+    "from": "0x08cfc1b6b2dcf36a1480b99353a354aa8ac56f89",
+    "amountRaw": "46957074",
+    "amountUsdc": "46.957074"
+  },
+  "recipientBalanceRaw": "46957074",
+  "explorer": "https://sepolia.arbiscan.io/tx/0xdf68992e9a836bfb5d6b7ff834e2f3537f9913a32b39eeeeb8664099360501c0"
+}

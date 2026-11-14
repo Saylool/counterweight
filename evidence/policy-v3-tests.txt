@@ -1,0 +1,440 @@
+Policy v3 optimized validation — 2026-11-10T18:50:51.206654+00:00
+Production: 343,212 bytes (was 672,309); SHA-256 052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c
+Rust default/workspace: 135 passed. Rust test-utils/workspace: same 135 distinct tests passed.
+Golden signing vectors: 34, verified in both configurations.
+Sandbox: 26 passed, 2 threads, 254.04s; exact optimized production bytes, localhost mocks/disposable keys only.
+Artifact manifest/RPC-byte equality and reserve regressions: 2 strengthened checks rerun, both passed.
+TypeScript: 467 root tests, 22 files. Frontend: previous 30 tests/2 files retained; not rerun in this build pass.
+Root typecheck, Clippy --workspace --all-targets --all-features -D warnings, format: passed.
+Production exports: 42 required; no raw-signing/upgrade/test-only methods.
+Shared cross-layer cases: 19 legacy + 9 v3 partial-withdrawal cases.
+Timelock exact 24h boundary: native host; keyless sandbox maturity uses local state patch.
+Repeat production build: byte-for-byte identical. SHA256SUMS: v2 and v3 both pass; v2 artifact untouched.
+Initialized storage: 344,059 bytes = 343,212 WASM + 847 account/key/state overhead.
+Creation formula: (343212 + 847 + 131072) × 10^19 / 10^24 + 1 + 0.5 = 6.25131 NEAR
+Reserve alone: 5.75131 NEAR; margin: 0.5 NEAR; create: 6.25131 NEAR.
+Venue funding can precede spot. Later commands: npm run testnet:plan -- --spot-only=true --spot-near=4
+Any positive spot amount is accepted (up to 24 decimals); recovered wNEAR is not wrapped again.
+V3 undeployed; v2 cleanup unsent; no real private keys, git commands or testnet transactions.
+
+Reproduction (contracts/policy working directory; local toolchain variables as in README):
+bash tools/build-v3.sh
+cargo test --locked --workspace
+cargo test --locked --workspace --features test-utils
+cargo build --locked --release --target wasm32-unknown-unknown -p counterweight-mock-signer
+TMPDIR=/private/tmp COUNTERWEIGHT_ALLOW_DISPOSABLE_SANDBOX_KEYS=1 cargo test --locked --features sandbox-tests --test sandbox -- --test-threads=2 --nocapture
+python3 tests/check_default_exports.py artifacts/counterweight_policy_v3.wasm
+shasum -a 256 -c artifacts/SHA256SUMS
+cargo fmt --all --check
+cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+Repository root: node_modules/.bin/vitest run; node_modules/.bin/tsc --noEmit
+
+--- build output ---
+wasm-opt version 123 (version_123)
+    Finished `release` profile [optimized] target(s) in 0.74s
+default Wasm exports: ok; 42 required methods; no test-only or raw-signing methods
+  343212 artifacts/counterweight_policy_v3.wasm
+052d4d8758a1e470c5d6c32ff8610564c39dde47194d7a4de42f97a2c587838c  artifacts/counterweight_policy_v3.wasm
+
+--- default output ---
+   Compiling counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.36s
+     Running unittests src/lib.rs (target/debug/deps/counterweight_mock_signer-5d7e791dca29f04f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/counterweight_policy-bdd5c6b567012a2c)
+
+running 135 tests
+test hl_digest::tests::canonical_decimal_validation ... ok
+test hl_digest::tests::noop_msgpack_exact_and_expiry_bound ... ok
+test hl_digest::tests::golden_vectors_all_supported_types ... ok
+test hl_digest::tests::unsafe_integer_and_noncanonical_inputs_fail_closed ... ok
+test tests::audit::audit_deposit_rejects_nonempty_message_and_zero_amount ... ok
+test tests::audit::audit_emergency_marks_withheld_keeper_nonce ... ok
+test tests::audit::audit_full_outstanding_queue_can_still_pause_and_invalidate ... ok
+test tests::audit::audit_definite_signer_failure_releases_only_exposure ... ok
+test tests::audit::audit_nonce_drift_zero_rejected ... ok
+test tests::audit::audit_configurable_mpc_fee_gas_and_refund ... ok
+test tests::audit::audit_emits_pause_request_fixture_for_ts_relay ... ok
+test tests::audit::audit_nonround_near_price_obeys_ticks ... ok
+test tests::audit::audit_native_sweep_preserves_storage_and_operating_reserve ... ok
+test tests::audit::audit_owner_config_preempts_keeper_cancel ... ok
+test tests::audit::audit_pause_without_signing_resources_commits ... ok
+test tests::audit::audit_limits_evm_self_authority_and_spot_resources ... ok
+test tests::audit::audit_cumulative_keeper_budget_reserves_owner_capacity ... ok
+test tests::audit::audit_residual_reduce_after_understated_settlement ... ok
+test tests::audit::audit_private_successful_detached_callback_and_public_recovery_after_owner_deadline ... ok
+test tests::audit::audit_initializer_and_resource_guards ... ok
+test tests::audit::audit_real_mpc_fixture_and_flat_schema ... ok
+test tests::audit::audit_rolling_turnover_cannot_double_at_midnight ... ok
+test tests::audit::audit_withdraw_requires_margin_policy_without_route - should panic ... ok
+test tests::audit::audit_zero_deposit_signing_uses_bounded_operating_reserve ... ok
+test tests::audit::audit_withdraw_timeout_remains_revocable ... ok
+test tests::audit::audit_withdraw_requires_invalidation_before_retry ... ok
+test tests::callbacks_are_private - should panic ... ok
+test tests::audit::audit_reserve_fee_rejects_storage_drain_large_fee_and_partial_deposit ... ok
+test tests::authenticated_wnear_deposit ... ok
+test tests::cannot_withdraw_encumbered_spot - should panic ... ok
+test tests::class_transfer::user_domain_and_existing_borsh_discriminants_are_fixed ... ok
+test tests::decimal_encoding_is_exact ... ok
+test tests::audit::audit_mpc_scalar_and_event_guards ... ok
+test tests::class_transfer::expired_callback_never_emits_signature ... ok
+test tests::emergency_detaches_stuck_signer_and_late_callback_cannot_clear_new_slot ... ok
+test tests::class_transfer::owner_nonce_callback_and_accounting ... ok
+test tests::exhausted_owner_budget_still_commits_local_pause_and_discards_keeper_callback ... ok
+test tests::hex_encoding_preserves_all_bytes_and_leading_zeroes ... ok
+test tests::failed_spot_transfer_restores_ledger ... ok
+test tests::heartbeat_keeper_only_and_refreshes ... ok
+test tests::expired_callback_is_discarded_and_missing_callback_recovers_permissionlessly ... ok
+test tests::keeper_block_limit_and_owner_reserved_emergency ... ok
+test tests::invalidation_confirmation_is_owner_only_and_requires_signed_request ... ok
+test tests::interrupted_invalidation_can_retry_same_nonce ... ok
+test tests::keeper_cannot_unpause - should panic ... ok
+test tests::keeper_cannot_withdraw - should panic ... ok
+test tests::keeper_per_order_cap - should panic ... ok
+test tests::max_short_cap - should panic ... ok
+test tests::nonce_cannot_drift_ahead_of_clock - should panic ... ok
+test tests::keeper_outstanding_cap_keeps_invalidation_capacity ... ok
+test tests::nonce_overflow_fails_closed - should panic ... ok
+test tests::missing_withdraw_callback_expires_locally_without_reusing_its_nonce ... ok
+test tests::oracle::immutable_mainnet_domain_and_network_accounts ... ok
+test tests::keeper_rolling_budget_counts_failed_requests_and_expires_at_boundary ... ok
+test tests::audit::audit_open_price_rounding_nonround_bands_matrix ... ok
+test tests::oracle::configured_keeper_maximum_direct_execution_debit_bound ... ok
+test tests::oracle::sane_fallback_rejects_scale_errors_stale_future_and_owner_oracle_override ... ok
+test tests::audit::audit_rally_closes_and_price_precision_matrix ... ok
+test tests::owner_cannot_impersonate_keeper - should panic ... ok
+test tests::owner_only_config - should panic ... ok
+test tests::owner_config_preserves_identity_and_counters ... ok
+test tests::oracle::oracle_is_permissionless_private_and_reads_fixed_feed ... ok
+test tests::pause_blocks_increases - should panic ... ok
+test tests::pause_emits_nep297 ... ok
+test tests::pause_commits_during_token_transfer_and_preserves_its_callback ... ok
+test tests::pause_blocks_keeper_additions_and_cancels_but_all_can_reduce ... ok
+test tests::class_transfer::rejects_unauthorized_amount_pending_and_open_risk ... ok
+test tests::public_can_preempt_keeper_but_uses_separate_bounded_capacity ... ok
+test tests::public_deleverage_requires_timeout - should panic ... ok
+test tests::pause_discards_inflight_keeper_callback_and_retries_failed_invalidation ... ok
+test tests::oracle::oracle_stale_absent_uncertain_invalid_and_out_of_order_fail_closed ... ok
+test tests::public_cannot_interrupt_owner_emergency_or_invalidation ... ok
+test tests::pause_invalidates_each_original_nonce_and_confirmation_controls_completion ... ok
+test tests::public_rate_limit_cannot_consume_owner_capacity ... ok
+test tests::rebalance::rebalance_exact_route_reserves_inventory_and_credits_only_final_receipt ... ok
+test tests::rebalance::rebalance_failure_timeout_late_and_partial_refund_never_double_credit ... ok
+test tests::rebalance::rebalance_pending_route_blocks_additions_withdrawals_and_second_route_but_not_emergency ... ok
+test tests::rebalance::rebalance_finalized_funded_reentry_obeys_inventory_dollar_and_health_bands ... ok
+test tests::rebalance::rebalance_pending_withdrawal_blocks_risk_before_final_arrival ... ok
+test tests::rebalance::rebalance_sale_daily_caps_and_margin_health ... ok
+test tests::rebalance::rebalance_final_withdrawal_arrival_requires_actual_spot_before_reentry ... ok
+test tests::rebalance::rebalance_withdrawal_reserves_full_margin_and_caps_rolling_usage ... ok
+test tests::reduce_can_exceed_local_exposure_bound ... ok
+test tests::rebalance::rebalance_rejects_keeper_recipient_changes_and_unsafe_quotes ... ok
+test tests::rebalance::rebalance_sale_requires_reconciled_matching_short_quantity ... ok
+test tests::rejects_fake_token - should panic ... ok
+test tests::rebalance::rebalance_receipt_cannot_be_reused_across_route_ids ... ok
+test tests::rejects_evm_recipient - should panic ... ok
+test tests::rejects_near_recipient - should panic ... ok
+test tests::rejects_other_market - should panic ... ok
+test tests::rejects_quantity_rounding - should panic ... ok
+test tests::same_block_nonce_allocation_and_failed_callback_never_reuse ... ok
+test tests::rejects_nonowner_deposit - should panic ... ok
+test tests::short_never_exceeds_spot - should panic ... ok
+test tests::reductions_do_not_consume_invalidation_queue_capacity ... ok
+test tests::signer_success_after_expiry_never_emits_signature ... ok
+test tests::signing::anyone_deleverages_after_timeout_even_paused ... ok
+test tests::signing::definite_failed_callback_releases_exposure_without_refunding_churn ... ok
+test tests::signing::duplicate_pending_operation_rejected - should panic ... ok
+test tests::signing::completed_callback_cannot_replay ... ok
+test tests::rebalance::rebalance_withdrawal_health_availability_and_fee_caps ... ok
+test tests::settlement_cannot_ignore_a_newer_open_authorization ... ok
+test tests::settlement_rejects_keeper_stale_observation_and_unexpired_open_replay ... ok
+test tests::signing::malformed_callback_is_uncertain ... ok
+test tests::signing::oversized_signature_callback_is_uncertain ... ok
+test tests::signing::keeper_cooldown - should panic ... ok
+test tests::signing::evm_withdrawal_uses_only_fixed_owner_recipient_while_paused ... ok
+test tests::settlement_releases_partial_and_full_backing_but_never_daily_churn_budget ... ok
+test tests::signing::typed_ioc_price_band_and_mpc_request ... ok
+test tests::signing::stale_callback_id_rejected ... ok
+test tests::signing::keeper_daily_cap - should panic ... ok
+test tests::signing::reductions_never_recycle_signed_open_budget ... ok
+test tests::signing::withdrawal_cannot_overlap_order - should panic ... ok
+test tests::v3::atomic_self_initialization_preserves_separate_owner_and_keeper ... ok
+test tests::signing::rolling_day_preserves_lifetime_budget ... ok
+test tests::signing::reductions_ignore_caps_cooldown_pause_and_stale_price ... ok
+test tests::successful_spot_transfer_does_not_restore_ledger_for_large_return ... ok
+test tests::stale_reference_blocks_increases - should panic ... ok
+test tests::stranger_cannot_refresh_heartbeat - should panic ... ok
+test tests::v3::exits_never_wait_for_price_bounds_proposal ... ok
+test tests::v3::flat_withdrawal_requires_fresh_equity_but_no_price_observation ... ok
+test tests::v3::fresh_caller_exit_can_override_oracle_older_than_exit_freshness ... ok
+test tests::v3::independent_margin_wrong_recipient_stale_observation_and_no_config_switch ... ok
+test tests::v3::keeper_close_preempts_stuck_open_and_full_queue ... ok
+test tests::v3::oracle_outside_band_can_close_but_cannot_open ... ok
+test tests::v3::exits_and_spot_callbacks_are_independent_in_both_receipt_orders ... ok
+test tests::v3::price_bounds_timelock_cancel_replace_and_owner_only ... ok
+test tests::v3::independent_margin_flat_and_open_withdrawals_reserve_and_reconcile ... ok
+test tests::v3::v2_cleanup_fee_cap_requires_expiry_abandonment_without_margin_credit ... ok
+test tests::v3::exits_reject_stale_future_and_outside_sanity_marks ... ok
+test tests::v3::wide_keeper_cache_unblocks_margin_health_but_never_opening_band ... ok
+test tests::withheld_signature_keeps_pause_incomplete_until_expiry_without_confirmation ... ok
+test tests::cross_layer::cross_layer_decisions ... ok
+test tests::v3::v3_cross_layer_withdrawals ... ok
+test tests::v3::exits_far_outside_opening_band_all_authorities_and_exact_slippage_cap ... ok
+
+test result: ok. 135 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.30s
+
+   Doc-tests counterweight_mock_signer
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests counterweight_policy
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+--- testUtils output ---
+   Compiling counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+   Compiling counterweight-mock-signer v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy/tests/mock-signer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.78s
+     Running unittests src/lib.rs (target/debug/deps/counterweight_mock_signer-5d7e791dca29f04f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/counterweight_policy-3836151d75ee46dd)
+
+running 135 tests
+test hl_digest::tests::canonical_decimal_validation ... ok
+test hl_digest::tests::unsafe_integer_and_noncanonical_inputs_fail_closed ... ok
+test hl_digest::tests::golden_vectors_all_supported_types ... ok
+test hl_digest::tests::noop_msgpack_exact_and_expiry_bound ... ok
+test tests::audit::audit_definite_signer_failure_releases_only_exposure ... ok
+test tests::audit::audit_emergency_marks_withheld_keeper_nonce ... ok
+test tests::audit::audit_deposit_rejects_nonempty_message_and_zero_amount ... ok
+test tests::audit::audit_configurable_mpc_fee_gas_and_refund ... ok
+test tests::audit::audit_nonce_drift_zero_rejected ... ok
+test tests::audit::audit_full_outstanding_queue_can_still_pause_and_invalidate ... ok
+test tests::audit::audit_native_sweep_preserves_storage_and_operating_reserve ... ok
+test tests::audit::audit_emits_pause_request_fixture_for_ts_relay ... ok
+test tests::audit::audit_limits_evm_self_authority_and_spot_resources ... ok
+test tests::audit::audit_nonround_near_price_obeys_ticks ... ok
+test tests::audit::audit_cumulative_keeper_budget_reserves_owner_capacity ... ok
+test tests::audit::audit_owner_config_preempts_keeper_cancel ... ok
+test tests::audit::audit_pause_without_signing_resources_commits ... ok
+test tests::audit::audit_residual_reduce_after_understated_settlement ... ok
+test tests::audit::audit_private_successful_detached_callback_and_public_recovery_after_owner_deadline ... ok
+test tests::audit::audit_real_mpc_fixture_and_flat_schema ... ok
+test tests::audit::audit_initializer_and_resource_guards ... ok
+test tests::audit::audit_withdraw_requires_margin_policy_without_route - should panic ... ok
+test tests::audit::audit_withdraw_timeout_remains_revocable ... ok
+test tests::audit::audit_rolling_turnover_cannot_double_at_midnight ... ok
+test tests::audit::audit_withdraw_requires_invalidation_before_retry ... ok
+test tests::authenticated_wnear_deposit ... ok
+test tests::audit::audit_zero_deposit_signing_uses_bounded_operating_reserve ... ok
+test tests::callbacks_are_private - should panic ... ok
+test tests::class_transfer::expired_callback_never_emits_signature ... ok
+test tests::cannot_withdraw_encumbered_spot - should panic ... ok
+test tests::audit::audit_reserve_fee_rejects_storage_drain_large_fee_and_partial_deposit ... ok
+test tests::decimal_encoding_is_exact ... ok
+test tests::class_transfer::user_domain_and_existing_borsh_discriminants_are_fixed ... ok
+test tests::audit::audit_mpc_scalar_and_event_guards ... ok
+test tests::class_transfer::owner_nonce_callback_and_accounting ... ok
+test tests::emergency_detaches_stuck_signer_and_late_callback_cannot_clear_new_slot ... ok
+test tests::exhausted_owner_budget_still_commits_local_pause_and_discards_keeper_callback ... ok
+test tests::hex_encoding_preserves_all_bytes_and_leading_zeroes ... ok
+test tests::failed_spot_transfer_restores_ledger ... ok
+test tests::heartbeat_keeper_only_and_refreshes ... ok
+test tests::expired_callback_is_discarded_and_missing_callback_recovers_permissionlessly ... ok
+test tests::keeper_cannot_unpause - should panic ... ok
+test tests::interrupted_invalidation_can_retry_same_nonce ... ok
+test tests::invalidation_confirmation_is_owner_only_and_requires_signed_request ... ok
+test tests::keeper_block_limit_and_owner_reserved_emergency ... ok
+test tests::keeper_cannot_withdraw - should panic ... ok
+test tests::keeper_per_order_cap - should panic ... ok
+test tests::keeper_outstanding_cap_keeps_invalidation_capacity ... ok
+test tests::max_short_cap - should panic ... ok
+test tests::nonce_cannot_drift_ahead_of_clock - should panic ... ok
+test tests::nonce_overflow_fails_closed - should panic ... ok
+test tests::missing_withdraw_callback_expires_locally_without_reusing_its_nonce ... ok
+test tests::oracle::immutable_mainnet_domain_and_network_accounts ... ok
+test tests::audit::audit_rally_closes_and_price_precision_matrix ... ok
+test tests::audit::audit_open_price_rounding_nonround_bands_matrix ... ok
+test tests::oracle::configured_keeper_maximum_direct_execution_debit_bound ... ok
+test tests::keeper_rolling_budget_counts_failed_requests_and_expires_at_boundary ... ok
+test tests::owner_cannot_impersonate_keeper - should panic ... ok
+test tests::owner_only_config - should panic ... ok
+test tests::owner_config_preserves_identity_and_counters ... ok
+test tests::oracle::sane_fallback_rejects_scale_errors_stale_future_and_owner_oracle_override ... ok
+test tests::oracle::oracle_is_permissionless_private_and_reads_fixed_feed ... ok
+test tests::pause_blocks_increases - should panic ... ok
+test tests::pause_emits_nep297 ... ok
+test tests::pause_commits_during_token_transfer_and_preserves_its_callback ... ok
+test tests::pause_blocks_keeper_additions_and_cancels_but_all_can_reduce ... ok
+test tests::class_transfer::rejects_unauthorized_amount_pending_and_open_risk ... ok
+test tests::pause_discards_inflight_keeper_callback_and_retries_failed_invalidation ... ok
+test tests::public_can_preempt_keeper_but_uses_separate_bounded_capacity ... ok
+test tests::public_deleverage_requires_timeout - should panic ... ok
+test tests::public_cannot_interrupt_owner_emergency_or_invalidation ... ok
+test tests::oracle::oracle_stale_absent_uncertain_invalid_and_out_of_order_fail_closed ... ok
+test tests::rebalance::rebalance_exact_route_reserves_inventory_and_credits_only_final_receipt ... ok
+test tests::public_rate_limit_cannot_consume_owner_capacity ... ok
+test tests::pause_invalidates_each_original_nonce_and_confirmation_controls_completion ... ok
+test tests::rebalance::rebalance_failure_timeout_late_and_partial_refund_never_double_credit ... ok
+test tests::rebalance::rebalance_pending_withdrawal_blocks_risk_before_final_arrival ... ok
+test tests::rebalance::rebalance_pending_route_blocks_additions_withdrawals_and_second_route_but_not_emergency ... ok
+test tests::rebalance::rebalance_finalized_funded_reentry_obeys_inventory_dollar_and_health_bands ... ok
+test tests::rebalance::rebalance_sale_daily_caps_and_margin_health ... ok
+test tests::rebalance::rebalance_final_withdrawal_arrival_requires_actual_spot_before_reentry ... ok
+test tests::rebalance::rebalance_receipt_cannot_be_reused_across_route_ids ... ok
+test tests::rebalance::rebalance_rejects_keeper_recipient_changes_and_unsafe_quotes ... ok
+test tests::rebalance::rebalance_sale_requires_reconciled_matching_short_quantity ... ok
+test tests::rebalance::rebalance_withdrawal_reserves_full_margin_and_caps_rolling_usage ... ok
+test tests::reduce_can_exceed_local_exposure_bound ... ok
+test tests::rejects_fake_token - should panic ... ok
+test tests::rejects_evm_recipient - should panic ... ok
+test tests::reductions_do_not_consume_invalidation_queue_capacity ... ok
+test tests::rejects_other_market - should panic ... ok
+test tests::rejects_quantity_rounding - should panic ... ok
+test tests::rejects_nonowner_deposit - should panic ... ok
+test tests::rejects_near_recipient - should panic ... ok
+test tests::short_never_exceeds_spot - should panic ... ok
+test tests::same_block_nonce_allocation_and_failed_callback_never_reuse ... ok
+test tests::signer_success_after_expiry_never_emits_signature ... ok
+test tests::signing::anyone_deleverages_after_timeout_even_paused ... ok
+test tests::signing::completed_callback_cannot_replay ... ok
+test tests::signing::definite_failed_callback_releases_exposure_without_refunding_churn ... ok
+test tests::settlement_rejects_keeper_stale_observation_and_unexpired_open_replay ... ok
+test tests::settlement_cannot_ignore_a_newer_open_authorization ... ok
+test tests::rebalance::rebalance_withdrawal_health_availability_and_fee_caps ... ok
+test tests::settlement_releases_partial_and_full_backing_but_never_daily_churn_budget ... ok
+test tests::signing::duplicate_pending_operation_rejected - should panic ... ok
+test tests::signing::oversized_signature_callback_is_uncertain ... ok
+test tests::signing::keeper_cooldown - should panic ... ok
+test tests::signing::malformed_callback_is_uncertain ... ok
+test tests::signing::keeper_daily_cap - should panic ... ok
+test tests::signing::stale_callback_id_rejected ... ok
+test tests::signing::evm_withdrawal_uses_only_fixed_owner_recipient_while_paused ... ok
+test tests::signing::typed_ioc_price_band_and_mpc_request ... ok
+test tests::signing::reductions_ignore_caps_cooldown_pause_and_stale_price ... ok
+test tests::signing::withdrawal_cannot_overlap_order - should panic ... ok
+test tests::signing::rolling_day_preserves_lifetime_budget ... ok
+test tests::signing::reductions_never_recycle_signed_open_budget ... ok
+test tests::v3::atomic_self_initialization_preserves_separate_owner_and_keeper ... ok
+test tests::stale_reference_blocks_increases - should panic ... ok
+test tests::stranger_cannot_refresh_heartbeat - should panic ... ok
+test tests::v3::exits_never_wait_for_price_bounds_proposal ... ok
+test tests::successful_spot_transfer_does_not_restore_ledger_for_large_return ... ok
+test tests::v3::fresh_caller_exit_can_override_oracle_older_than_exit_freshness ... ok
+test tests::v3::flat_withdrawal_requires_fresh_equity_but_no_price_observation ... ok
+test tests::v3::independent_margin_wrong_recipient_stale_observation_and_no_config_switch ... ok
+test tests::v3::keeper_close_preempts_stuck_open_and_full_queue ... ok
+test tests::v3::oracle_outside_band_can_close_but_cannot_open ... ok
+test tests::v3::independent_margin_flat_and_open_withdrawals_reserve_and_reconcile ... ok
+test tests::v3::exits_and_spot_callbacks_are_independent_in_both_receipt_orders ... ok
+test tests::v3::wide_keeper_cache_unblocks_margin_health_but_never_opening_band ... ok
+test tests::v3::price_bounds_timelock_cancel_replace_and_owner_only ... ok
+test tests::v3::exits_reject_stale_future_and_outside_sanity_marks ... ok
+test tests::v3::v2_cleanup_fee_cap_requires_expiry_abandonment_without_margin_credit ... ok
+test tests::withheld_signature_keeps_pause_incomplete_until_expiry_without_confirmation ... ok
+test tests::cross_layer::cross_layer_decisions ... ok
+test tests::v3::v3_cross_layer_withdrawals ... ok
+test tests::v3::exits_far_outside_opening_band_all_authorities_and_exact_slippage_cap ... ok
+
+test result: ok. 135 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.11s
+
+   Doc-tests counterweight_mock_signer
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests counterweight_policy
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+--- sandbox output ---
+   Compiling counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.50s
+     Running tests/sandbox.rs (target/debug/deps/sandbox-5e0c267313568655)
+
+running 26 tests
+test sandbox_authenticated_deposits_and_token_failure_restoration ... ok
+test sandbox_exact_sale_route_finality_and_replay ... ok
+test sandbox_failed_signing_budget_exhaustion_preserves_owner_emergency ... ok
+test sandbox_fixed_recipient_rejection ... ok
+test sandbox_function_call_keeper_uses_contract_fee_reserve ... ok
+test sandbox_malformed_callback_and_private_endpoint ... ok
+test sandbox_keeper_caps_and_cooldown ... ok
+test sandbox_owner_only_config ... ok
+test sandbox_outstanding_limit_and_failed_transaction_do_not_advance_nonce ... ok
+test sandbox_pause_blocks_keeper_additions_but_allows_reductions ... ok
+test sandbox_partial_settlement_releases_only_matching_spot ... ok
+test sandbox_pending_duplicate_and_failed_callback ... ok
+test sandbox_pause_invalidates_all_nonces_confirmation_failure_and_expiry ... ok
+test sandbox_public_oracle_age_confidence_and_absent_fallback ... ok
+test sandbox_rally_precision_and_cumulative_address_budget ... ok
+test sandbox_public_heartbeat_timeout_deleverage has been running for over 60 seconds
+test sandbox_real_order_cancel_withdraw_digests_and_expiries has been running for over 60 seconds
+test sandbox_public_heartbeat_timeout_deleverage ... ok
+test sandbox_reduce_signatures_do_not_prove_fills ... ok
+test sandbox_runs_exact_optimized_production_artifact ... ok
+test sandbox_real_order_cancel_withdraw_digests_and_expiries ... ok
+test sandbox_short_spot_invariant ... ok
+test sandbox_upgrade_initialized_v2_preserves_deposit_and_class_transfer ... ok
+test sandbox_settlement_releases_backing_and_opening_capacity_after_expiry ... ok
+V3_STORAGE_BYTES=344059; V3_INITIAL_STORAGE_OVERHEAD=847
+test sandbox_v3_creation_reserve_matches_initialized_storage ... ok
+test sandbox_v3_partial_margin_without_route_and_receipt_reconciliation ... ok
+test sandbox_withdrawal_nonce_requires_confirmed_invalidation ... ok
+test sandbox_v3_keyless_timelock_and_out_of_band_exits ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 254.04s
+
+
+--- artifactRegression output ---
+   Compiling counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.37s
+     Running tests/sandbox.rs (target/debug/deps/sandbox-5e0c267313568655)
+
+running 1 test
+test sandbox_runs_exact_optimized_production_artifact ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 5.01s
+
+
+--- reserveRegression output ---
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.84s
+     Running tests/sandbox.rs (target/debug/deps/sandbox-5e0c267313568655)
+
+running 1 test
+V3_STORAGE_BYTES=344059; V3_INITIAL_STORAGE_OVERHEAD=847
+test sandbox_v3_creation_reserve_matches_initialized_storage ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 5.78s
+
+
+--- typescript output ---
+
+ RUN  v4.1.12 /Users/samet/Desktop/counterweight
+
+
+ Test Files  22 passed (22)
+      Tests  467 passed (467)
+   Start at  21:45:35
+   Duration  14.69s (transform 2.28s, setup 0ms, import 11.75s, tests 41.16s, environment 2ms)
+
+
+--- clippy output ---
+    Checking counterweight-policy v0.1.0 (/Users/samet/Desktop/counterweight/contracts/policy)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.16s

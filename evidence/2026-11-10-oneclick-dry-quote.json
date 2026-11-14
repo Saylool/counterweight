@@ -1,0 +1,66 @@
+{
+  "capturedAt": "2026-11-10T10:16:33.836Z",
+  "kind": "mainnet-public-dry-quote",
+  "signingRequests": 0,
+  "transactions": 0,
+  "request": {
+    "dry": true,
+    "swapType": "EXACT_INPUT",
+    "slippageTolerance": 100,
+    "originAsset": "nep141:wrap.near",
+    "destinationAsset": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+    "depositType": "INTENTS",
+    "refundType": "INTENTS",
+    "recipientType": "DESTINATION_CHAIN",
+    "amount": "1000000000000000000000000",
+    "refundTo": "counterweight-dry.near",
+    "recipient": "0x1111111111111111111111111111111111111111",
+    "deadline": "2026-11-10T10:19:33.837Z"
+  },
+  "result": {
+    "quote": {
+      "amountIn": "1000000000000000000000000",
+      "amountOut": "326612000",
+      "minAmountOut": "323035800",
+      "timeEstimate": 22,
+      "amountInFormatted": "1.0",
+      "amountInUsd": "3.600000000000",
+      "minAmountIn": "1000000000000000000000000",
+      "amountOutFormatted": "3.26612",
+      "amountOutUsd": "3.264552262400",
+      "refundFee": "0",
+      "withdrawFee": "31530000"
+    },
+    "quoteRequest": {
+      "dry": true,
+      "depositMode": "SIMPLE",
+      "swapType": "EXACT_INPUT",
+      "slippageTolerance": 100,
+      "originAsset": "nep141:wrap.near",
+      "depositType": "INTENTS",
+      "destinationAsset": "1cs_v1:hypercore:hip1:0x6d1e7cde53ba9467b783cb7c530ce054",
+      "amount": "1000000000000000000000000",
+      "refundTo": "counterweight-dry.near",
+      "refundType": "INTENTS",
+      "recipient": "0x1111111111111111111111111111111111111111",
+      "recipientType": "DESTINATION_CHAIN",
+      "deadline": "2026-11-10T10:19:33.837Z",
+      "confidentiality": "public",
+      "quoteWaitingTimeMs": 0,
+      "insured": false,
+      "appFees": [
+        {
+          "recipient": "5880ad2b362620fadf759cbceb1cd5737ce8c6ed7fb8e9942881e6731f9247dd",
+          "fee": 20
+        }
+      ]
+    },
+    "signature": "ed25519:63qVyCRVsDEoAidYtTCE7Aub26p1SxLNCVxZcyA2V5wbueWG3bbVPC8UupQR8HYzkuTYhpHSZ2v9ud2VMsPdnmZG",
+    "timestamp": "2026-11-10T10:16:34.260Z",
+    "correlationId": "844dc91a-df01-4ed4-8728-c177bc0111d4"
+  },
+  "httpStatus": 201,
+  "routeNetwork": "mainnet",
+  "outputUsdc": 3.26612,
+  "minOutputUsdc": 3.230358
+}
