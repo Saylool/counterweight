@@ -1,3 +1,7 @@
+## V5 source status — 14 November 2026
+
+[V5](POLICY-V5.md) bounds Finding A for a fresh deployment; v4's immutable deployed code and historical finding remain unchanged. Every exit authority uses a fresh configured authenticated oracle when available. Otherwise the caller mark is still **not authenticated**: it must fit the time-locked corridor and a 25bps opening/authenticated-anchor band; the final IOC limit also caps incremental adverse execution at 1% of opening-attested margin for reserved exposure, excluding fees/funding and legitimate authenticated market movement. Mutable price caches cannot ratchet the anchor, and partial settlement cannot widen the margin-derived cap. Mainnet opens require the existing fresh owner margin attestation. The narrow fallback can reject honest market moves and cannot guarantee fills or prevent liquidation. Current official documentation no longer supports Pyth on NEAR, so the [v5 run](MAINNET.md) must disclose unavailable authenticated pricing and use the bounded fallback; no maintained mainnet Pyth deployment is claimed. The new autonomous keeper code is prepared for an owner start, without a live mainnet uptime/execution claim. Every other issue below remains disclosed.
+
 # Known issues
 
 ## V4 deployed on mainnet; two bounded repairs

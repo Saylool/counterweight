@@ -8,7 +8,7 @@ import { testnetAccount, V3_POLICY } from '../../../scripts/testnet-common.js';
 import { assess, heartbeatDue, priceNeeded, planOrder, riskSettings, KEEPER, type PolicyState } from './run-state.js';
 import { commandArgs, DiskStore, printable, PublicClient, runtime, sendNear, type Runtime } from './run-io.js';
 
-export interface RunOptions { policy: string; hours: number; intervalMs: number; dry: boolean; allowOpen: boolean; network?: Network; keeper?: string; cycles?: number }
+export interface RunOptions { policy: string; hours: number; intervalMs: number; dry: boolean; allowOpen: boolean; network?: Network; keeper?: string; cycles?: number; autonomousMainnetV5?: boolean; expectedCodeHash?: string }
 export function parseRunOptions(argv: string[]): RunOptions {
   const values: Record<string, string> = {};
   for (const arg of argv) {
@@ -77,20 +77,57 @@ export class Keeper {
   private addressCache: { identity: string; address: string } | undefined;
   constructor(readonly options: RunOptions, readonly store: DiskStore, readonly rt: Runtime, readonly stopped: () => boolean = () => false) {
     this.client = new PublicClient(rt, undefined, options.network);
-    if (options.network === 'mainnet' && !options.dry) throw new Error('Policy mainnet keeper is commands-only; use --dry');
+    if (options.autonomousMainnetV5 && (options.network !== 'mainnet' || options.policy !== 'cw5.haxheton.near' || options.keeper !== 'keeper4.haxheton.near' || options.allowOpen)) throw new Error('Policy autonomous v5 requires cw5, keeper4 and opening disabled');
+    if (options.network === 'mainnet' && !options.dry && !options.autonomousMainnetV5) throw new Error('Policy mainnet keeper is commands-only; use --dry');
     this.activeName = `${options.policy}.active.json`;
   }
-  async command(c: Cycle, method: 'heartbeat' | 'set_keeper_price', args: unknown) {
-    const command = commandArgs(this.options.policy, method, args, this.options.network, this.options.keeper);
+  async command(c: Cycle, method: 'heartbeat' | 'refresh_oracle' | 'set_keeper_price', args: unknown) {
+    const command = commandArgs(this.options.policy, method, args, this.options.network, this.options.keeper, this.options.autonomousMainnetV5 ? (method === 'heartbeat' ? 5 : method === 'refresh_oracle' ? 40 : 10) : undefined);
     c.commands.push(printable(command)); this.rt.print(`${this.options.dry ? 'WOULD SEND' : 'SEND'} ${printable(command)}`);
     if (this.options.dry || this.stopped()) return;
+    if (this.options.autonomousMainnetV5) {
+      await this.assertMainnetBudget(method === 'refresh_oracle' ? 40 : method === 'heartbeat' ? 5 : 10);
+      await this.store.claim(this.controlName, { method, createdAt: this.rt.now(), outcome: 'submission-uncertain' });
+    }
     const hash = await sendNear(this.rt, command); c.txHashes.push(hash);
+    if (this.options.autonomousMainnetV5) await this.store.write(this.controlName, { method, hash, outcome: 'awaiting-finality' });
     const raw = await this.client.rpc('tx', { tx_hash: hash, sender_account_id: this.options.keeper ?? KEEPER, wait_until: 'FINAL' });
     z.object({ final_execution_status: z.literal('FINAL'), status: z.object({ SuccessValue: z.string() }).strict(),
       transaction: z.object({ hash: z.literal(hash), signer_id: z.literal(this.options.keeper ?? KEEPER), receiver_id: z.literal(this.options.policy) }),
       receipts_outcome: z.array(z.object({ outcome: z.object({ status: z.record(z.string(), z.unknown()).refine(s => !('Failure' in s)) }) })),
     }).parse(raw);
+    if (this.options.autonomousMainnetV5) await this.store.remove(this.controlName);
     if (method === 'heartbeat') c.heartbeats++;
+  }
+  get controlName() { return `${this.options.policy}.control-uncertain.json`; }
+  stopReason: string | null = null;
+  lastChainTimeMs: number | null = null;
+  async assertMainnetBudget(gasTgas = 285) {
+    const started = this.rt.now();
+    const [balanceRaw, gasRaw, blockRaw, protocolRaw] = await Promise.all([
+      this.client.rpc('query', { request_type: 'view_account', account_id: this.options.keeper, finality: 'final' }),
+      this.client.rpc('gas_price', { block_id: null }),
+      this.client.rpc('block', { finality: 'optimistic' }),
+      this.client.rpc('EXPERIMENTAL_protocol_config', { finality: 'final' }),
+    ]);
+    const balance = z.object({ amount: z.string().regex(/^\d+$/), locked: z.string().regex(/^\d+$/), storage_usage: z.number().int().nonnegative() }).parse(balanceRaw);
+    const gas = BigInt(z.object({ gas_price: z.string().regex(/^\d+$/) }).parse(gasRaw).gas_price);
+    const chainMs = Number(BigInt(z.object({ header: z.object({ timestamp_nanosec: z.string().regex(/^\d+$/) }) }).parse(blockRaw).header.timestamp_nanosec) / 1_000_000n);
+    this.lastChainTimeMs = Math.min(started, chainMs);
+    if (started - chainMs > 3000) throw new Error('NEAR clock is more than 3 seconds ahead of optimistic block; stop until synchronized');
+    const storage = BigInt(balance.storage_usage) * 10n ** 19n;
+    const available = BigInt(balance.amount) - (storage > BigInt(balance.locked) ? storage - BigInt(balance.locked) : 0n);
+    // Retain 0.35 NEAR for one emergency MPC request even when frequent reads are free.
+    const reserve = 350_000_000_000_000_000_000_000n;
+    const protocol = z.object({ runtime_config: z.object({ min_gas_purchase_price: z.string().regex(/^\d+$/).optional() }) }).parse(protocolRaw);
+    const floor = BigInt(protocol.runtime_config.min_gas_purchase_price ?? '1000000000');
+    const conservativeGasPrice = [gas * 2n, floor, 1_000_000_000n].reduce((a, b) => a > b ? a : b);
+    const prepay = conservativeGasPrice * BigInt(gasTgas) * 10n ** 12n * 11n / 10n;
+    if (available < reserve + prepay) {
+      this.stopReason = 'NEAR keeper balance below 0.35 NEAR reserve plus conservative gas prepayment; replenish before restarting';
+      throw new Error(this.stopReason);
+    }
+    return available;
   }
   async address(state: PolicyState) {
     const identity = `${state.signer_account}:${state.derivation_path}`;
@@ -172,6 +209,13 @@ export class Keeper {
       equity: null, H: null, thresholdUsd: null, decision: 'monitor', txHashes: [], hyperliquidResponses: {}, commands: [],
       heartbeats: 0, reductions: 0, opens: 0, errors: [], dry: this.options.dry };
     try {
+      if (this.options.autonomousMainnetV5) {
+        if (await this.store.read(this.controlName)) {
+          this.stopReason = 'NEAR control submission uncertain; inspect control journal and finalized receipt before restarting';
+          c.decision = 'blocked-uncertain-control'; c.errors.push(this.stopReason); return c;
+        }
+        await this.assertMainnetBudget();
+      }
       // A signing journal that cannot be resolved blocks every new order, including reductions. Withhold the
       // heartbeat once it is older than half the contract timeout (or unreadable) so the public dead-man
       // `deleverage` path becomes available instead of being kept off by a stuck keeper.
@@ -180,19 +224,25 @@ export class Keeper {
         const journal = await this.store.read<ActiveOrder>(this.activeName);
         if (journal) journalAgeMs = this.rt.now() - (Number.isFinite(journal.createdAt) ? journal.createdAt : 0);
       } catch { journalAgeMs = Number.POSITIVE_INFINITY; }
-      let snapshot = await this.client.policy(this.options.policy, undefined, async state => {
+      const onState = async (state: PolicyState) => {
         this.heartbeatTimeoutMs = state.heartbeat_timeout_seconds * 1000;
         if (journalAgeMs > this.heartbeatTimeoutMs / 2) {
           c.heartbeatWithheld = true;
           c.errors.push('Policy signing journal unresolved past half the heartbeat timeout; heartbeat withheld so public deleverage can recover');
-        } else if (heartbeatDue(state, this.rt.now()) && !this.stopped()) {
-          try { await this.command(c, 'heartbeat', {}); } catch (e) { c.errors.push(safeFailure(e)); }
+        } else if ((this.options.autonomousMainnetV5 ? this.rt.now() / 1000 >= Number(state.last_keeper_heartbeat) + 600 : heartbeatDue(state, this.rt.now())) && !this.stopped()) {
+          try { await this.command(c, 'heartbeat', {}); } catch (e) { if (this.options.autonomousMainnetV5) throw e; c.errors.push(safeFailure(e)); }
         }
-      });
+      };
+      let snapshot = await this.client.policy(this.options.policy, undefined, this.options.autonomousMainnetV5 ? undefined : onState);
+      if (this.options.autonomousMainnetV5) {
+        if (!this.options.expectedCodeHash || snapshot.codeHash !== this.options.expectedCodeHash || !snapshot.keyless || snapshot.state.derivation_path !== 'counterweight-mainnet-v5') throw new Error('Policy v5 bytecode/keyless/derivation pin mismatch; no transaction sent');
+      }
       if (this.options.network === 'mainnet' && (snapshot.state.keeper !== this.options.keeper || BigInt(snapshot.state.limits.per_order_notional_cap) > 15_000_000n || BigInt(snapshot.state.limits.per_day_notional_cap) > 30_000_000n)) throw new Error('Policy mainnet keeper identity/$15 order/$30 daily caps mismatch');
+      if (this.options.autonomousMainnetV5) await onState(snapshot.state);
       c.policyState = snapshot;
       const address = await this.address(snapshot.state); c.derivedAddress = address;
       const o = await this.client.observe(address);
+      if (this.options.autonomousMainnetV5 && this.lastChainTimeMs !== null) o.observedAt = Math.min(o.observedAt, this.lastChainTimeMs);
       c.mark = o.mark; c.funding = o.funding; c.position = o.account.signedSize; c.equity = o.account.equity;
       c.hyperliquidResponses = { ...c.hyperliquidResponses, ...o.responses };
       const settings = riskSettings(snapshot.state, snapshot.rebalance), risk = assess(snapshot.state, o, settings, this.rt.now());
@@ -203,7 +253,16 @@ export class Keeper {
       if (active) { c.decision = 'dry-existing-order-blocked'; return c; }
       if (this.stopped()) { c.decision = 'stopping'; return c; }
       if (!snapshot.keyless) { c.decision = 'blocked-policy-access-keys'; return c; }
-      if (priceNeeded(snapshot.state, o.mark, o.observedAt, this.rt.now(), this.options.policy)) {
+      if (this.options.autonomousMainnetV5 && snapshot.state.oracle.account_id) {
+        const due = this.rt.now() / 1000 - Number(snapshot.state.oracle_timestamp) >= Math.min(30, snapshot.state.oracle.max_age_seconds / 2);
+        const riskExit = o.account.signedSize < 0 && risk.metrics.headroom < risk.thresholdUsd;
+        // Refresh only on an exit candidate or the ten-minute liveness interval.
+        if (riskExit || (due && c.heartbeats > 0)) {
+          await this.command(c, 'refresh_oracle', {});
+          if (!this.options.dry) snapshot = await this.client.policy(this.options.policy);
+        }
+      }
+      if (!this.options.autonomousMainnetV5 && priceNeeded(snapshot.state, o.mark, o.observedAt, this.rt.now(), this.options.policy)) {
         await this.command(c, 'set_keeper_price', { price: String(Math.round(o.mark * 1e6)), observed_at: String(Math.floor(o.observedAt / 1000)) });
         if (this.options.dry) snapshot = { ...snapshot, state: { ...snapshot.state, reference_price: String(Math.round(o.mark * 1e6)), reference_price_timestamp: String(Math.floor(o.observedAt / 1000)) } };
         else {
@@ -215,8 +274,16 @@ export class Keeper {
       const latestSettings = riskSettings(snapshot.state, snapshot.rebalance);
       const latestRisk = assess(snapshot.state, o, latestSettings, this.rt.now());
       c.H = latestRisk.metrics.headroom; c.thresholdUsd = latestRisk.thresholdUsd; c.risk = latestRisk; c.riskSettings = latestSettings;
+      if (this.options.autonomousMainnetV5 && o.account.signedSize < 0 && latestRisk.metrics.headroom < latestRisk.thresholdUsd && !await this.v5ExitAllowed(snapshot.state, o.mark, c)) return c;
       const expected = planOrder(this.options.policy, snapshot.state, o, latestSettings, this.rt.now(), this.options.allowOpen);
       if (!expected) return c;
+      if (this.options.autonomousMainnetV5 && c.exitPricing) {
+        const cap = BigInt((c.exitPricing as { max_fallback_price: string }).max_fallback_price);
+        const price = units(expected.price, 6);
+        const limited = price < cap ? price : cap;
+        const tick = 10n ** BigInt(Math.min(6, Math.max(snapshot.state.size_decimals, limited.toString().length - 5)));
+        expected.price = decimal(limited / tick * tick, 6);
+      }
       if ((this.options.policy === V3_POLICY || this.options.network === 'mainnet') && !expected.reduceOnly) {
         // Owner-only margin attestations gate v3 entries. Check before claiming a
         // signature journal: a known stale preflight must not become an uncertain send.
@@ -231,9 +298,10 @@ export class Keeper {
         }
       }
       c.decision = `${this.options.dry ? 'would-' : ''}${expected.reduceOnly ? 'reduce-only-close' : 'open-within-caps'}`;
-      const args = commandArgs(this.options.policy, 'request_order_signature', expected.args, this.options.network, this.options.keeper);
+      const args = commandArgs(this.options.policy, 'request_order_signature', expected.args, this.options.network, this.options.keeper, this.options.autonomousMainnetV5 ? 285 : undefined);
       c.commands.push(printable(args)); this.rt.print(`${this.options.dry ? 'WOULD SEND' : 'SEND'} ${printable(args)}`);
       if (this.options.dry || this.stopped()) return c;
+      if (this.options.autonomousMainnetV5) await this.assertMainnetBudget();
       const pending: ActiveOrder = { phase: 'near-uncertain', expected, address, codeHash: snapshot.codeHash, before: o.clearinghouseState, createdAt: this.rt.now() };
       // Claim before invoking near-cli-rs. Even a crash before receiving its hash blocks new signatures.
       await this.store.claim(this.activeName, pending);
@@ -242,15 +310,34 @@ export class Keeper {
       pending.txHash = await sendNear(this.rt, args); c.txHashes.push(pending.txHash); this.urgentUntil = pending.createdAt + 60000;
       await this.store.write(this.activeName, pending);
       await this.verifyActive(pending, c);
-    } catch (e) { c.errors.push(safeFailure(e)); c.decision = 'error-await-next-cycle'; }
+    } catch (e) { if (this.options.autonomousMainnetV5 && await this.store.read(this.controlName).catch(() => true)) this.stopReason = 'NEAR control outcome uncertain; inspect journal before restarting'; c.errors.push(safeFailure(e)); c.decision = 'error-await-next-cycle'; }
     finally { c.finishedAt = new Date(this.rt.now()).toISOString(); }
     return c;
+  }
+  async v5ExitAllowed(state: PolicyState, mark: number, c: Cycle): Promise<boolean> {
+    if (state.oracle.account_id) {
+      const fresh = BigInt(state.oracle_price) > 0n && Number(state.oracle_timestamp) <= this.rt.now() / 1000
+        && this.rt.now() / 1000 - Number(state.oracle_timestamp) <= Math.min(60, state.oracle.max_age_seconds);
+      if (!fresh) { c.decision = 'blocked-oracle-stale'; return false; }
+      return true;
+    }
+    // Fallback preflight is supplied by v5's on-chain anchor view; fail closed on older bytecode.
+    const pricing = await this.client.view(this.options.policy, 'get_exit_pricing');
+    const p = z.object({ anchor_price: z.string().regex(/^\d+$/), mark_band_bps: z.number().int().nonnegative(), max_fallback_price: z.string().regex(/^\d+$/) }).parse(pricing.value);
+    const price = BigInt(Math.round(mark * 1e6)), anchor = BigInt(p.anchor_price), band = BigInt(p.mark_band_bps);
+    if (anchor === 0n || price < BigInt(state.oracle.min_price) || price > BigInt(state.oracle.max_price)
+      || price * 10000n < anchor * (10000n - band) || price * 10000n > anchor * (10000n + band)) {
+      c.decision = 'blocked-fallback-price-band'; return false;
+    }
+    c.exitPricing = p;
+    c.exitPriceSource = 'bounded-unauthenticated-fallback';
+    return true;
   }
   heartbeatTimeoutMs = 3_600_000;
   urgentUntil = 0;
 }
 export async function runKeeper(options: RunOptions, dependencies: { rt?: Runtime; store?: DiskStore; signal?: AbortSignal; runId?: string } = {}) {
-  const rt = dependencies.rt ?? runtime(), store = dependencies.store ?? new DiskStore(options.network === 'mainnet' ? 'reports/keeper-mainnet' : 'reports/keeper-run');
+  const rt = dependencies.rt ?? runtime(), store = dependencies.store ?? new DiskStore(options.network === 'mainnet' ? options.autonomousMainnetV5 ? 'reports/keeper-mainnet-v5' : 'reports/keeper-mainnet' : 'reports/keeper-run');
   const runId = dependencies.runId ?? `${new Date(rt.now()).toISOString().replaceAll(/[:.]/g, '-')}-${randomUUID().slice(0, 8)}`;
   await store.init();
   const lock = `${options.policy}${options.dry ? '.dry' : ''}.lock.json`;
@@ -268,6 +355,7 @@ export async function runKeeper(options: RunOptions, dependencies: { rt?: Runtim
       summary = addCycle(summary, c, interval);
       await store.replace(`${runId}.md`, summaryMarkdown(summary, options, runId, false));
       rt.print(`${c.timestamp} ${c.decision} H=${c.H ?? 'unavailable'} errors=${c.errors.length}`);
+      if (keeper.stopReason) { rt.print(keeper.stopReason); break; }
       if (dependencies.signal?.aborted || rt.now() >= deadline || (options.cycles !== undefined && summary.cycles >= options.cycles)) break;
       interval = Math.min(options.intervalMs, keeper.heartbeatTimeoutMs / 6, keeper.urgentUntil > rt.now() ? 5000 : Infinity);
       // Schedule from cycle start; long RPC/MPC work is included in gap accounting.

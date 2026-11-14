@@ -558,6 +558,10 @@ impl Policy {
     }
     pub(crate) fn check_rebalance_increase(&self, total: u128) {
         self.assert_route_idle();
+        require!(
+            !self.network.mainnet() || self.get_margin().is_some(),
+            "ERR_MARGIN_CONFIG"
+        );
         if self.get_margin().is_some() {
             self.assert_margin_health(total, self.margin_state().usable_margin.0);
         }

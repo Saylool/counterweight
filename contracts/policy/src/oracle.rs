@@ -1,4 +1,4 @@
-//! Opening bounds are owner time-locked; exits use a separate wide sanity range.
+//! Authenticated oracle first; fallback exits have a non-ratcheting opening/authenticated anchor.
 use super::*;
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug)]
@@ -73,10 +73,13 @@ impl Policy {
         }
         self.oracle_price = price;
         self.oracle_timestamp = published;
+        let mut anchor = self.exit_anchor();
+        anchor.price = U128(price);
+        write_extension(EXIT_ANCHOR_KEY, &anchor);
         true
     }
     /// Only keeper may supply fresh observations when the public feed is unavailable/stale.
-    /// Cache wide sane marks for exits/health; opens separately enforce time-locked bounds.
+    /// Cache observations for opens/health; this never changes the exit anchor.
     pub fn set_keeper_price(&mut self, price: U128, observed_at: U64) {
         self.assert_keeper();
         require!(!self.oracle_fresh(), "ERR_ORACLE_PRIMARY");
@@ -202,4 +205,104 @@ pub(crate) fn write_extension<T: near_sdk::borsh::BorshSerialize>(key: &[u8], va
         key,
         &near_sdk::borsh::to_vec(value).expect("ERR_EXTENSION_STATE"),
     );
+}
+
+const EXIT_ANCHOR_KEY: &[u8] = b"v5:exit_anchor";
+pub const EXIT_MARK_BAND_BPS: u16 = 25;
+pub const EXIT_SLIPPAGE_BPS: u16 = 100;
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug)]
+pub(crate) struct ExitAnchor {
+    pub price: U128,
+    pub margin_at_open: U128,
+    pub reserved_size: U128,
+}
+#[near(serializers = [json])]
+pub struct ExitPricing {
+    pub anchor_price: U128,
+    pub mark_band_bps: u16,
+    pub fallback_slippage_bps: u16,
+    pub max_fallback_price: U128,
+}
+#[near]
+impl Policy {
+    /// Opening/authenticated anchor, independent of mutable caller price caches.
+    pub fn get_exit_pricing(&self) -> ExitPricing {
+        let anchor = self.exit_anchor();
+        let mut cap = anchor.price.0.checked_mul(10_100).expect("ERR_OVERFLOW") / 10_000;
+        if self.signed_short_size > 0 && anchor.margin_at_open.0 > 0 {
+            let margin = self.get_margin().map_or(anchor.margin_at_open.0, |m| {
+                m.usable_margin.0.min(anchor.margin_at_open.0)
+            });
+            // All reserved exposure combined can incur at most 1% attested margin
+            // above the anchor. Reduce-only execution cannot add new exposure.
+            let increment = (margin / 100).checked_mul(BASE).expect("ERR_OVERFLOW")
+                / self.signed_short_size.max(anchor.reserved_size.0);
+            cap = cap.min(anchor.price.0.checked_add(increment).expect("ERR_OVERFLOW"));
+        }
+        ExitPricing {
+            anchor_price: anchor.price,
+            mark_band_bps: EXIT_MARK_BAND_BPS,
+            fallback_slippage_bps: EXIT_SLIPPAGE_BPS,
+            max_fallback_price: U128(cap),
+        }
+    }
+}
+impl Policy {
+    pub(crate) fn initialize_exit_anchor(price: u128) {
+        write_extension(
+            EXIT_ANCHOR_KEY,
+            &ExitAnchor {
+                price: U128(price),
+                margin_at_open: U128(0),
+                reserved_size: U128(0),
+            },
+        );
+    }
+    fn exit_anchor(&self) -> ExitAnchor {
+        read_extension(EXIT_ANCHOR_KEY).expect("ERR_EXIT_ANCHOR")
+    }
+    pub(crate) fn record_opening_anchor(&self, opening_limit: u128, opening_size: u128) {
+        let margin = self.get_margin().map_or(0, |m| m.usable_margin.0);
+        let old = self.exit_anchor();
+        let fresh_epoch = self.signed_short_size == 0;
+        let anchor = ExitAnchor {
+            price: U128(if fresh_epoch {
+                opening_limit
+            } else {
+                old.price.0.min(opening_limit)
+            }),
+            margin_at_open: U128(if fresh_epoch {
+                margin
+            } else {
+                old.margin_at_open.0.min(margin)
+            }),
+            reserved_size: U128(
+                add(self.signed_short_size, opening_size).max(if fresh_epoch {
+                    0
+                } else {
+                    old.reserved_size.0
+                }),
+            ),
+        };
+        write_extension(EXIT_ANCHOR_KEY, &anchor);
+    }
+    pub(crate) fn fallback_exit_limit(&self, mark: u128) -> u128 {
+        assert_exit_price(mark);
+        self.assert_price_bounds(mark);
+        let pricing = self.get_exit_pricing();
+        let anchor = pricing.anchor_price.0;
+        let difference = mark
+            .abs_diff(anchor)
+            .checked_mul(10_000)
+            .expect("ERR_OVERFLOW");
+        require!(
+            difference
+                <= anchor
+                    .checked_mul(u128::from(EXIT_MARK_BAND_BPS))
+                    .expect("ERR_OVERFLOW"),
+            "ERR_EXIT_ANCHOR_BAND"
+        );
+        (mark.checked_mul(10_100).expect("ERR_OVERFLOW") / 10_000).min(pricing.max_fallback_price.0)
+    }
 }

@@ -9,6 +9,7 @@ import { BASE, decimal, orderPrice, parseMarket, priceBounds, units, v3ExitPrice
 import { parseAccount, parseLifecycleReceipt, parseMainnetWithdrawal, spotUsdc, verifyClassTransfer, verifyFill, WITHDRAWAL_WINDOW_MS, type ExpectedCall } from './lifecycle-parsing.js';
 import { committedWasm, ORACLE, parseOptions, publicKey, SIGNING_LIMITS, txHash } from './testnet-common.js';
 import { shellQuote } from './proof-plan.js';
+import { mainnetVersion, selectedPolicyVersion, PYTH_NEAR_STATUS, type PolicyVersion } from './mainnet-version.js';
 import { assertSigningResources, readSigningResources, signingResourcesSchema } from './mainnet-signer.js';
 
 export function assertSingleLabelChild(account: string, owner: string) {
@@ -63,7 +64,7 @@ export function assertMainnetClock(hostMs: number, nearMs: number, venueMs: numb
   if (![hostMs, nearMs, venueMs].every(Number.isFinite)) throw new Error('STOP: mainnet clock comparison unavailable');
   // The latest NEAR block is itself about one block time (1-1.5 s) old, so its bound is looser; observations still use min(host, NEAR, venue).
   if (hostMs - nearMs > 3000 || hostMs - venueMs > 1000)
-    throw new Error(`STOP: Mac clock is more than 1 s ahead of NEAR/venue (NEAR ${hostMs - nearMs} ms, venue ${hostMs - venueMs} ms). Sync Date & Time, then retry step 12 before any send.`);
+    throw new Error(`STOP: Mac clock is more than 1 s ahead of venue or 3 s ahead of NEAR (NEAR ${hostMs - nearMs} ms, venue ${hostMs - venueMs} ms). Sync Date & Time, then retry step 12 before any send.`);
 }
 function nearBlockTime(raw: unknown) {
   const header = z.object({ header: z.object({ timestamp_nanosec: z.string().optional(), timestamp: z.union([z.string(), z.number()]).optional() }) }).parse(raw).header;
@@ -82,10 +83,10 @@ export async function checkMainnetClock(client: PublicClient) {
 }
 
 export const V4_WASM = 'contracts/policy/artifacts/counterweight_policy_v4.wasm';
-export const MAINNET_PLAN = 'docs/evidence/policy-v4-mainnet-plan.json';
+export const MAINNET_PLAN = mainnetVersion().plan;
 export const MAINNET_MARGIN_LIMITS = { per_withdrawal_usdc: '20000000', daily_withdrawal_usdc: '20000000',
   min_residual_equity_usdc: '1000000', min_headroom_bps: 1000, fee_reserve_usdc: '100000', max_fee_usdc: '1000000' };
-const PATH = 'counterweight-mainnet-v4';
+const PATH = mainnetVersion().derivationPath;
 // A user signature can be relayed near day two; retain another day for ledger observation.
 const MAINNET_WITHDRAWAL_HISTORY_MS = 3 * WITHDRAWAL_WINDOW_MS;
 const suffix = 'network-config mainnet sign-with-keychain send';
@@ -93,7 +94,7 @@ export function mainnetCall(policy: string, method: string, args: unknown, calle
   accountForNetwork(policy, 'mainnet'); accountForNetwork(caller, 'mainnet');
   return `near contract call-function as-transaction ${policy} ${method} json-args ${shellQuote(JSON.stringify(args))} prepaid-gas '${gas}' attached-deposit '${deposit}' sign-as ${caller} ${suffix}`;
 }
-export function mainnetInitialization(owner: string, keeper: string, recipient: string, market: { assetIndex: number; szDecimals: number; mark: string }) {
+export function mainnetInitialization(owner: string, keeper: string, recipient: string, market: { assetIndex: number; szDecimals: number; mark: string }, version: PolicyVersion = selectedPolicyVersion()) {
   accountForNetwork(owner, 'mainnet'); accountForNetwork(keeper, 'mainnet');
   z.string().regex(/^0x[0-9a-fA-F]{40}$/).refine(s => !/^0x0{40}$/.test(s)).parse(recipient);
   z.number().int().nonnegative().parse(market.assetIndex); z.number().int().min(0).max(6).parse(market.szDecimals);
@@ -102,29 +103,33 @@ export function mainnetInitialization(owner: string, keeper: string, recipient: 
   // Immutable opening quantity ceiling also fits $15 at the initial upper opening bound.
   const maxShort = 15_000_000n * BASE / BigInt(bounds.max_price) / lot * lot;
   if (maxShort <= 0n) throw new Error('Policy $15 cap cannot fit a venue size lot');
-  return { owner, keeper, asset_index: market.assetIndex, size_decimals: market.szDecimals, derivation_path: PATH,
+  return { owner, keeper, asset_index: market.assetIndex, size_decimals: market.szDecimals, derivation_path: mainnetVersion(version).derivationPath,
     evm_recipient: recipient.toLowerCase(), signer_account: 'v1.signer', wnear_account: 'wrap.near', network: 'Mainnet',
     oracle: { ...ORACLE, min_price: bounds.min_price, max_price: bounds.max_price },
     limits: { max_short_size: maxShort.toString(), per_order_notional_cap: '15000000', per_day_notional_cap: '30000000',
-      cooldown_seconds: 60, price_band_bps: 100, price_max_age_seconds: 60 },
+      cooldown_seconds: 60, price_band_bps: version === 'v5' ? 10 : 100, price_max_age_seconds: 60 },
     heartbeat_timeout_seconds: 3600, reference_price: bounds.reference_price, signing_limits: SIGNING_LIMITS };
 }
 const planSchema = z.object({ network: z.literal('mainnet'), policy: z.string(), owner: z.string(), keeper: z.string(),
   market: z.object({ assetIndex: z.number(), szDecimals: z.number(), mark: z.string() }), init: z.unknown(),
-  derived: z.object({ address: z.string() }), artifact: z.object({ sha256: z.string(), codeHash: z.string(), bytes: z.number() }), marginLimits: z.unknown(), signingResources: signingResourcesSchema });
+  derived: z.object({ address: z.string() }), artifact: z.object({ sha256: z.string(), codeHash: z.string(), bytes: z.number() }), marginLimits: z.unknown(), signingResources: signingResourcesSchema, policyVersion: z.enum(['v4', 'v5']).optional(), creationNear: z.string().optional() });
 export async function loadMainnetPlan(file: string) {
   const p = planSchema.parse(JSON.parse(await readFile(file, 'utf8')));
   accountForNetwork(p.policy, 'mainnet');
   assertSingleLabelChild(p.policy, p.owner); assertSingleLabelChild(p.keeper, p.owner);
   if (p.policy === p.keeper) throw new Error('Policy must be a separate owner sub-account');
   const recipient = z.object({ evm_recipient: z.string() }).parse(p.init).evm_recipient;
-  const init = mainnetInitialization(p.owner, p.keeper, recipient, p.market);
+  const path = z.object({ derivation_path: z.string() }).parse(p.init).derivation_path;
+  const version = p.policyVersion ?? (path === mainnetVersion('v5').derivationPath ? 'v5' : 'v4');
+  const config = mainnetVersion(version);
+  const init = mainnetInitialization(p.owner, p.keeper, recipient, p.market, version);
   if (!isDeepStrictEqual(init, p.init) || !isDeepStrictEqual(p.marginLimits, MAINNET_MARGIN_LIMITS)) throw new Error('Policy mainnet plan config mismatch');
-  const artifact = await committedWasm(V4_WASM, 'contracts/policy/artifacts/SHA256SUMS.v4');
+  const artifact = await committedWasm(config.wasm, config.checksum);
   if (!isDeepStrictEqual(artifact, p.artifact)) throw new Error('Policy mainnet artifact differs from saved plan');
-  return { ...p, init };
+  if (p.creationNear !== undefined && p.creationNear !== config.creationNear) throw new Error('Policy creation deposit differs from version budget');
+  return { ...p, init, policyVersion: version, creationNear: config.creationNear };
 }
-type Plan = Awaited<ReturnType<typeof loadMainnetPlan>>;
+type Plan = Omit<Awaited<ReturnType<typeof loadMainnetPlan>>, 'policyVersion' | 'creationNear'> & { policyVersion?: PolicyVersion; creationNear?: string };
 export function mainnetSigningGasTgas(plan: Pick<Plan, 'signingResources'>) {
   // lib.rs assert_signing_resources; preserve frozen signer/callback allocations.
   return plan.signingResources.signer_gas_tgas + plan.signingResources.callback_gas_tgas + 25;
@@ -146,6 +151,7 @@ export async function checkPolicy(client: PublicClient, plan: Plan, requireKeyle
   for (const key of ['keeper', 'asset_index', 'size_decimals', 'derivation_path', 'evm_recipient', 'signer_account', 'network', 'oracle', 'limits', 'signing_limits', 'heartbeat_timeout_seconds'] as const)
     if (!isDeepStrictEqual(state[key], plan.init[key])) throw new Error(`Policy mainnet ${key} differs from saved plan`);
   if (p.codeHash !== plan.artifact.codeHash || (requireKeyless && !p.keyless)) throw new Error('Policy mainnet code/access-key check failed');
+  const exitPricing = plan.policyVersion === 'v5' ? (await client.view(plan.policy, 'get_exit_pricing', {}, p.block)).value : null;
   if (p.rebalance !== null) throw new Error('Policy mainnet lifecycle requires adapter-free controls');
   if (!block) {
     const liveResources = await readSigningResources(client);
@@ -160,8 +166,23 @@ export async function checkPolicy(client: PublicClient, plan: Plan, requireKeyle
   if (derived !== plan.derived.address) throw new Error('Policy mainnet address differs from saved plan');
   const token = z.string().regex(/^\d+$/).parse(tokenRead.value);
   if (token !== p.state.spot_balance) throw new Error('Policy mainnet wNEAR custody differs from ledger');
-  return { ...p, margin, token, fullState: state };
+  return { ...p, margin, token, fullState: state, exitPricing };
 }
+
+/** Mirror v5's downward-quantized total fallback cap; never expect an unclamped IOC. */
+export function v5FallbackExitPrice(mark: bigint, szDecimals: number, corridor: { min_price: string; max_price: string }, raw: unknown) {
+  const p = z.object({ anchor_price: z.string(), mark_band_bps: z.number().int(), fallback_slippage_bps: z.number().int(), max_fallback_price: z.string() }).parse(raw);
+  const anchor = BigInt(p.anchor_price), cap = BigInt(p.max_fallback_price);
+  if (anchor <= 0n || cap <= 0n || mark < BigInt(corridor.min_price) || mark > BigInt(corridor.max_price) ||
+      (mark > anchor ? mark - anchor : anchor - mark) * 10000n > anchor * BigInt(p.mark_band_bps)) throw new Error('v5 fallback mark outside authenticated/opening anchor band or timelocked corridor; do not forge a replacement mark');
+  const rawPrice = mark * BigInt(10000 + p.fallback_slippage_bps) / 10000n;
+  const limit = rawPrice < cap ? rawPrice : cap;
+  // Hyperliquid uses 5 significant figures and at most 6 - szDecimals fractional digits.
+  const digits = limit.toString().length;
+  const quantum = 10n ** BigInt(Math.min(6, Math.max(szDecimals, digits - 5)));
+  return limit / quantum * quantum;
+}
+
 const requestSchema = z.object({ network: z.literal('mainnet'), plan: z.string(), createdAt: z.number(), address: z.string(), codeHash: z.string(),
   before: z.object({ clearing: z.unknown(), spot: z.unknown() }), expected: z.object({
     method: z.enum(['request_order_signature', 'request_evm_withdrawal', 'request_usd_class_transfer', 'set_paused', 'request_next_invalidation']), args: z.record(z.string(), z.unknown()),
@@ -182,7 +203,7 @@ export async function readConsumedClassTransfers(client: PublicClient, planFile:
   let names: string[];
   try { names = await readdir('docs/evidence'); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return result; throw error; }
-  for (const name of names.filter(n => /^mainnet-v4-to-perp-.*\.request\.json\.verified\.json$/.test(n))) {
+  for (const name of names.filter(n => new RegExp(`^mainnet-${plan.policyVersion ?? 'v4'}-to-perp-.*\\.request\\.json\\.verified\\.json$`).test(n))) {
     const proof = classProofSchema.parse(JSON.parse(await readFile(`docs/evidence/${name}`, 'utf8')));
     const saved = requestSchema.parse(JSON.parse(await readFile(proof.request, 'utf8')));
     if (saved.plan !== planFile || saved.address !== plan.derived.address || saved.codeHash !== plan.artifact.codeHash ||
@@ -210,6 +231,7 @@ export function mainnetOptions(argv: string[]) {
 /** Read-only mainnet operator assistant. It prints every transaction/relay for the owner to execute. */
 export async function mainnetLifecycle(argv: string[]) {
   const opts = mainnetOptions(argv), planFile = opts.plan ?? MAINNET_PLAN;
+  const config = mainnetVersion();
   const client = new PublicClient(runtime(), MAINNET_RPC, 'mainnet');
   const commands: string[] = [];
   let requestFile: string | undefined;
@@ -222,21 +244,23 @@ export async function mainnetLifecycle(argv: string[]) {
     const policy = accountForNetwork(opts.policy ?? '', 'mainnet');
     assertSingleLabelChild(policy, owner); assertSingleLabelChild(keeper, owner);
     if (policy === keeper || owner === keeper) throw new Error('Policy/keeper must be separate accounts; policy must be owner sub-account');
-    const [rawMarket, derived, artifact, signingResources] = await Promise.all([client.info({ type: 'metaAndAssetCtxs' }), deriveAddress('mainnet', policy, PATH), committedWasm(V4_WASM, 'contracts/policy/artifacts/SHA256SUMS.v4'), readSigningResources(client)]);
+    const [rawMarket, derived, artifact, signingResources] = await Promise.all([client.info({ type: 'metaAndAssetCtxs' }), deriveAddress('mainnet', policy, PATH), committedWasm(config.wasm, config.checksum), readSigningResources(client)]);
     const market = parseMarket(rawMarket);
     const init = mainnetInitialization(owner, keeper, opts['owner-evm'] ?? '', market);
-    const upperCreation = BigInt(artifact.bytes + 2048 + 131072) * 10n ** 19n + BASE + BASE / 2n;
-    if (upperCreation > 7n * BASE) throw new Error('Policy artifact exceeds conservative 7 NEAR account budget');
+    // v4 observed state overhead: 345920 - 344776 = 1144 bytes.
+    // Reserve 128 KiB growth plus 0.5 NEAR operations; fail before funding if v5 no longer fits.
+    const upperCreation = BigInt(artifact.bytes + (config.version === 'v5' ? 1144 + 131072 : 2048 + 131072)) * 10n ** 19n + (config.version === 'v5' ? BASE / 2n : BASE + BASE / 2n);
+    if (upperCreation > units(config.creationNear, 24)) throw new Error(`Policy artifact/storage/growth/operating reserve exceeds ${config.creationNear} NEAR account budget`);
     const plan = { network: 'mainnet', policy, owner, keeper, market, init, derived, artifact, signingResources, marginLimits: MAINNET_MARGIN_LIMITS,
-      capturedAt: new Date().toISOString(), creationNear: '7', maxMarginUsdc: '20', maxNotionalUsd: '15', rawMarket };
+      capturedAt: new Date().toISOString(), policyVersion: config.version, creationNear: config.creationNear, oracleStatus: PYTH_NEAR_STATUS, maxMarginUsdc: '20', maxNotionalUsd: '15', rawMarket };
     await mkdir('docs/evidence', { recursive: true });
     await writeFile(planFile, `${JSON.stringify(plan, null, 2)}\n`, { flag: 'wx' });
     const pk = opts['policy-public-key'] ? shellQuote(publicKey(opts['policy-public-key'])) : '"${POLICY_PUBLIC_KEY:?Set the temporary policy PUBLIC key from list-keys}"';
     print(`MAINNET REAL FUNDS. Commands only; no keys read, no NEAR sends, no exchange submission. Plan: ${planFile}`);
     print(`Derived address ${derived.address}; mainnet signer v1.signer; path ${PATH}. NEAR index ${market.assetIndex}, szDecimals ${market.szDecimals} discovered from metaAndAssetCtxs.universe.`);
     print(`Caps: $15/order and $30/rolling day (one retry); margin/class transfer <=20 USDC; venue minimum $10. Opening max size ${decimal(BigInt(init.limits.max_short_size), 24)} NEAR. Mainnet bridge withdraw3 fee $1; destination Arbitrum One. Deposit already-owned USDC to THIS derived account's perps; owner-wallet margin is not policy margin.`);
-    print(`near account create-account fund-myself ${policy} '7 NEAR' ${opts['policy-public-key'] ? `use-manually-provided-public-key ${pk}` : 'autogenerate-new-keypair save-to-keychain'} sign-as ${owner} ${suffix}`);
-    print(`test "$(shasum -a 256 ${V4_WASM} | cut -d ' ' -f 1)" = '${artifact.sha256}' && near contract deploy ${policy} use-file ${V4_WASM} with-init-call new json-args ${shellQuote(JSON.stringify(init))} prepaid-gas '30 Tgas' attached-deposit '0 NEAR' ${suffix}`);
+    print(`near account create-account fund-myself ${policy} '${config.creationNear} NEAR' ${opts['policy-public-key'] ? `use-manually-provided-public-key ${pk}` : 'autogenerate-new-keypair save-to-keychain'} sign-as ${owner} ${suffix}`);
+    print(`test "$(shasum -a 256 ${config.wasm} | cut -d ' ' -f 1)" = '${artifact.sha256}' && near contract deploy ${policy} use-file ${config.wasm} with-init-call new json-args ${shellQuote(JSON.stringify(init))} prepaid-gas '30 Tgas' attached-deposit '0 NEAR' ${suffix}`);
     print(mainnetCall(policy, 'configure_margin_withdrawals', { limits: MAINNET_MARGIN_LIMITS }, owner));
     print(mainnetCall(policy, 'set_signing_resources', { fee: signingResources.fee, signer_gas_tgas: signingResources.signer_gas_tgas, callback_gas_tgas: signingResources.callback_gas_tgas }, owner));
     print(`Live v1.signer ${signingResources.version}, code ${signingResources.codeHash}, verified release deposit ${signingResources.fee} yoctoNEAR; gas minimum ${signingResources.minimumGasTgas} Tgas; policy ${signingResources.signer_gas_tgas}+${signingResources.callback_gas_tgas}+25 <=300 Tgas. Unknown release or incompatible fee/gas stops planning.`);
@@ -246,7 +270,8 @@ export async function mainnetLifecycle(argv: string[]) {
     print(`IRREVERSIBLE: after verifying code, recipient, config and the sole temporary key, owner removes it:`);
     print(`npx tsx scripts/mainnet-owner.ts --network=mainnet --i-understand-real-funds --plan=${shellQuote(planFile)} --step=delete-key`);
     print(`Verify zero keys at finality: python3 contracts/policy/tools/check_custody_keys.py --rpc ${shellQuote(MAINNET_RPC)} --account ${policy}`);
-    print(`Then ${repeat} --step=spot --amount=OWNER_SELECTED_NEAR, followed by --step=open. Keep 0.1 NEAR owner gas and 0.1 NEAR in keeper separately. Account budget already includes >=1 NEAR operating reserve. Total fresh NEAR budget: 7.22 + chosen spot NEAR (7 policy +0.02 registrations +0.1 owner gas +0.1 keeper); subtract new wrapping when using existing wNEAR.`);
+    if (config.version === 'v5') print(`Prepared/unexecuted v5: ${PYTH_NEAR_STATUS} Reuse keeper4 and existing wNEAR. Policy 5.5 +owner reserve0.50 +policy registration0.01 =6.01 NEAR total liquid requirement; owner helper prints exact top-up. No real Intents route configured. Opening band10bps; exits fallback25bps anchor band with contract cumulative loss cap.`);
+    else print(`Then ${repeat} --step=spot --amount=OWNER_SELECTED_NEAR, followed by --step=open. Keep 0.1 NEAR owner gas and 0.1 NEAR in keeper separately. Account budget already includes >=1 NEAR operating reserve. Total fresh NEAR budget: 7.22 + chosen spot NEAR (7 policy +0.02 registrations +0.1 owner gas +0.1 keeper); subtract new wrapping when using existing wNEAR.`);
     return;
   }
   const plan = await loadMainnetPlan(planFile);
@@ -257,6 +282,11 @@ export async function mainnetLifecycle(argv: string[]) {
   if (venue.market.assetIndex !== plan.init.asset_index || venue.market.szDecimals !== plan.init.size_decimals) throw new Error('Policy mainnet NEAR metadata changed');
   if (opts.step === 'open-prepare') {
     command(plan, 'heartbeat', {}, plan.keeper);
+    if (plan.init.oracle.account_id !== null) {
+      command(plan, 'refresh_oracle', {}, plan.keeper, '50 Tgas');
+      return; // next batch reads the finalized authenticated cache; never overwrite it
+    }
+    print(PYTH_NEAR_STATUS);
     command(plan, 'set_keeper_price', { price: String(Math.round(Number(venue.market.mark) * 1e6)), observed_at: String(Math.floor(venue.observedAt / 1000)) }, plan.keeper);
     return;
   }
@@ -371,7 +401,9 @@ export async function mainnetLifecycle(argv: string[]) {
       && Number(observedAt) - Number(state.oracle_timestamp) <= Math.min(state.oracle.max_age_seconds, 60);
     // Without a fresh oracle the contract prices an OPEN from its stored keeper reference (set in open-prepare), not from a newer venue mark; a close passes its own reference.
     const reference = freshOracle ? BigInt(state.oracle_price) : close ? mark : BigInt(state.reference_price);
-    const px = close ? v3ExitPrice(reference, venue.market.szDecimals) : orderPrice(reference, venue.market.szDecimals, false, state.limits.price_band_bps);
+    const px = close && plan.policyVersion === 'v5' && !freshOracle
+      ? v5FallbackExitPrice(mark, venue.market.szDecimals, plan.init.oracle, policy.exitPricing)
+      : close ? v3ExitPrice(reference, venue.market.szDecimals) : orderPrice(reference, venue.market.szDecimals, false, state.limits.price_band_bps);
     if (size <= 0n || size % lot !== 0n || (!close && (size * px < 10_000_000n * BASE || size * ((reference * 10100n + 9999n) / 10000n) > 15_000_000n * BASE))) throw new Error('Policy cannot fit venue $10 minimum under $15 cap and spot backing');
     if (!close) observe();
     expected = { method: 'request_order_signature', args: { order: { asset_index: venue.market.assetIndex, size: size.toString(), reduce_only: close,
@@ -379,7 +411,7 @@ export async function mainnetLifecycle(argv: string[]) {
       policy: plan.policy, asset: venue.market.assetIndex, reduceOnly: close, size: decimal(size, 24), price: decimal(px, 6), recipient: plan.init.evm_recipient, amount: '0' };
   }
   if (Date.now() - venue.observedAt > 8000) throw new Error('Hyperliquid observations too old; regenerate commands');
-  const file = `docs/evidence/mainnet-v4-${opts.step}-${Date.now()}-${randomUUID().slice(0, 8)}.request.json`;
+  const file = `docs/evidence/mainnet-${plan.policyVersion}-${opts.step}-${Date.now()}-${randomUUID().slice(0, 8)}.request.json`;
   requestFile = file;
   await writeFile(file, `${JSON.stringify({ network: 'mainnet', plan: planFile, createdAt: Date.now(), expected,
     address: plan.derived.address, codeHash: plan.artifact.codeHash, before: { clearing: venue.clearing, spot: venue.spot } }, null, 2)}\n`, { flag: 'wx' });

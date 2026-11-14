@@ -1,0 +1,12 @@
+{
+  "amount": "3.6",
+  "yocto": "3600000000000000000000000",
+  "totalNear": "6.01",
+  "maximumNear": "6.01",
+  "ownerBalanceAtPlan": "824075179214294499999998",
+  "fundedBaselineAtPlan": "6011820000000000000000000",
+  "ownerLiquidAtPlan": "0.822255179214294499999998",
+  "extraNearRequired": "5.187744820785705500000002",
+  "reuseWrappedNear": true,
+  "creationNear": "5.5"
+}

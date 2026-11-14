@@ -16,6 +16,7 @@ fn margin(p: &mut Policy, equity: u128) {
     p.observe_margin(U128(equity), U128(equity), U64(1_000_000));
 }
 #[test]
+// Historical regression name retained: v5 requires the out-of-band price to be authenticated.
 fn exits_far_outside_opening_band_all_authorities_and_exact_slippage_cap() {
     for mark in [
         10,
@@ -29,6 +30,9 @@ fn exits_far_outside_opening_band_all_authorities_and_exact_slippage_cap() {
         for role in [OWNER, KEEPER, "anyone.testnet"] {
             let mut p = policy();
             p.signed_short_size = BASE;
+            p.oracle.account_id = Some(account("pyth.testnet"));
+            p.oracle_price = mark;
+            p.oracle_timestamp = 5000;
             p.size_decimals = 1;
             p.limits.price_band_bps = 9999; // Exit cap cannot be widened by set_config.
             p.keeper_weight_used = 5000;
@@ -152,7 +156,7 @@ fn exits_never_wait_for_price_bounds_proposal() {
     at(OWNER, 1000);
     p.propose_price_bounds(U128(10), U128(100_000_000));
     at("anyone.testnet", 5000);
-    p.deleverage(U128(50_000_000), U64(5000));
+    p.deleverage(U128(5_000_000), U64(5000));
     assert!(p.get_price_bounds_proposal().is_some());
 }
 #[test]
@@ -317,7 +321,7 @@ fn exits_and_spot_callbacks_are_independent_in_both_receipt_orders() {
         p.withdraw_spot(account(OWNER), U128(BASE));
         let spot_id = p.operation_id;
         at(OWNER, 1000);
-        p.emergency_reduce(U128(BASE), U128(50_000_000), U64(1000));
+        p.emergency_reduce(U128(BASE), U128(5_000_000), U64(1000));
         let exit_id = p.operation_id;
         assert_eq!(p.pending.as_ref().unwrap().id, spot_id);
         assert_eq!(p.get_pending_exit().unwrap().id, exit_id);
@@ -337,7 +341,7 @@ fn exits_and_spot_callbacks_are_independent_in_both_receipt_orders() {
     }
 }
 #[test]
-fn fresh_caller_exit_can_override_oracle_older_than_exit_freshness() {
+fn fresh_caller_exit_cannot_override_authenticated_oracle_within_configured_age() {
     let mut p = policy();
     p.oracle.account_id = Some(account("pyth.testnet"));
     p.oracle.max_age_seconds = 300;
@@ -349,7 +353,7 @@ fn fresh_caller_exit_can_override_oracle_older_than_exit_freshness() {
     p.request_order_signature(o);
     assert_eq!(
         request_event()["payload"]["action"]["orders"][0]["p"],
-        "50.5"
+        "5.05"
     );
 }
 

@@ -23,7 +23,7 @@ export function runtime(): Runtime {
 export class PublicClient {
   constructor(readonly rt: Runtime, readonly fallback = process.env.NEAR_TESTNET_RPC ?? 'https://test.rpc.fastnear.com', readonly network: Network = 'testnet') {}
   async rpc(method: string, params: unknown): Promise<unknown> {
-    const endpoints = this.network === 'mainnet' ? [MAINNET_RPC] : [...new Set(['https://rpc.testnet.near.org', this.fallback])];
+    const endpoints = this.network === 'mainnet' ? [...new Set([process.env.NEAR_MAINNET_RPC ?? MAINNET_RPC, 'https://rpc.mainnet.near.org'])] : [...new Set(['https://rpc.testnet.near.org', this.fallback])];
     for (let attempt = 0; attempt < 4; attempt++) {
       let response: Response | undefined;
       try {
@@ -103,10 +103,10 @@ export class PublicClient {
       responses: { metaAndAssetCtxs: marketRaw, clearinghouseState, openOrders: orders, fundingHistory: history, l2Book: bookRaw } };
   }
 }
-export function commandArgs(policy: string, method: 'heartbeat' | 'set_keeper_price' | 'request_order_signature', args: unknown, network: Network = 'testnet', keeper = KEEPER) {
+export function commandArgs(policy: string, method: 'heartbeat' | 'refresh_oracle' | 'set_keeper_price' | 'request_order_signature', args: unknown, network: Network = 'testnet', keeper = KEEPER, gasTgas?: number) {
   accountForNetwork(policy, network); accountForNetwork(keeper, network);
   return ['contract', 'call-function', 'as-transaction', policy, method, 'json-args', JSON.stringify(args), 'prepaid-gas',
-    method === 'request_order_signature' ? '300 Tgas' : '30 Tgas', 'attached-deposit', '0 NEAR', 'sign-as', keeper,
+    `${gasTgas ?? (method === 'request_order_signature' ? 300 : method === 'refresh_oracle' ? 40 : 30)} Tgas`, 'attached-deposit', '0 NEAR', 'sign-as', keeper,
     'network-config', network, 'sign-with-keychain', 'send'];
 }
 export function printable(args: string[]) { return `near ${args.map(s => /^[a-zA-Z0-9_.:-]+$/.test(s) ? s : `'${s.replaceAll("'", "'\\''")}'`).join(' ')}`; }

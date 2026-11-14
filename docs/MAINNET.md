@@ -1,3 +1,46 @@
+# Policy v5 owner run (prepared, unexecuted)
+
+Use `POLICY_VERSION=v5 bash scripts/mainnet-runbook.sh N`. Without that environment variable the entrypoint remains historical v4; never rerun v4. V5 uses `cw5.haxheton.near`, reuses `keeper4.haxheton.near`, and writes a new plan and evidence directories. No transaction was submitted during engineering. The archived v4 run below remains unchanged.
+
+The v5 policy creation deposit is **5.5 NEAR**. The live v4 storage measurement is **345,920 bytes = 3.4592 NEAR**; the planner uses v5 artifact size plus the observed 1,144-byte state overhead, 128 KiB growth and 0.5 NEAR operating margin and refuses an artifact that does not fit. Keep **0.50 NEAR owner operating reserve** and **0.01 NEAR** policy `wrap.near` registration allocation: **6.01 NEAR liquid** total. Reuse the owner's **3.6 wNEAR** and existing owner storage registration; no new wrapping or keeper funding. Read-only mainnet block 224535479 showed owner liquid **0.822255179214294499999998 NEAR**, so add **5.187744820785705500000002 NEAR**. Step 2 rereads balances and prints the exact current difference. Keeper liquid was **0.6910684689861766 NEAR**, sufficient for this small lifecycle with finalized refunds; keep its independent reserve.
+
+Fund the newly derived **v5 strategy address printed by step 2** with about **21 existing USDC** through the owner's Hyperliquid UI; keep **22 USDC available** to cover an additional possible 1 USDC activation/funding fee. At least 15 USDC must be verified withdrawable in v5 perps; the class transfer targets at most 20. Never reuse v4's derived strategy address.
+
+Pyth no longer supports NEAR; no maintained mainnet contract account was verified. V5's `oracle.account_id` remains null, so this run uses the explicit bounded fallback rather than claiming authenticated Pyth pricing. If an authenticated deployment is verified and deliberately configured in a future plan, opening/closing preparation calls `refresh_oracle` and rereads its finalized cache. Current v5's fallback validates the mark against both the timelocked corridor and opening/authenticated anchor and caps the final signed exit price; quotes outside the band fail closed. See [integration verification and excluded real Intents route](V5-INTEGRATIONS.md) and [v5 contract specification](POLICY-V5.md). No real 1Click sale is included.
+
+Run the numbered steps individually, in this order:
+
+```sh
+export POLICY_VERSION=v5
+export NEAR_MAINNET_RPC=https://rpc.mainnet.fastnear.com
+bash scripts/mainnet-runbook.sh 1   # npm tests/types, v5 checksum/exports
+bash scripts/mainnet-runbook.sh 2   # prepared plan/read-only balances; verify public payout address
+bash scripts/mainnet-runbook.sh 3   # verifies existing keeper; no creation or top-up
+# Add the exact NEAR top-up printed at 2 before creating cw5.
+bash scripts/mainnet-runbook.sh 4   # create cw5 with exactly5.5 NEAR
+bash scripts/mainnet-runbook.sh 5   # deploy v5 + atomic initializer
+bash scripts/mainnet-runbook.sh 6   # signing resources
+bash scripts/mainnet-runbook.sh 7   # owner-attested margin configuration
+bash scripts/mainnet-runbook.sh 8   # real MPC cancel-signature test; never venue-submitted
+bash scripts/mainnet-runbook.sh 9   # readiness gate then irreversible key deletion
+# Owner funds ONLY the v5 derived strategy with ~21 USDC; verify balances.
+bash scripts/mainnet-runbook.sh 10  # class transfer if perps need funding
+bash scripts/mainnet-runbook.sh 11  # reuse/deposit saved existing wNEAR, skip registered accounts
+bash scripts/mainnet-runbook.sh 12  # heartbeat/price, owner margin attestation, open
+bash scripts/mainnet-runbook.sh 13  # reduce-only close with capped fallback price
+# Wait past every opening-signature expiry, at least61 seconds from step12.
+bash scripts/mainnet-runbook.sh 14  # owner settles flat venue state, without pause
+bash scripts/mainnet-runbook.sh 15  # withdraw once; public ledger polls never resend
+# Independently verify finalized owner native-USDC receipt on Arbitrum One.
+bash scripts/mainnet-runbook.sh 16  # receipt hash, net, fee, VERIFIED (piped stdin supported)
+bash scripts/mainnet-runbook.sh 17  # return backing as wNEAR
+bash scripts/mainnet-runbook.sh 18  # save final public status
+```
+
+All recovery rules below apply with `POLICY_VERSION=v5` prefixed. Preserve uncertain transaction journals; `--resume` only retries public verification, never sends. User-signed transfer/withdrawal relays retain their full venue nonce window. Observed milliseconds are integers; host-clock guard allows 3 seconds against NEAR and 1 second against venue. Opens remain owner-attested. Do not run the autonomous keeper concurrently with owner execution steps: both use the same keeper account and could race its nonce or price observations.
+
+---
+
 # Policy v4: haxheton.near mainnet run
 
 V4 completed one owner-supervised mainnet lifecycle on **14 November 2026** at `cw4.haxheton.near`, owner `haxheton.near`, keeper `keeper4.haxheton.near`, zero access keys. **All steps 1–18 below are now historical instructions; do not rerun setup, funding or trading for this completed run.** Keep the contract, WASM, saved plan and original evidence unchanged. This release verification uses public reads only and performs no signing or sends.

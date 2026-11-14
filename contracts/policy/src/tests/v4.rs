@@ -151,19 +151,19 @@ fn concurrent_exit_cannot_be_overwritten_by_any_exit_authority() {
         p.withdraw_spot(account(OWNER), U128(BASE));
         let spot_id = p.operation_id;
         at(OWNER, 1600);
-        p.emergency_reduce(U128(BASE), U128(5_000_000), U64(1600));
+        p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(1600));
         let exit_id = p.operation_id;
         let nonce = p.last_nonce;
         at(role, 1601);
         rejected(|| match role {
             OWNER => {
-                p.emergency_reduce(U128(BASE), U128(5_000_000), U64(1601));
+                p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(1601));
             }
             KEEPER => {
                 p.request_order_signature(order(BASE, true));
             }
             _ => {
-                p.deleverage(U128(5_000_000), U64(1601));
+                p.deleverage(p.get_exit_pricing().anchor_price, U64(1601));
             }
         });
         assert_eq!(p.get_pending_exit().unwrap().id, exit_id);
@@ -180,7 +180,7 @@ fn outstanding_exit_blocks_open_cancel_and_withdraw_after_spot_callback() {
     p.withdraw_spot(account(OWNER), U128(BASE));
     let spot_id = p.operation_id;
     at(OWNER, 1600);
-    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(1600));
+    p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(1600));
     let exit_id = p.operation_id;
     callback(PromiseResult::Successful(vec![]), 1601);
     assert!(p.on_spot_withdrawal(U64(spot_id)));
@@ -218,7 +218,7 @@ fn concurrent_exit_timeout_records_uncertainty_and_preserves_spot_callback() {
     p.withdraw_spot(account(OWNER), U128(BASE));
     let spot_id = p.operation_id;
     at(OWNER, 1600);
-    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(1600));
+    p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(1600));
     let exit_id = p.operation_id;
     at("anyone.testnet", 1661);
     p.expire_pending_signature();
@@ -250,7 +250,7 @@ fn public_reserve_subsidy_has_lifetime_cap_even_when_flat() {
         ctx.attached_deposit(NearToken::from_yoctonear(0));
         testing_env!(ctx.build());
         assert_eq!(p.signed_short_size, 0);
-        p.deleverage(U128(5_000_000), U64(seconds));
+        p.deleverage(p.get_exit_pricing().anchor_price, U64(seconds));
         // A definite signer failure also consumes the irreversible reserve subsidy.
         callback(PromiseResult::Failed, seconds + 1);
         assert!(!p.on_signature(U64(p.operation_id)));
@@ -261,21 +261,21 @@ fn public_reserve_subsidy_has_lifetime_cap_even_when_flat() {
     testing_env!(ctx.build());
     let nonce = p.last_nonce;
     rejected(|| {
-        p.deleverage(U128(5_000_000), U64(1722));
+        p.deleverage(p.get_exit_pricing().anchor_price, U64(1722));
     });
     assert_eq!(p.last_nonce, nonce);
     assert!(get_created_receipts().is_empty());
     // Anyone can still recover residual venue exposure by paying the MPC fee.
     ctx.attached_deposit(NearToken::from_yoctonear(p.mpc_fee));
     testing_env!(ctx.build());
-    p.deleverage(U128(5_000_000), U64(1722));
+    p.deleverage(p.get_exit_pricing().anchor_price, U64(1722));
     assert_eq!(p.get_public_subsidy_spent().0, PUBLIC_SUBSIDY_LIMIT);
     success(&mut p, 1723);
     // Public exhaustion never consumes the owner or keeper's reserve allowance.
     let mut ctx = context(OWNER, 1724);
     ctx.attached_deposit(NearToken::from_yoctonear(0));
     testing_env!(ctx.build());
-    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(1724));
+    p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(1724));
     assert_eq!(p.get_public_subsidy_spent().0, PUBLIC_SUBSIDY_LIMIT);
     success(&mut p, 1725);
     let mut ctx = context(KEEPER, 1726);

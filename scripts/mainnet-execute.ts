@@ -10,6 +10,7 @@ import { parseAccount } from './lifecycle-parsing.js';
 import { MAINNET_RPC } from '../packages/hyperliquid/src/index.js';
 import { PublicClient, runtime, extractHash } from '../apps/keeper/src/run-io.js';
 import { parseOptions } from './testnet-common.js';
+import { mainnetVersion } from './mainnet-version.js';
 import { checkOwnerSpend } from './mainnet-budget.js';
 const exec = promisify(execFile);
 export function executionOptions(argv: string[]) {
@@ -41,8 +42,9 @@ export function liveResumeAuthorizations(raw: unknown, consumedClassTransfers: R
 export async function executeMainnet(argv: string[]) {
   const opts = executionOptions(argv), planFile = opts.plan ?? MAINNET_PLAN;
   const base = ['--network=mainnet', '--i-understand-real-funds', `--plan=${planFile}`];
-  const run = `docs/evidence/mainnet-execute-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  await mkdir('docs/evidence', { recursive: true });
+  const runFolder = mainnetVersion().version === 'v5' ? 'docs/evidence/mainnet-execute-v5' : 'docs/evidence';
+  const run = `${runFolder}/mainnet-execute-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  await mkdir(runFolder, { recursive: true });
   const existingJournal = async (file: string) => {
     try { return z.object({ step: z.string() }).passthrough().parse(JSON.parse(await readFile(file, 'utf8'))); }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }

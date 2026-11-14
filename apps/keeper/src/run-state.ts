@@ -15,7 +15,7 @@ export const stateSchema = z.object({
   limits: z.object({ max_short_size: uint, per_order_notional_cap: uint, per_day_notional_cap: uint,
     cooldown_seconds: z.number().int().nonnegative(), price_band_bps: z.number().int().min(0).max(1000),
     price_max_age_seconds: seconds, min_headroom_bps: z.number().int().min(0).max(10000).optional(), fee_reserve_usdc: uint.optional() }),
-  oracle: z.object({ min_price: uint, max_price: uint, max_age_seconds: seconds }),
+  oracle: z.object({ account_id: z.string().nullable().optional(), min_price: uint, max_price: uint, max_age_seconds: seconds }),
   oracle_price: uint, oracle_timestamp: uint, reference_price: uint, reference_price_timestamp: uint,
   last_keeper_heartbeat: uint, heartbeat_timeout_seconds: seconds,
   paused: z.boolean(), pending: z.unknown().refine(v => v !== undefined),
@@ -71,6 +71,7 @@ export function planOrder(policy: string, state: PolicyState, o: Observation, se
   const risk = assess(state, o, settings, now);
   if (now < o.observedAt || now - o.observedAt > 30_000) return null;
   const reduce = o.account.signedSize < 0 && risk.metrics.headroom < risk.thresholdUsd;
+  if (!reduce && !allowOpen) return null;
   const step = 10n ** BigInt(24 - o.szDecimals);
   const oracleFresh = BigInt(state.oracle_price) > 0n && Number(state.oracle_timestamp) <= Math.floor(now / 1000)
     && Math.floor(now / 1000) - Number(state.oracle_timestamp) <= Math.min(state.oracle.max_age_seconds, 60);

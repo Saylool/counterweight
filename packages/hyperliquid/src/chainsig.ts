@@ -7,7 +7,7 @@ import { SECP256K1_ORDER, validateSignature, type HyperliquidSignature, type Net
 
 export const TESTNET_SIGNER = 'v1.signer-prod.testnet';
 export const MAINNET_SIGNER = 'v1.signer';
-export const MAINNET_RPC = process.env.NEAR_MAINNET_RPC ?? 'https://rpc.mainnet.near.org';
+export const MAINNET_RPC = process.env.NEAR_MAINNET_RPC ?? 'https://rpc.mainnet.fastnear.com';
 // Override with NEAR_TESTNET_RPC (e.g. https://test.rpc.fastnear.com) when the public endpoint rate-limits.
 export const TESTNET_RPC = process.env.NEAR_TESTNET_RPC ?? 'https://rpc.testnet.near.org';
 export function nearPublicKeyToHex(publicKey: string): Hex {
@@ -34,19 +34,58 @@ export function deriveEvmAddress(rootPublicKey: string, predecessor: string, pat
   const publicKey = toHex(derived.toBytes(false));
   return { address: publicKeyToEvmAddress(publicKey), publicKey };
 }
-export async function chainSignatureView(network: Network, method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string): Promise<{ value: string; blockHeight: number; blockHash: string }> {
-  const response = await fetch(network === 'mainnet' ? MAINNET_RPC : TESTNET_RPC, { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'counterweight-public-view', method: 'query', params: {
-      request_type: 'call_function', ...(blockHash === undefined ? { finality: 'final' } : { block_id: blockHash }), account_id: network === 'mainnet' ? MAINNET_SIGNER : TESTNET_SIGNER, method_name: method,
-      args_base64: Buffer.from(JSON.stringify(args)).toString('base64'),
-    } }), signal: AbortSignal.timeout(25_000) });
-  if (!response.ok) throw new Error(`NEAR RPC HTTP ${response.status}`);
-  const result = z.object({ result: z.object({ result: z.array(z.number().int().min(0).max(255)), block_height: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), block_hash: z.string().min(1) }) }).safeParse(await response.json());
-  if (!result.success) throw new Error('NEAR view failed or returned an unexpected shape');
-  if (blockHash !== undefined && result.data.result.block_hash !== blockHash) throw new Error('NEAR view returned a different block');
-  return { value: z.string().parse(JSON.parse(Buffer.from(result.data.result.result).toString('utf8'))),
-    blockHeight: result.data.result.block_height, blockHash: result.data.result.block_hash };
+class TransientMainnetViewError extends Error {
+  constructor(message: string, readonly retryAfterMs = 0) { super(message); }
 }
+function transientRpcError(raw: unknown) {
+  const error = z.object({ error: z.object({ code: z.number().optional(), message: z.string().optional(), cause: z.object({ name: z.string() }).optional() }).passthrough() }).safeParse(raw);
+  if (!error.success) return false;
+  const e = error.data.error;
+  return e.code === -32603 || ['TIMEOUT_ERROR', 'INTERNAL_ERROR', 'NO_SYNCED_BLOCKS', 'UNAVAILABLE_SHARD', 'UNKNOWN_BLOCK'].includes(e.cause?.name ?? '')
+    || /timeout|temporar|rate.?limit|unavailable|not synced|too many requests/i.test(e.message ?? '');
+}
+/** Finalized public reads only. The exact request/block stays fixed across transient mainnet failover. */
+export async function chainSignatureView(network: Network, method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string): Promise<{ value: string; blockHeight: number; blockHash: string }> {
+  const endpoints = network === 'mainnet' ? [...new Set([process.env.NEAR_MAINNET_RPC ?? MAINNET_RPC, 'https://rpc.mainnet.fastnear.com', 'https://rpc.mainnet.near.org'])] : [TESTNET_RPC];
+  const body = JSON.stringify({ jsonrpc: '2.0', id: 'counterweight-public-view', method: 'query', params: {
+    request_type: 'call_function', ...(blockHash === undefined ? { finality: 'final' } : { block_id: blockHash }), account_id: network === 'mainnet' ? MAINNET_SIGNER : TESTNET_SIGNER, method_name: method,
+    args_base64: Buffer.from(JSON.stringify(args)).toString('base64'),
+  } });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      let response: Response;
+      try {
+        response = await fetch(endpoints[attempt % endpoints.length]!, { method: 'POST', headers: { 'content-type': 'application/json' }, body, signal: AbortSignal.timeout(25_000) });
+      } catch (error) {
+        if (network !== 'mainnet') throw error;
+        throw new TransientMainnetViewError('NEAR public view transport unavailable');
+      }
+      if (!response.ok) {
+        if (network === 'mainnet' && [408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526].includes(response.status)) {
+          const retryAfter = response.headers.get('retry-after');
+          const retryMs = retryAfter && /^\d+(?:\.\d+)?$/.test(retryAfter) ? Number(retryAfter) * 1000 : 0;
+          throw new TransientMainnetViewError(`NEAR RPC HTTP ${response.status}`, retryMs);
+        }
+        throw new Error(`NEAR RPC HTTP ${response.status}`);
+      }
+      let raw: unknown;
+      try { raw = await response.json(); } catch (error) {
+        if (network === 'mainnet' && (error instanceof TypeError || (error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name)))) throw new TransientMainnetViewError('NEAR public view response interrupted');
+        throw error;
+      }
+      if (network === 'mainnet' && transientRpcError(raw)) throw new TransientMainnetViewError('NEAR public view temporarily unavailable');
+      const result = z.object({ result: z.object({ result: z.array(z.number().int().min(0).max(255)), block_height: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER), block_hash: z.string().min(1) }) }).safeParse(raw);
+      if (!result.success) throw new Error('NEAR view failed or returned an unexpected shape');
+      if (blockHash !== undefined && result.data.result.block_hash !== blockHash) throw new Error('NEAR view returned a different block');
+      return { value: z.string().parse(JSON.parse(Buffer.from(result.data.result.result).toString('utf8'))),
+        blockHeight: result.data.result.block_height, blockHash: result.data.result.block_hash };
+    } catch (error) {
+      if (!(error instanceof TransientMainnetViewError) || attempt >= 3) throw error;
+      await new Promise<void>(resolve => setTimeout(resolve, Math.min(5000, Math.max(250 * 2 ** attempt, error.retryAfterMs))));
+    }
+  }
+}
+
 export function testnetView(method: 'public_key' | 'derived_public_key', args: Record<string, unknown>, blockHash?: string) {
   return chainSignatureView('testnet', method, args, blockHash);
 }

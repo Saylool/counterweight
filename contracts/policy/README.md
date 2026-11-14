@@ -1,3 +1,9 @@
+# V5 source and separate production artifact
+
+Build v5 with `CARGO_NET_OFFLINE=true bash contracts/policy/tools/build-v5.sh` from the repository root. It uses the v4 production optimization sequence and writes only `artifacts/counterweight_policy_v5.wasm` and `artifacts/SHA256SUMS.v5`. Do not run old build scripts against the v5 source: historical v1–v4 artifacts are frozen. [V5 pricing and limits](../../docs/POLICY-V5.md) documents the non-ratcheting fallback, direct opening-attested-margin cap and deliberate exit-liveness limitation. No upgrade or mainnet deployment is performed by the build.
+
+The following v4 instructions are historical; adapt only the artifact/build version for a new v5 account.
+
 # Counterweight policy contract — v4 source, separate artifacts
 
 **V4 is a new mainnet-capable successor, locally tested; no mainnet deployment is

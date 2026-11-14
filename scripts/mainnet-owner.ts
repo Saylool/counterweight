@@ -2,7 +2,8 @@
 import { execFile } from 'node:child_process';
 import { promisify, isDeepStrictEqual } from 'node:util';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { createInterface } from 'node:readline/promises';
+import { createInterface } from 'node:readline';
+import type { Readable, Writable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { PublicClient, runtime, extractHash } from '../apps/keeper/src/run-io.js';
@@ -13,20 +14,22 @@ import { checkPolicy, loadMainnetPlan, mainnetLifecycle, MAINNET_PLAN, V4_WASM }
 import { assertSigningResources, readSigningResources } from './mainnet-signer.js';
 import { committedWasm, parseOptions, publicKey, txHash } from './testnet-common.js';
 import { checkOwnerSpend } from './mainnet-budget.js';
+import { mainnetVersion, selectedPolicyVersion } from './mainnet-version.js';
 
-export const OWNER_ACCOUNTS = { owner: 'haxheton.near', policy: 'cw4.haxheton.near', keeper: 'keeper4.haxheton.near' };
-const evidence = 'docs/evidence/mainnet-owner-v4';
-export const OWNER_LIFECYCLE_EVIDENCE = 'docs/evidence/mainnet-owner-v4-lifecycle';
+const version = mainnetVersion();
+export const OWNER_ACCOUNTS = { owner: version.owner, policy: version.policy, keeper: version.keeper };
+const evidence = version.evidence;
+export const OWNER_LIFECYCLE_EVIDENCE = version.lifecycleEvidence;
 const execute = promisify(execFile);
-type Plan = Awaited<ReturnType<typeof loadMainnetPlan>>;
+type Plan = Omit<Awaited<ReturnType<typeof loadMainnetPlan>>, 'policyVersion' | 'creationNear'> & { policyVersion?: 'v4' | 'v5'; creationNear?: string };
 const suffix = ['network-config', 'mainnet', 'sign-with-keychain', 'send'];
 const client = () => new PublicClient(runtime(), undefined, 'mainnet');
 export function assertOwnerPlan(plan: Pick<Plan, 'owner' | 'policy' | 'keeper'>) {
   for (const key of ['owner', 'policy', 'keeper'] as const) if (plan[key] !== OWNER_ACCOUNTS[key]) throw new Error(`Owner fixed ${key} mismatch`);
 }
-export function chooseSpot(mark: string, szDecimals: number, maxShort: string) {
+export function chooseSpot(mark: string, szDecimals: number, maxShort: string, policyVersion = selectedPolicyVersion()) {
   const price = units(mark, 6), lot = 10n ** BigInt(24 - szDecimals);
-  const amount = [12_000_000n * BASE / price, 398n * BASE / 100n, BigInt(maxShort)].reduce((a, b) => a < b ? a : b) / lot * lot;
+  const amount = [12_000_000n * BASE / price, (policyVersion === 'v5' ? 360n : 398n) * BASE / 100n, BigInt(maxShort)].reduce((a, b) => a < b ? a : b) / lot * lot;
   const limit = orderPrice(price, szDecimals, false, 100);
   if (amount <= 0n || amount * limit < 10_000_000n * BASE) throw new Error('Owner budget cannot fit the venue $10 minimum with <=3.98 NEAR; STOP before account creation');
   return { amount: decimal(amount, 24), yocto: amount.toString(), totalNear: decimal(722n * BASE / 100n + amount, 24) };
@@ -128,20 +131,48 @@ export function assertWithdrawalAbandonmentAllowed(rawAuthorizations: unknown, n
 async function readStepHash(step: string) {
   return z.object({ phase: z.literal('final-success'), hash: z.string() }).parse(JSON.parse(await readFile(`${evidence}/${step}.json`, 'utf8'))).hash;
 }
-async function ask(question: string) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try { return (await rl.question(question)).trim(); } finally { rl.close(); }
+/** One iterator buffers piped lines across asynchronous receipt/account reads. */
+export function ownerPrompter(input: Readable, output: Writable) {
+  const rl = createInterface({ input, crlfDelay: Infinity });
+  const lines = rl[Symbol.asyncIterator]();
+  return {
+    async ask(question: string) {
+      output.write(question);
+      const answer = await lines.next();
+      if (answer.done) throw new Error('Owner input ended before all required answers');
+      return answer.value.trim();
+    },
+    close: () => rl.close(),
+  };
 }
+let prompts: ReturnType<typeof ownerPrompter> | undefined;
+async function ask(question: string) {
+  prompts ??= ownerPrompter(process.stdin, process.stdout);
+  return prompts.ask(question);
+}
+
 async function account(pc: PublicClient, account_id: string) {
   return z.object({ amount: z.string(), storage_usage: z.number(), locked: z.string(), code_hash: z.string(), block_hash: z.string() }).parse(await pc.rpc('query', { request_type: 'view_account', account_id, finality: 'final' }));
 }
 async function assertAbsent(pc: PublicClient, account_id: string) {
-  // PublicClient deliberately masks RPC errors; inspect a raw public response to distinguish absence from transport failure.
+  // Distinguish proven UNKNOWN_ACCOUNT from transport failure; only these public reads retry.
   const { MAINNET_RPC } = await import('../packages/hyperliquid/src/index.js');
-  const response = await fetch(MAINNET_RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'owner-absence', method: 'query', params: { request_type: 'view_account', account_id, finality: 'final' } }), signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error('Owner account absence RPC unavailable');
-  const raw = await response.json();
-  if (!z.object({ error: z.object({ cause: z.object({ name: z.literal('UNKNOWN_ACCOUNT') }) }) }).safeParse(raw).success) throw new Error(`Owner ${account_id} already exists or absence unverified; STOP`);
+  const endpoints = [...new Set([MAINNET_RPC, 'https://rpc.mainnet.fastnear.com', 'https://rpc.mainnet.near.org'])];
+  for (let attempt = 0; ; attempt++) {
+    let raw: unknown;
+    try {
+      const response = await pc.rt.fetch(endpoints[attempt % endpoints.length]!, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'owner-absence', method: 'query', params: { request_type: 'view_account', account_id, finality: 'final' } }), signal: AbortSignal.timeout(15000) });
+      if (!response.ok) throw new Error('Owner account absence RPC unavailable');
+      raw = await response.json();
+    } catch (error) {
+      if (attempt === 3) throw error;
+      await pc.rt.sleep(500 * 2 ** attempt); continue;
+    }
+    if (z.object({ error: z.object({ cause: z.object({ name: z.literal('UNKNOWN_ACCOUNT') }) }) }).safeParse(raw).success) return;
+    if (z.object({ result: z.object({ amount: z.string() }) }).safeParse(raw).success) throw new Error(`Owner ${account_id} already exists; STOP`);
+    if (attempt === 3) throw new Error(`Owner ${account_id} absence unverified; STOP`);
+    await pc.rt.sleep(500 * 2 ** attempt);
+  }
 }
 export async function predeleteGate(pc: PublicClient, plan: Plan) {
   const current = await checkPolicy(pc, plan, false);
@@ -161,15 +192,27 @@ export async function predeleteGate(pc: PublicClient, plan: Plan) {
   console.log('PASS predelete: deployed code + initialization + margin config + live resources + actual recovered MPC test signature');
   return { publicKey: publicKey(keys.keys[0]!.public_key), proof, block: current.block };
 }
-export async function ownerMainnet(argv: string[]) {
+async function ownerMainnetInner(argv: string[]) {
   const opts = parseOptions(argv, ['step']);
   z.enum(['plan', 'create-keeper', 'create-policy', 'deploy', 'resources', 'margin', 'sign-test', 'predelete', 'delete-key', 'spot', 'reconcile', 'return-spot', 'status', 'unpause', 'abandon-withdrawal']).parse(opts.step);
   const pc = client();
   if (opts.step === 'plan') {
+    if (version.version === 'v5') {
+      let existing = false;
+      try { await readFile(MAINNET_PLAN, 'utf8'); existing = true; } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      if (existing) {
+        const p = await loadMainnetPlan(MAINNET_PLAN); assertOwnerPlan(p);
+        const b = z.object({ totalNear: z.string(), amount: z.string() }).parse(JSON.parse(await readFile(`${evidence}/budget.json`, 'utf8')));
+        const balance = await account(pc, p.owner);
+        const liquid = BigInt(balance.amount) - BigInt(balance.storage_usage) * 10n ** 19n;
+        const needed = units(b.totalNear, 24);
+        console.log(`PASS prepared v5 plan ${MAINNET_PLAN}; owner payout ${p.init.evm_recipient}; strategy ${p.derived.address}; ${b.amount} existing wNEAR. ADD EXACTLY ${decimal(needed > liquid ? needed - liquid : 0n, 24)} NEAR (liquid ${decimal(liquid, 24)}, required ${b.totalNear}). Plan is prepared/unexecuted; verify recipient before step4.`); return;
+      }
+    }
     const recipient = z.string().regex(/^0x[0-9a-fA-F]{40}$/).refine(s => !/^0x0{40}$/.test(s)).parse(await ask('Public owner EVM address (Arbitrum One native USDC recipient): '));
-    const [balance] = await Promise.all([account(pc, OWNER_ACCOUNTS.owner), assertAbsent(pc, OWNER_ACCOUNTS.policy), assertAbsent(pc, OWNER_ACCOUNTS.keeper)]);
+    const [balance] = await Promise.all([account(pc, OWNER_ACCOUNTS.owner), assertAbsent(pc, OWNER_ACCOUNTS.policy), version.version === 'v5' ? account(pc, OWNER_ACCOUNTS.keeper) : assertAbsent(pc, OWNER_ACCOUNTS.keeper)]);
     const available = BigInt(balance.amount) - BigInt(balance.storage_usage) * 10n ** 19n;
-    if (available < 112n * BASE / 10n) throw new Error('Owner liquid balance below conservative 11.20 NEAR budget');
+    if (version.version === 'v4' && available < 112n * BASE / 10n) throw new Error('Owner liquid balance below conservative 11.20 NEAR budget');
     // Feasibility is checked before exclusively saving the plan; no funded accounts yet.
     const market = parseMarket(await pc.info({ type: 'metaAndAssetCtxs' }));
     const { mainnetInitialization } = await import('./mainnet-lifecycle.js');
@@ -178,20 +221,32 @@ export async function ownerMainnet(argv: string[]) {
     await mainnetLifecycle(['--network=mainnet', '--i-understand-real-funds', '--step=plan', `--owner=${OWNER_ACCOUNTS.owner}`, `--policy=${OWNER_ACCOUNTS.policy}`, `--keeper=${OWNER_ACCOUNTS.keeper}`, `--owner-evm=${recipient}`]);
     const p = await loadMainnetPlan(MAINNET_PLAN), backing = chooseSpot(p.market.mark, p.market.szDecimals, p.init.limits.max_short_size);
     await mkdir(evidence, { recursive: true });
-    await writeFile(`${evidence}/budget.json`, JSON.stringify({ ...backing, maximumNear: '11.20', ownerBalanceAtPlan: balance.amount }, null, 2), { flag: 'wx' });
+    const total = version.version === 'v5' ? units(version.creationNear, 24) + BASE / 2n + BASE / 100n : units(backing.totalNear, 24);
+    const ownedWrapped = version.version === 'v5' ? BigInt(z.string().regex(/^\d+$/).parse((await pc.view('wrap.near', 'ft_balance_of', { account_id: p.owner })).value)) : 0n;
+    if (version.version === 'v5' && ownedWrapped < BigInt(backing.yocto)) throw new Error('v5 requires already wrapped spot backing; do not buy/wrap additional NEAR in this plan');
+    const extra = total > available ? total - available : 0n;
+    await writeFile(`${evidence}/budget.json`, JSON.stringify({ ...backing, totalNear: decimal(total, 24), maximumNear: version.version === 'v5' ? '6.01' : '11.20', ownerBalanceAtPlan: balance.amount,
+      fundedBaselineAtPlan: (BigInt(balance.amount) + extra).toString(), ownerLiquidAtPlan: decimal(available, 24), extraNearRequired: decimal(extra, 24), reuseWrappedNear: version.version === 'v5', creationNear: version.creationNear }, null, 2), { flag: 'wx' });
+    if (version.version === 'v5') { console.log(`PASS v5 plan: ${backing.amount} existing wNEAR; policy ${version.creationNear} NEAR + 0.50 owner reserve + 0.01 registration = ${decimal(total, 24)} NEAR. Owner liquid ${decimal(available, 24)}; ADD EXACTLY ${decimal(extra, 24)} NEAR before step 4. Reuse keeper4; no top-up or new keeper.`); return; }
+
     console.log(`PASS plan: backing ${backing.amount} NEAR; total ${backing.totalNear} NEAR <=11.20. Derived strategy ${p.derived.address}`); return;
   }
   const plan = await loadMainnetPlan(MAINNET_PLAN); assertOwnerPlan(plan);
   const sent = async (args: string[], signer: string, receiver: string) => send(opts.step!, args, signer, receiver, pc);
   if (opts.step === 'create-keeper' || opts.step === 'create-policy') {
     const keeper = opts.step === 'create-keeper', target = keeper ? plan.keeper : plan.policy;
+    if (keeper && version.version === 'v5') {
+      const existing = await account(pc, target);
+      if (BigInt(existing.amount) - BigInt(existing.storage_usage) * 10n ** 19n < 38n * BASE / 100n) throw new Error('Reused keeper liquid balance below 0.38 NEAR lifecycle reserve');
+      console.log(`PASS reuse ${target}; no creation, key access or funding`); return;
+    }
     await assertAbsent(pc, target);
-    await sent(['account', 'create-account', 'fund-myself', target, keeper ? '0.1 NEAR' : '7 NEAR', 'autogenerate-new-keypair', 'save-to-keychain', 'sign-as', plan.owner, ...suffix], plan.owner, target); return;
+    await sent(['account', 'create-account', 'fund-myself', target, keeper ? '0.1 NEAR' : `${plan.creationNear} NEAR`, 'autogenerate-new-keypair', 'save-to-keychain', 'sign-as', plan.owner, ...suffix], plan.owner, target); return;
   }
   if (opts.step === 'deploy') {
-    const artifact = await committedWasm(V4_WASM, 'contracts/policy/artifacts/SHA256SUMS.v4');
+    const artifact = await committedWasm(version.wasm, version.checksum);
     if (!isDeepStrictEqual(artifact, plan.artifact)) throw new Error('Owner artifact mismatch');
-    await sent(['contract', 'deploy', plan.policy, 'use-file', V4_WASM, 'with-init-call', 'new', 'json-args', JSON.stringify(plan.init), 'prepaid-gas', '30 Tgas', 'attached-deposit', '0 NEAR', ...suffix], plan.policy, plan.policy);
+    await sent(['contract', 'deploy', plan.policy, 'use-file', version.wasm, 'with-init-call', 'new', 'json-args', JSON.stringify(plan.init), 'prepaid-gas', '30 Tgas', 'attached-deposit', '0 NEAR', ...suffix], plan.policy, plan.policy);
     await checkPolicy(pc, plan, false); return;
   }
   if (opts.step === 'resources') {
@@ -257,7 +312,7 @@ export async function ownerMainnet(argv: string[]) {
     const budget = z.object({ amount: z.string(), yocto: z.string(), totalNear: z.string() }).parse(JSON.parse(await readFile(`${evidence}/budget.json`, 'utf8')));
     if (units(budget.amount, 24) > 398n * BASE / 100n || units(budget.totalNear, 24) > 112n * BASE / 10n || !['0', budget.yocto].includes(policy.token)) throw new Error('Owner spot budget or preexisting balance mismatch');
     const budgetAmount = units(budget.amount, 24);
-    if (budgetAmount.toString() !== budget.yocto || units(budget.totalNear, 24) !== 722n * BASE / 100n + budgetAmount) throw new Error('Owner budget evidence mismatch');
+    if (budgetAmount.toString() !== budget.yocto || units(budget.totalNear, 24) !== (version.version === 'v5' ? 601n * BASE / 100n : 722n * BASE / 100n + budgetAmount)) throw new Error('Owner budget evidence mismatch');
     const depositArgs = ['contract', 'call-function', 'as-transaction', 'wrap.near', 'ft_transfer_call', 'json-args', JSON.stringify({ receiver_id: plan.policy, amount: budget.yocto, msg: '' }), 'prepaid-gas', '100 Tgas', 'attached-deposit', '1 yoctoNEAR', 'sign-as', plan.owner, ...suffix];
     if (policy.token === budget.yocto) {
       const saved: unknown = JSON.parse(await readFile(`${OWNER_LIFECYCLE_EVIDENCE}/spot.json`, 'utf8'));
@@ -266,10 +321,14 @@ export async function ownerMainnet(argv: string[]) {
     }
     const initialOwned = BigInt(z.string().regex(/^\d+$/).parse((await pc.view('wrap.near', 'ft_balance_of', { account_id: plan.owner })).value));
     const initialMissing = budgetAmount > initialOwned ? budgetAmount - initialOwned : 0n;
+    if (version.version === 'v5' && initialMissing > 0n) throw new Error('v5 must reuse already wrapped wNEAR; restore backing before retry');
     // Reserve all remaining deposits and prepaid gas before beginning a multi-tx
     // step, so wrapping cannot strand the following custody transfer.
     await checkOwnerSpend(pc, plan.owner, plan.owner, initialMissing + BASE / 50n + 1n, 190);
-    for (const target of [plan.owner, plan.policy]) await send(`storage-${target}`, ['contract', 'call-function', 'as-transaction', 'wrap.near', 'storage_deposit', 'json-args', JSON.stringify({ account_id: target, registration_only: true }), 'prepaid-gas', '30 Tgas', 'attached-deposit', '0.01 NEAR', 'sign-as', plan.owner, ...suffix], plan.owner, 'wrap.near', pc);
+    for (const target of [plan.owner, plan.policy]) {
+      if ((await pc.view('wrap.near', 'storage_balance_of', { account_id: target })).value !== null) continue;
+      await send(`storage-${target}`, ['contract', 'call-function', 'as-transaction', 'wrap.near', 'storage_deposit', 'json-args', JSON.stringify({ account_id: target, registration_only: true }), 'prepaid-gas', '30 Tgas', 'attached-deposit', '0.01 NEAR', 'sign-as', plan.owner, ...suffix], plan.owner, 'wrap.near', pc);
+    }
     const wrapArgs = (amount: bigint) => ['contract', 'call-function', 'as-transaction', 'wrap.near', 'near_deposit', 'json-args', '{}', 'prepaid-gas', '30 Tgas', 'attached-deposit', `${decimal(amount, 24)} NEAR`, 'sign-as', plan.owner, ...suffix];
     let priorWrap: unknown;
     try { priorWrap = JSON.parse(await readFile(`${OWNER_LIFECYCLE_EVIDENCE}/wrap.json`, 'utf8')); }
@@ -314,6 +373,10 @@ export async function ownerMainnet(argv: string[]) {
     if (z.object({ withdrawal: z.null() }).safeParse(after.margin).success !== true) throw new Error('Owner reconciliation not proven');
     console.log('PASS owner-attested Arbitrum receipt reconciled; venue ledger alone was not destination proof'); return;
   }
+}
+export async function ownerMainnet(argv: string[]) {
+  try { return await ownerMainnetInner(argv); }
+  finally { prompts?.close(); prompts = undefined; }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
   ownerMainnet(process.argv.slice(2)).catch(error => { console.error(`STOP: ${error instanceof Error ? error.message : String(error)}`); process.exitCode = 1; });

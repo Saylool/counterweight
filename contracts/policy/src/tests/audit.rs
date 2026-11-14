@@ -30,7 +30,11 @@ fn audit_residual_reduce_after_understated_settlement() {
     let mut p = policy();
     at(OWNER, 1001);
     p.settle_position(U128(0), U64(1_001_000));
-    p.emergency_reduce(U128(10 * BASE), U128(5_000_000), U64(now()));
+    p.emergency_reduce(
+        U128(10 * BASE),
+        p.get_exit_pricing().anchor_price,
+        U64(now()),
+    );
     assert!(p.pending.is_some());
 }
 #[test]
@@ -69,7 +73,7 @@ fn audit_emergency_marks_withheld_keeper_nonce() {
     let mut p = policy();
     p.request_order_signature(order(BASE, false));
     at(OWNER, 1001);
-    p.emergency_reduce(U128(BASE), U128(5_000_000), U64(now()));
+    p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(now()));
     assert!(p.paused);
     assert!(p.outstanding[0].discarded);
 }
@@ -127,7 +131,7 @@ fn audit_cumulative_keeper_budget_reserves_owner_capacity() {
         p.request_cancel_signature(U64(2));
     });
     at(OWNER, 1061);
-    p.emergency_reduce(U128(BASE), U128(5_750_000), U64(now()));
+    p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(now()));
 }
 #[test]
 fn audit_configurable_mpc_fee_gas_and_refund() {
@@ -166,6 +170,9 @@ fn audit_rally_closes_and_price_precision_matrix() {
         p.size_decimals = 1;
         p.reference_price = 5_123_000;
         p.reference_price_timestamp = 1;
+        p.oracle.account_id = Some(account("pyth.testnet"));
+        p.oracle_price = mark;
+        p.oracle_timestamp = 5000;
         p.signed_short_size = BASE;
         at(OWNER, 5000);
         p.emergency_reduce(U128(10 * BASE), U128(mark), U64(now()));
@@ -180,8 +187,11 @@ fn audit_rally_closes_and_price_precision_matrix() {
     }
     let mut p = policy();
     p.signed_short_size = BASE;
+    p.oracle.account_id = Some(account("pyth.testnet"));
+    p.oracle_price = 5_750_000;
+    p.oracle_timestamp = 5000;
     at("anyone.testnet", 5000);
-    p.deleverage(U128(5_750_000), U64(now()));
+    p.deleverage(p.get_exit_pricing().anchor_price, U64(now()));
     assert!(requested_price().parse::<f64>().unwrap() >= 5.75); // +15% rally, crossing ask
 }
 #[test]
@@ -369,7 +379,7 @@ fn audit_private_successful_detached_callback_and_public_recovery_after_owner_de
     let mut p = policy();
     p.request_order_signature(order(BASE, false));
     at(OWNER, 1600);
-    p.emergency_reduce(U128(BASE), U128(5_750_000), U64(now()));
+    p.emergency_reduce(U128(BASE), p.get_exit_pricing().anchor_price, U64(now()));
     let owner_id = p.operation_id;
     let fixture: near_sdk::serde_json::Value = near_sdk::serde_json::from_str(include_str!(
         "../../../../fixtures/nearblocks-mpc-response.json"
@@ -382,7 +392,7 @@ fn audit_private_successful_detached_callback_and_public_recovery_after_owner_de
     assert!(!p.on_signature(U64(1)));
     assert_eq!(p.pending.as_ref().unwrap().id, owner_id);
     at("anyone.testnet", 1661);
-    p.deleverage(U128(5_750_000), U64(now()));
+    p.deleverage(p.get_exit_pricing().anchor_price, U64(now()));
     assert!(p.operation_id > owner_id);
     let public_id = p.operation_id;
     callback(

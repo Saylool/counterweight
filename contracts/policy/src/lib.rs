@@ -382,6 +382,7 @@ impl Policy {
             "init",
             near_sdk::serde_json::json!({"owner": owner, "keeper": keeper, "asset_index": asset_index, "size_decimals": size_decimals, "evm_recipient": evm_recipient, "signer_account": signer_account, "wnear_account": wnear_account, "limits": limits, "heartbeat_timeout_seconds": heartbeat_timeout_seconds, "signing_limits": signing_limits}),
         );
+        Self::initialize_exit_anchor(reference_price.0);
         Self {
             network,
             oracle,
@@ -1304,21 +1305,22 @@ impl Policy {
         let band = u128::from(self.limits.price_band_bps);
         let (mark, marked_at) = self.active_price();
         let price = if order.reduce_only {
-            let (mark, observed_at) = if self.oracle_fresh() && now() - self.oracle_timestamp <= 60
-            {
-                (mark, marked_at)
-            } else if let Some(hint) = order.reference_price {
-                (hint.0, order.observed_at.expect("ERR_REDUCE_TIMESTAMP").0)
+            if self.oracle_fresh() {
+                // Caller marks never override an authenticated fresh feed.
+                mark.checked_mul(10_100).expect("ERR_OVERFLOW") / 10_000
             } else {
-                (mark, marked_at)
-            };
-            require!(
-                observed_at <= now() && now() - observed_at <= self.oracle.max_age_seconds.min(60),
-                "ERR_STALE_PRICE"
-            );
-            assert_exit_price(mark);
-            // Round DOWN to the venue tick: execution can never exceed mark + 1%.
-            mark.checked_mul(10_100).expect("ERR_OVERFLOW") / 10_000
+                let (fallback_mark, observed_at) = if let Some(hint) = order.reference_price {
+                    (hint.0, order.observed_at.expect("ERR_REDUCE_TIMESTAMP").0)
+                } else {
+                    (mark, marked_at)
+                };
+                require!(
+                    observed_at <= now()
+                        && now() - observed_at <= self.oracle.max_age_seconds.min(60),
+                    "ERR_STALE_PRICE"
+                );
+                self.fallback_exit_limit(fallback_mark)
+            }
         } else {
             require!(order.reference_price.is_none(), "ERR_OPEN_PRICE_OVERRIDE");
             self.assert_price_bounds(mark);
@@ -1414,6 +1416,7 @@ impl Policy {
         let digest = hl_digest::digest(&payload, self.network.mainnet())
             .unwrap_or_else(|e| env::panic_str(e));
         if !order.reduce_only {
+            self.record_opening_anchor(price, order.size.0);
             self.signed_short_size = add(self.signed_short_size, order.size.0);
             self.lifetime_opened = add(self.lifetime_opened, order.size.0);
             self.last_open_expiry = payload.expires_after.unwrap();

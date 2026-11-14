@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
+import { mainnetVersion } from './mainnet-version.js';
 import type { PublicClient } from '../apps/keeper/src/run-io.js';
 const BASE = 10n ** 24n;
-export const OWNER_BUDGET_FILE = 'docs/evidence/mainnet-owner-v4/budget.json';
+export const OWNER_BUDGET_FILE = `${mainnetVersion().evidence}/budget.json`;
 // Already authorized and funded by the owner: keeper 0.10 -> 0.70 NEAR. This
 // records that finite historical increment; it never authorizes another top-up.
 export const ALREADY_FUNDED_KEEPER_INCREMENT = 6n * BASE / 10n;
@@ -19,13 +20,13 @@ export function assertSignerLiquidity(balance: bigint, storageUsage: number, loc
   const needed = deposit + gasUpfrontReserve(gasPrice, gasTgas, minimumPurchasePrice);
   if (balance - liquidStorage < needed) throw new Error(`Signer liquid balance insufficient: needs ${needed} yoctoNEAR plus storage for ${gasTgas} Tgas prepaid gas; wait for refunds or fund signer before retry`);
 }
-export function assertSpendCeiling(startingBalance: bigint, currentBalance: bigint, nextDeposit: bigint, gasPrice: bigint, gasTgas: number, alreadyFundedIncrement = 0n) {
+export function assertSpendCeiling(startingBalance: bigint, currentBalance: bigint, nextDeposit: bigint, gasPrice: bigint, gasTgas: number, alreadyFundedIncrement = 0n, maximumSpend = 112n * BASE / 10n) {
   // NEP-642 refunds the purchase/burn-price difference as well as unused gas.
   // Charge the expenditure ceiling against conservative burn cost, separately
   // from the larger temporary gas purchase checked by assertSignerLiquidity.
   const maximumDebit = nextDeposit + 2n * gasPrice * BigInt(gasTgas) * 10n ** 12n + TX_BASE_RESERVE;
-  if (currentBalance - maximumDebit < startingBalance - 112n * BASE / 10n - alreadyFundedIncrement)
-    throw new Error(`Owner ${alreadyFundedIncrement ? '11.80' : '11.20'} NEAR spend ceiling or gas headroom would be exceeded; STOP`);
+  if (currentBalance - maximumDebit < startingBalance - maximumSpend - alreadyFundedIncrement)
+    throw new Error(`Owner ${maximumSpend === 601n * BASE / 100n ? '6.01' : alreadyFundedIncrement ? '11.80' : '11.20'} NEAR spend ceiling or gas headroom would be exceeded; STOP`);
 }
 /** Guard every signer liquidity; bound owner actual expenditure separately. */
 export async function checkOwnerSpend(pc: PublicClient, owner: string, signer: string, deposit = 0n, gasTgas = 300) {
@@ -40,7 +41,11 @@ export async function checkOwnerSpend(pc: PublicClient, owner: string, signer: s
   const minimumPurchasePrice = configured > GAS_PURCHASE_PRICE_FLOOR ? configured : GAS_PURCHASE_PRICE_FLOOR;
   assertSignerLiquidity(BigInt(balance.amount), balance.storage_usage, BigInt(balance.locked), deposit, BigInt(gas.header.gas_price), gasTgas, minimumPurchasePrice);
   if (signer === owner) {
-    const budget = z.object({ ownerBalanceAtPlan: z.string().regex(/^\d+$/) }).parse(JSON.parse(await readFile(OWNER_BUDGET_FILE, 'utf8')));
-    assertSpendCeiling(BigInt(budget.ownerBalanceAtPlan), BigInt(balance.amount), deposit, BigInt(gas.header.gas_price), gasTgas, ALREADY_FUNDED_KEEPER_INCREMENT);
+    const budget = z.object({ ownerBalanceAtPlan: z.string().regex(/^\d+$/), maximumNear: z.string().optional(), fundedBaselineAtPlan: z.string().regex(/^\d+$/).optional() }).parse(JSON.parse(await readFile(OWNER_BUDGET_FILE, 'utf8')));
+    if (mainnetVersion().version === 'v4') assertSpendCeiling(BigInt(budget.ownerBalanceAtPlan), BigInt(balance.amount), deposit, BigInt(gas.header.gas_price), gasTgas, ALREADY_FUNDED_KEEPER_INCREMENT);
+    else {
+      if (budget.maximumNear !== '6.01' || budget.fundedBaselineAtPlan === undefined) throw new Error('v5 owner budget mismatch');
+      assertSpendCeiling(BigInt(budget.fundedBaselineAtPlan), BigInt(balance.amount), deposit, BigInt(gas.header.gas_price), gasTgas, 0n, 601n * BASE / 100n);
+    }
   }
 }
